@@ -38,6 +38,25 @@ export function BottomNav() {
               <span className="text-[10px] font-medium text-text-muted">Menu</span>
             </button>
 
+            {/* Feed */}
+            <Link
+              href="/"
+              className={cn(
+                'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
+                pathname === '/' ? 'text-white' : 'text-text-muted'
+              )}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor"
+                strokeWidth={pathname === '/' ? 2.5 : 1.8}
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+              <span className={cn('text-[10px] font-medium', pathname === '/' && 'text-white')}>
+                Feed
+              </span>
+            </Link>
+
             {/* Compose FAB */}
             <button
               onClick={() => { haptic('medium'); setComposerOpen(true) }}
@@ -65,22 +84,23 @@ export function BottomNav() {
               <span className="text-[10px] font-medium text-text-muted">Search</span>
             </button>
 
-            {/* Feed */}
+            {/* Profile */}
             <Link
-              href="/"
+              href="/profile"
               className={cn(
                 'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
-                pathname === '/' ? 'text-white' : 'text-text-muted'
+                pathname === '/profile' ? 'text-white' : 'text-text-muted'
               )}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor"
-                strokeWidth={pathname === '/' ? 2.5 : 1.8}
+                strokeWidth={pathname === '/profile' ? 2.5 : 1.8}
                 strokeLinecap="round" strokeLinejoin="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
               </svg>
-              <span className={cn('text-[10px] font-medium', pathname === '/' && 'text-white')}>
-                Feed
+              <span className={cn('text-[10px] font-medium', pathname === '/profile' && 'text-white')}>
+                Profile
               </span>
             </Link>
 

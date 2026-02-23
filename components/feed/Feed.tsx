@@ -10,7 +10,7 @@ import { VerifyHuman } from '@/components/auth/VerifyHuman'
 
 export function Feed() {
   const { activeBoard } = useArkoraStore()
-  const { posts, isLoading, isLoadingMore, hasMore, error, loadMore } = useFeed(
+  const { posts, isLoading, isLoadingMore, hasMore, error, loadMore, removePost } = useFeed(
     activeBoard ?? undefined
   )
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -70,7 +70,7 @@ export function Feed() {
     <>
       <div className="overflow-y-scroll snap-y snap-mandatory h-[calc(100dvh-56px)] scroll-smooth">
         {posts.map((post) => (
-          <ThreadCard key={post.id} post={post} />
+          <ThreadCard key={post.id} post={post} onDeleted={removePost} />
         ))}
 
         {/* Infinite scroll sentinel */}

@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { HumanUser, BoardId } from '@/lib/types'
 
-export type IdentityMode = 'anonymous' | 'alias' | 'custom' | 'named'
+export type IdentityMode = 'anonymous' | 'alias' | 'named'
 export type Theme = 'dark' | 'light'
 
 interface ArkoraState {
@@ -16,10 +16,8 @@ interface ArkoraState {
 
   // Identity preference
   identityMode: IdentityMode
-  // Cached alias — generated once from nullifier, reused across all alias posts
+  // Alias — auto-generated from nullifier, user can rename it (persisted locally)
   persistentAlias: string | null
-  // User-chosen custom handle (no verification, stored locally)
-  customHandle: string | null
 
   // Appearance
   theme: Theme
@@ -41,8 +39,7 @@ interface ArkoraState {
   setWalletAddress: (address: string | null) => void
   setVerified: (nullifierHash: string, user: HumanUser) => void
   setIdentityMode: (mode: IdentityMode) => void
-  setPersistentAlias: (alias: string) => void
-  setCustomHandle: (handle: string | null) => void
+  setPersistentAlias: (alias: string | null) => void
   setTheme: (theme: Theme) => void
   setHasOnboarded: (v: boolean) => void
   setActiveBoard: (boardId: BoardId | null) => void
@@ -62,7 +59,6 @@ const initialState = {
   user: null,
   identityMode: 'anonymous' as IdentityMode,
   persistentAlias: null,
-  customHandle: null,
   theme: 'dark' as Theme,
   hasOnboarded: false,
   activeBoard: null,
@@ -86,8 +82,6 @@ export const useArkoraStore = create<ArkoraState>()(
       setIdentityMode: (mode) => set({ identityMode: mode }),
 
       setPersistentAlias: (alias) => set({ persistentAlias: alias }),
-
-      setCustomHandle: (handle) => set({ customHandle: handle }),
 
       setTheme: (theme) => set({ theme }),
 
@@ -126,7 +120,6 @@ export const useArkoraStore = create<ArkoraState>()(
         user: state.user,
         identityMode: state.identityMode,
         persistentAlias: state.persistentAlias,
-        customHandle: state.customHandle,
         theme: state.theme,
         hasOnboarded: state.hasOnboarded,
       }),

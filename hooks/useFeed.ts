@@ -11,6 +11,7 @@ interface UseFeedReturn {
   error: string | null
   loadMore: () => Promise<void>
   refresh: () => Promise<void>
+  removePost: (postId: string) => void
 }
 
 export function useFeed(boardId?: BoardId): UseFeedReturn {
@@ -82,5 +83,9 @@ export function useFeed(boardId?: BoardId): UseFeedReturn {
     void fetchPosts(true).finally(() => setIsLoading(false))
   }, [boardId, fetchPosts])
 
-  return { posts, isLoading, isLoadingMore, hasMore, error, loadMore, refresh }
+  const removePost = useCallback((postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId))
+  }, [])
+
+  return { posts, isLoading, isLoadingMore, hasMore, error, loadMore, refresh, removePost }
 }

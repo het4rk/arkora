@@ -7,7 +7,8 @@ interface Props {
   replies: Reply[]
   /** The reply being replied to — highlight its subtree */
   onReplyTo: (reply: Reply) => void
-  depth?: number
+  onDeleted?: (() => void) | undefined
+  depth?: number | undefined
 }
 
 /** Build parent → [children] map from a flat reply list */
@@ -21,7 +22,7 @@ function buildTree(replies: Reply[]): Map<string | null, Reply[]> {
   return map
 }
 
-export function ReplyTree({ replies, onReplyTo, depth = 0 }: Props) {
+export function ReplyTree({ replies, onReplyTo, onDeleted, depth = 0 }: Props) {
   const tree = buildTree(replies)
   const roots = tree.get(null) ?? []
 
@@ -33,6 +34,7 @@ export function ReplyTree({ replies, onReplyTo, depth = 0 }: Props) {
           reply={reply}
           tree={tree}
           onReplyTo={onReplyTo}
+          onDeleted={onDeleted}
           depth={depth}
           isTopReply={depth === 0 && i === 0}
         />
@@ -45,13 +47,13 @@ interface BranchProps {
   reply: Reply
   tree: Map<string | null, Reply[]>
   onReplyTo: (reply: Reply) => void
+  onDeleted?: (() => void) | undefined
   depth: number
   isTopReply: boolean
 }
 
-function ReplyBranch({ reply, tree, onReplyTo, depth, isTopReply }: BranchProps) {
+function ReplyBranch({ reply, tree, onReplyTo, onDeleted, depth, isTopReply }: BranchProps) {
   const children = tree.get(reply.id) ?? []
-  // Cap nesting at 4 levels deep to avoid infinite indentation on mobile
   const MAX_DEPTH = 4
 
   return (
@@ -60,6 +62,7 @@ function ReplyBranch({ reply, tree, onReplyTo, depth, isTopReply }: BranchProps)
         reply={reply}
         isTopReply={isTopReply}
         onReplyTo={onReplyTo}
+        onDeleted={onDeleted}
       />
 
       {children.length > 0 && depth < MAX_DEPTH && (
@@ -74,6 +77,7 @@ function ReplyBranch({ reply, tree, onReplyTo, depth, isTopReply }: BranchProps)
                 reply={child}
                 tree={tree}
                 onReplyTo={onReplyTo}
+                onDeleted={onDeleted}
                 depth={depth + 1}
                 isTopReply={false}
               />

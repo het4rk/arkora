@@ -11,8 +11,7 @@ import { cn } from '@/lib/utils'
 /* ─── Privacy options ──────────────────────────────────────────────────── */
 const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: string }[] = [
   { mode: 'anonymous', label: 'Random',  sub: 'New Human # each post',    icon: '🎲' },
-  { mode: 'alias',     label: 'Alias',   sub: 'Same handle, always',      icon: '👤' },
-  { mode: 'custom',    label: 'Custom',  sub: 'Your chosen name',         icon: '✏️' },
+  { mode: 'alias',     label: 'Alias',   sub: 'Consistent handle',        icon: '👤' },
   { mode: 'named',     label: 'Named',   sub: 'Your World ID username',   icon: '📛' },
 ]
 
@@ -27,20 +26,16 @@ export function LeftDrawer() {
     isDrawerOpen, setDrawerOpen,
     identityMode, setIdentityMode,
     theme, setTheme,
-    isVerified, nullifierHash, persistentAlias,
-    customHandle, setCustomHandle,
+    isVerified, nullifierHash, persistentAlias, setPersistentAlias,
     user,
   } = useArkoraStore()
 
-  const [customDraft, setCustomDraft] = useState(customHandle ?? '')
+  const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
 
   function displayName(): string {
     if (!isVerified) return 'Unverified'
     if (identityMode === 'alias') {
       return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : '…')
-    }
-    if (identityMode === 'custom') {
-      return customHandle?.trim() || 'unnamed'
     }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
@@ -49,9 +44,15 @@ export function LeftDrawer() {
     return 'Human #????'
   }
 
-  function commitCustomHandle() {
-    const trimmed = customDraft.trim().slice(0, 32)
-    setCustomHandle(trimmed || null)
+  function commitAlias() {
+    const trimmed = aliasDraft.trim().slice(0, 32)
+    if (trimmed) {
+      setPersistentAlias(trimmed)
+    } else if (nullifierHash) {
+      const generated = generateAlias(nullifierHash)
+      setPersistentAlias(generated)
+      setAliasDraft(generated)
+    }
   }
 
   return (
@@ -142,19 +143,19 @@ export function LeftDrawer() {
                         )}
                       </button>
 
-                      {/* Custom name input — shown inline when Custom is selected */}
-                      {opt.mode === 'custom' && identityMode === 'custom' && (
+                      {/* Alias name input — shown inline when Alias is selected */}
+                      {opt.mode === 'alias' && identityMode === 'alias' && (
                         <div className="mt-2 flex gap-2">
                           <input
                             type="text"
-                            value={customDraft}
-                            onChange={(e) => setCustomDraft(e.target.value.slice(0, 32))}
-                            onBlur={commitCustomHandle}
-                            placeholder="Your name…"
+                            value={aliasDraft}
+                            onChange={(e) => setAliasDraft(e.target.value.slice(0, 32))}
+                            onBlur={commitAlias}
+                            placeholder={nullifierHash ? generateAlias(nullifierHash) : 'Your alias…'}
                             className="glass-input flex-1 rounded-[var(--r-md)] px-3 py-2.5 text-sm min-w-0"
                           />
                           <button
-                            onClick={commitCustomHandle}
+                            onClick={commitAlias}
                             className="px-3 py-2.5 bg-accent text-white text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all shrink-0"
                           >
                             Set

@@ -21,6 +21,7 @@ export interface Post {
   downvotes: number
   replyCount: number
   createdAt: Date
+  deletedAt: Date | null
 }
 
 export interface Reply {
@@ -35,6 +36,7 @@ export interface Reply {
   upvotes: number
   downvotes: number
   createdAt: Date
+  deletedAt: Date | null
 }
 
 export interface HumanUser {

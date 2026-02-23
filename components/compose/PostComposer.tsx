@@ -18,7 +18,6 @@ export function PostComposer() {
     setDrawerOpen,
     identityMode,
     persistentAlias, setPersistentAlias,
-    customHandle,
     nullifierHash,
     walletAddress,
     user,
@@ -46,9 +45,6 @@ export function PostComposer() {
     if (identityMode === 'alias') {
       return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : 'alias.pending')
     }
-    if (identityMode === 'custom') {
-      return customHandle?.trim() || 'unnamed'
-    }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
       return username ?? user?.pseudoHandle ?? shortWallet() ?? 'World ID user'
@@ -59,9 +55,6 @@ export function PostComposer() {
   function getPseudoHandle(): string | undefined {
     if (identityMode === 'alias') {
       return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : undefined)
-    }
-    if (identityMode === 'custom') {
-      return customHandle?.trim() || undefined
     }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
@@ -154,7 +147,7 @@ export function PostComposer() {
             <span className="text-accent text-xs font-semibold">{getPreviewName()} ✓</span>
           </div>
           <span className="text-text-muted text-[11px]">
-            {identityMode === 'anonymous' ? '🎲' : identityMode === 'alias' ? '👤' : identityMode === 'custom' ? '✏️' : '📛'}
+            {identityMode === 'anonymous' ? '🎲' : identityMode === 'alias' ? '👤' : '📛'}
             {' '}Change →
           </span>
         </button>

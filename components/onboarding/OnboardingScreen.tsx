@@ -31,7 +31,7 @@ const SLIDES = [
     ),
     heading: 'Your rules, your voice',
     sub: 'Post anonymously or with your identity.',
-    body: 'Choose how you show up: fully anonymous, a consistent alias, a custom name, or your World ID handle.',
+    body: 'Choose how you show up: fully anonymous, a consistent alias, or your World ID handle.',
   },
   {
     icon: (

@@ -24,6 +24,7 @@ export const posts = pgTable(
     downvotes: integer('downvotes').default(0).notNull(),
     replyCount: integer('reply_count').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
   },
   (table) => ({
     boardIdx: index('posts_board_id_idx').on(table.boardId),
@@ -48,6 +49,7 @@ export const replies = pgTable(
     upvotes: integer('upvotes').default(0).notNull(),
     downvotes: integer('downvotes').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
   },
   (table) => ({
     postIdIdx: index('replies_post_id_idx').on(table.postId),

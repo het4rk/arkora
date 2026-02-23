@@ -1,6 +1,6 @@
 import { db } from './index'
 import { posts, postVotes } from './schema'
-import { eq, desc, lt, and, sql } from 'drizzle-orm'
+import { eq, desc, lt, and, isNull, sql } from 'drizzle-orm'
 import type { Post, BoardId, CreatePostInput, FeedParams } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
 
@@ -19,6 +19,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
     downvotes: row.downvotes,
     replyCount: row.replyCount,
     createdAt: row.createdAt,
+    deletedAt: row.deletedAt ?? null,
   }
 }
 
@@ -49,7 +50,7 @@ export async function getPostById(id: string): Promise<Post | null> {
 export async function getFeed(params: FeedParams): Promise<Post[]> {
   const limit = Math.min(params.limit ?? 20, 50)
 
-  const conditions = []
+  const conditions = [isNull(posts.deletedAt)]
   if (params.boardId) {
     conditions.push(eq(posts.boardId, params.boardId))
   }
@@ -60,7 +61,7 @@ export async function getFeed(params: FeedParams): Promise<Post[]> {
   const rows = await db
     .select()
     .from(posts)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
     .limit(limit)
 
@@ -114,7 +115,6 @@ export async function upsertVote(
   )
 
   // Recompute tallies from source of truth
-  // postgres.js returns rows directly as an array (no .rows property)
   const tallies = await db.execute<{ up: string | null; down: string | null }>(
     sql`SELECT
           SUM(CASE WHEN direction = 1 THEN 1 ELSE 0 END)::text AS up,
@@ -127,4 +127,58 @@ export async function upsertVote(
   const up = parseInt(row?.up ?? '0', 10)
   const down = parseInt(row?.down ?? '0', 10)
   await updateVoteCounts(postId, up, down)
+}
+
+export async function softDeletePost(postId: string, nullifierHash: string): Promise<boolean> {
+  const result = await db
+    .update(posts)
+    .set({ deletedAt: sql`now()` })
+    .where(and(eq(posts.id, postId), eq(posts.nullifierHash, nullifierHash)))
+    .returning({ id: posts.id })
+
+  return result.length > 0
+}
+
+export async function getPostsByNullifier(
+  nullifierHash: string,
+  cursor?: string,
+  limit = 20
+): Promise<Post[]> {
+  const conditions = [
+    eq(posts.nullifierHash, nullifierHash),
+    isNull(posts.deletedAt),
+  ]
+  if (cursor) {
+    conditions.push(lt(posts.createdAt, new Date(cursor)))
+  }
+
+  const rows = await db
+    .select()
+    .from(posts)
+    .where(and(...conditions))
+    .orderBy(desc(posts.createdAt))
+    .limit(Math.min(limit, 50))
+
+  return rows.map(toPost)
+}
+
+export async function getVotedPostsByNullifier(
+  nullifierHash: string,
+  limit = 20
+): Promise<Array<Post & { voteDirection: 1 | -1 }>> {
+  const rows = await db
+    .select({
+      post: posts,
+      direction: postVotes.direction,
+    })
+    .from(postVotes)
+    .innerJoin(posts, and(eq(postVotes.postId, posts.id), isNull(posts.deletedAt)))
+    .where(eq(postVotes.nullifierHash, nullifierHash))
+    .orderBy(desc(postVotes.createdAt))
+    .limit(Math.min(limit, 50))
+
+  return rows.map(({ post, direction }) => ({
+    ...toPost(post),
+    voteDirection: direction as 1 | -1,
+  }))
 }

@@ -146,7 +146,7 @@ export function ThreadView({ postId }: Props) {
             </p>
           )}
 
-          <ReplyTree replies={replies} onReplyTo={setReplyingTo} />
+          <ReplyTree replies={replies} onReplyTo={setReplyingTo} onDeleted={() => void fetchThread()} />
 
           {replies.length === 0 && (
             <p className="text-text-muted text-sm text-center py-12">

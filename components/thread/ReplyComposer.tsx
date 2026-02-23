@@ -21,7 +21,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const { nullifierHash, isVerified, setVerifySheetOpen, identityMode, persistentAlias, customHandle, walletAddress, user } = useArkoraStore()
+  const { nullifierHash, isVerified, setVerifySheetOpen, identityMode, persistentAlias, walletAddress, user } = useArkoraStore()
 
   function shortWallet(): string | undefined {
     if (!walletAddress) return undefined
@@ -31,9 +31,6 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
   function getPseudoHandle(): string | undefined {
     if (identityMode === 'alias') {
       return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : undefined)
-    }
-    if (identityMode === 'custom') {
-      return customHandle?.trim() || undefined
     }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null

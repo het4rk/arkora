@@ -1,6 +1,6 @@
 import { db } from './index'
 import { posts } from './schema'
-import { sql, ilike, or } from 'drizzle-orm'
+import { sql, ilike, or, and, isNull } from 'drizzle-orm'
 import type { Post, BoardId } from '@/lib/types'
 
 function toPost(row: typeof posts.$inferSelect): Post {
@@ -17,6 +17,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
     downvotes: row.downvotes,
     replyCount: row.replyCount,
     createdAt: row.createdAt,
+    deletedAt: row.deletedAt ?? null,
   }
 }
 
@@ -38,10 +39,13 @@ export async function searchPosts(query: string, limit = 20): Promise<Post[]> {
       .select()
       .from(posts)
       .where(
-        or(
-          ilike(posts.title, pattern),
-          ilike(posts.pseudoHandle, pattern),
-          ilike(posts.boardId, pattern)
+        and(
+          isNull(posts.deletedAt),
+          or(
+            ilike(posts.title, pattern),
+            ilike(posts.pseudoHandle, pattern),
+            ilike(posts.boardId, pattern)
+          )
         )
       )
       .limit(limit)
@@ -53,7 +57,8 @@ export async function searchPosts(query: string, limit = 20): Promise<Post[]> {
     SELECT *
     FROM posts
     WHERE
-      to_tsvector('english',
+      deleted_at IS NULL
+      AND to_tsvector('english',
         title || ' ' || body || ' ' ||
         COALESCE(pseudo_handle, '') || ' ' || board_id
       ) @@ websearch_to_tsquery('english', ${q})
