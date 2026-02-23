@@ -5,22 +5,24 @@ import { usePathname } from 'next/navigation'
 import { cn, haptic } from '@/lib/utils'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { LeftDrawer } from '@/components/ui/LeftDrawer'
+import { SearchSheet } from '@/components/search/SearchSheet'
 
 export function BottomNav() {
   const pathname = usePathname()
-  const { setComposerOpen, setDrawerOpen } = useArkoraStore()
+  const { setComposerOpen, setDrawerOpen, setSearchOpen } = useArkoraStore()
 
   return (
     <>
+      <SearchSheet />
       {/* Drawer rendered here so it sits above nav in z-order */}
       <LeftDrawer />
 
       <nav className="fixed bottom-0 left-0 right-0 z-30 safe-bottom">
         {/* Liquid glass bar */}
         <div className="glass-nav">
-          <div className="flex items-center justify-between h-14 px-5">
+          <div className="flex items-center justify-around h-14 px-2">
 
-            {/* Left: hamburger → identity / settings drawer */}
+            {/* Menu */}
             <button
               onClick={() => { haptic('light'); setDrawerOpen(true) }}
               aria-label="Open settings"
@@ -36,7 +38,7 @@ export function BottomNav() {
               <span className="text-[10px] font-medium text-text-muted">Menu</span>
             </button>
 
-            {/* Center: compose FAB */}
+            {/* Compose FAB */}
             <button
               onClick={() => { haptic('medium'); setComposerOpen(true) }}
               className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center shadow-lg shadow-accent/30 active:scale-95 transition-all active:bg-accent-hover"
@@ -48,7 +50,22 @@ export function BottomNav() {
               </svg>
             </button>
 
-            {/* Right: feed link */}
+            {/* Search */}
+            <button
+              onClick={() => { haptic('light'); setSearchOpen(true) }}
+              aria-label="Search"
+              className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all active:scale-90"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                className="text-text-muted">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <span className="text-[10px] font-medium text-text-muted">Search</span>
+            </button>
+
+            {/* Feed */}
             <Link
               href="/"
               className={cn(

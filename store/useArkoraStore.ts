@@ -27,6 +27,7 @@ interface ArkoraState {
   isComposerOpen: boolean
   isVerifySheetOpen: boolean
   isDrawerOpen: boolean
+  isSearchOpen: boolean
 
   // Optimistic vote cache: postId → direction
   optimisticVotes: Record<string, 1 | -1>
@@ -41,6 +42,7 @@ interface ArkoraState {
   setComposerOpen: (open: boolean) => void
   setVerifySheetOpen: (open: boolean) => void
   setDrawerOpen: (open: boolean) => void
+  setSearchOpen: (open: boolean) => void
   setOptimisticVote: (postId: string, direction: 1 | -1) => void
   reset: () => void
 }
@@ -57,6 +59,7 @@ const initialState = {
   isComposerOpen: false,
   isVerifySheetOpen: false,
   isDrawerOpen: false,
+  isSearchOpen: false,
   optimisticVotes: {},
 }
 
@@ -84,16 +87,12 @@ export const useArkoraStore = create<ArkoraState>()(
 
       setDrawerOpen: (open) => set({ isDrawerOpen: open }),
 
+      setSearchOpen: (open) => set({ isSearchOpen: open }),
+
       setOptimisticVote: (postId, direction) =>
-        set((state) => {
-          const next = { ...state.optimisticVotes, [postId]: direction }
-          // Prevent unbounded growth: evict oldest entries beyond 500
-          const keys = Object.keys(next)
-          if (keys.length > 500) {
-            keys.slice(0, keys.length - 500).forEach((k) => delete next[k])
-          }
-          return { optimisticVotes: next }
-        }),
+        set((state) => ({
+          optimisticVotes: { ...state.optimisticVotes, [postId]: direction },
+        })),
 
       reset: () => set(initialState),
     }),

@@ -31,8 +31,22 @@ export function WalletConnect() {
     const MAX_RETRIES = 20 // up to ~6s (20 × 300ms)
     let pendingTimer: ReturnType<typeof setTimeout> | null = null
 
+    // MiniKit.isInstalled() internally calls console.error() every time it
+    // returns false — which floods the Next.js dev overlay during our 20-retry
+    // polling loop. We silence ONLY that specific message during retries.
+    function silentIsInstalled(): boolean {
+      const orig = console.error
+      console.error = (...args: unknown[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('MiniKit is not installed')) return
+        ;(orig as (...a: unknown[]) => void)(...args)
+      }
+      const result = MiniKit.isInstalled()
+      console.error = orig
+      return result
+    }
+
     function tryAuth() {
-      if (!MiniKit.isInstalled()) {
+      if (!silentIsInstalled()) {
         if (retries++ < MAX_RETRIES) {
           pendingTimer = setTimeout(tryAuth, 300)
         }
