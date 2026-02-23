@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [],
   },
+  turbopack: {
+    root: __dirname,
+  },
   // Required for MiniKit — allows World App to frame the app
   async headers() {
     return [
