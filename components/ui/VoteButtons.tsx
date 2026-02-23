@@ -13,26 +13,24 @@ export function VoteButtons({ post, className }: Props) {
   const { castVote, isVoting, myVote } = useVote()
   const myDirection = myVote(post.id)
 
-  // Optimistic display
-  const displayUpvotes =
-    myDirection === 1 && post.upvotes === 0 ? 1 : post.upvotes
-  const displayDownvotes =
-    myDirection === -1 && post.downvotes === 0 ? 1 : post.downvotes
+  const displayUpvotes = myDirection === 1 && post.upvotes === 0 ? 1 : post.upvotes
+  const displayDownvotes = myDirection === -1 && post.downvotes === 0 ? 1 : post.downvotes
 
   return (
-    <div className={cn('flex items-center gap-3', className)}>
+    <div className={cn('flex items-center gap-2', className)}>
       <button
         onClick={() => void castVote(post.id, 1)}
         disabled={isVoting}
         className={cn(
-          'flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95',
+          'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold transition-all active:scale-95',
           myDirection === 1
-            ? 'bg-upvote/20 text-upvote border border-upvote/40'
-            : 'bg-surface-up text-text-secondary border border-border hover:border-upvote/40 hover:text-upvote'
+            ? 'bg-upvote text-white'
+            : 'bg-surface-up text-text-muted border border-border active:border-upvote/50'
         )}
-        aria-label="Upvote"
       >
-        <span>▲</span>
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M6 1L11.196 9.5H0.804L6 1Z" />
+        </svg>
         <span>{displayUpvotes}</span>
       </button>
 
@@ -40,14 +38,15 @@ export function VoteButtons({ post, className }: Props) {
         onClick={() => void castVote(post.id, -1)}
         disabled={isVoting}
         className={cn(
-          'flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95',
+          'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold transition-all active:scale-95',
           myDirection === -1
-            ? 'bg-downvote/20 text-downvote border border-downvote/40'
-            : 'bg-surface-up text-text-secondary border border-border hover:border-downvote/40 hover:text-downvote'
+            ? 'bg-downvote text-white'
+            : 'bg-surface-up text-text-muted border border-border active:border-downvote/50'
         )}
-        aria-label="Downvote"
       >
-        <span>▼</span>
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M6 11L0.804 2.5H11.196L6 11Z" />
+        </svg>
         <span>{displayDownvotes}</span>
       </button>
     </div>

@@ -1,7 +1,7 @@
-export type BoardId = 'agora' | 'technology' | 'markets' | 'politics' | 'worldchain'
+export type BoardId = 'arkora' | 'technology' | 'markets' | 'politics' | 'worldchain'
 
 export const BOARDS: { id: BoardId; label: string; emoji: string }[] = [
-  { id: 'agora', label: 'Agora', emoji: '🏛️' },
+  { id: 'arkora', label: 'Arkora', emoji: '🏛️' },
   { id: 'technology', label: 'Technology', emoji: '⚡' },
   { id: 'markets', label: 'Markets', emoji: '📈' },
   { id: 'politics', label: 'Politics', emoji: '🗳️' },

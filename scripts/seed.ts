@@ -30,7 +30,7 @@ async function seed() {
     .values({
       title: 'Welcome to Arkora — provably human message board',
       body: 'Every voice here is cryptographically guaranteed to be a real, unique human. No bots. No spam. Just humans.',
-      boardId: 'agora',
+      boardId: 'arkora',
       nullifierHash,
       sessionTag: 'Human #1337',
     })

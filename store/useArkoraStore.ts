@@ -4,12 +4,19 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { HumanUser, BoardId } from '@/lib/types'
 
+export type IdentityMode = 'anonymous' | 'alias' | 'named'
+
 interface ArkoraState {
   // Auth & Identity
   walletAddress: string | null
   nullifierHash: string | null
   isVerified: boolean
   user: HumanUser | null
+
+  // Identity preference
+  identityMode: IdentityMode
+  // Cached alias — generated once from nullifier, reused across all alias posts
+  persistentAlias: string | null
 
   // UI State
   activeBoard: BoardId | null
@@ -22,6 +29,8 @@ interface ArkoraState {
   // Actions
   setWalletAddress: (address: string | null) => void
   setVerified: (nullifierHash: string, user: HumanUser) => void
+  setIdentityMode: (mode: IdentityMode) => void
+  setPersistentAlias: (alias: string) => void
   setActiveBoard: (boardId: BoardId | null) => void
   setComposerOpen: (open: boolean) => void
   setVerifySheetOpen: (open: boolean) => void
@@ -34,6 +43,8 @@ const initialState = {
   nullifierHash: null,
   isVerified: false,
   user: null,
+  identityMode: 'anonymous' as IdentityMode,
+  persistentAlias: null,
   activeBoard: null,
   isComposerOpen: false,
   isVerifySheetOpen: false,
@@ -50,6 +61,10 @@ export const useArkoraStore = create<ArkoraState>()(
       setVerified: (nullifierHash, user) =>
         set({ nullifierHash, user, isVerified: true }),
 
+      setIdentityMode: (mode) => set({ identityMode: mode }),
+
+      setPersistentAlias: (alias) => set({ persistentAlias: alias }),
+
       setActiveBoard: (boardId) => set({ activeBoard: boardId }),
 
       setComposerOpen: (open) => set({ isComposerOpen: open }),
@@ -65,12 +80,13 @@ export const useArkoraStore = create<ArkoraState>()(
     }),
     {
       name: 'arkora-store',
-      // Only persist identity — don't persist UI state
       partialize: (state) => ({
         walletAddress: state.walletAddress,
         nullifierHash: state.nullifierHash,
         isVerified: state.isVerified,
         user: state.user,
+        identityMode: state.identityMode,
+        persistentAlias: state.persistentAlias,
       }),
     }
   )
