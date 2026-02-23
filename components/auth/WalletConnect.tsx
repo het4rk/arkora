@@ -8,19 +8,30 @@ import type { HumanUser } from '@/lib/types'
 // Silently triggers walletAuth on app open, then auto-verifies the user
 // using a wallet-derived identity — no separate World ID ZK step required.
 export function WalletConnect() {
-  const { walletAddress, setWalletAddress, setVerified } = useArkoraStore()
+  const { walletAddress, isVerified, setWalletAddress, setVerified } = useArkoraStore()
   const attempted = useRef(false)
 
   useEffect(() => {
-    if (walletAddress || attempted.current) return
+    // Already fully signed in and verified — nothing to do
+    if (isVerified || attempted.current) return
 
+    attempted.current = true
+
+    // ── Fast path: wallet address already persisted, just re-verify ──────
+    // This happens when the user signed in before auto-verify was added,
+    // or when the store is hydrated from localStorage with walletAddress
+    // but isVerified=false (e.g. after a code update).
+    if (walletAddress) {
+      void callUserEndpoint(walletAddress)
+      return
+    }
+
+    // ── Full path: no wallet yet — wait for MiniKit, then walletAuth ──────
     let retries = 0
-    const MAX_RETRIES = 20 // up to ~6s total (20 × 300ms)
+    const MAX_RETRIES = 20 // up to ~6s (20 × 300ms)
     let timer: ReturnType<typeof setTimeout>
 
     function tryAuth() {
-      // MiniKit is injected asynchronously by the World App WebView —
-      // retry until it's ready rather than bailing on first check.
       if (!MiniKit.isInstalled()) {
         if (retries++ < MAX_RETRIES) {
           timer = setTimeout(tryAuth, 300)
@@ -28,11 +39,8 @@ export function WalletConnect() {
         return
       }
 
-      attempted.current = true
-
       void (async () => {
         try {
-          // ── Step 1: walletAuth (SIWE sign-in) ──────────────────────
           const res = await fetch('/api/nonce')
           const { nonce } = (await res.json()) as { nonce: string }
 
@@ -63,35 +71,37 @@ export function WalletConnect() {
           if (!authJson.success || !authJson.walletAddress) return
 
           setWalletAddress(authJson.walletAddress)
-
-          // ── Step 2: auto-verify via wallet-derived identity ─────────
-          // Derives a stable pseudonymous nullifier from the wallet address
-          // server-side — user is marked verified immediately, no separate
-          // World ID ZK proof modal needed.
-          const userRes = await fetch('/api/auth/user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ walletAddress: authJson.walletAddress }),
-          })
-
-          const userJson = (await userRes.json()) as {
-            success: boolean
-            nullifierHash?: string
-            user?: HumanUser
-          }
-
-          if (userJson.success && userJson.nullifierHash && userJson.user) {
-            setVerified(userJson.nullifierHash, userJson.user)
-          }
+          await callUserEndpoint(authJson.walletAddress)
         } catch {
           // Silent failure — user can still browse anonymously
         }
       })()
+
+      return () => clearTimeout(timer)
     }
 
     tryAuth()
-    return () => clearTimeout(timer)
-  }, [walletAddress, setWalletAddress, setVerified])
+  }, [walletAddress, isVerified, setWalletAddress, setVerified])
+
+  async function callUserEndpoint(address: string) {
+    try {
+      const userRes = await fetch('/api/auth/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: address }),
+      })
+      const userJson = (await userRes.json()) as {
+        success: boolean
+        nullifierHash?: string
+        user?: HumanUser
+      }
+      if (userJson.success && userJson.nullifierHash && userJson.user) {
+        setVerified(userJson.nullifierHash, userJson.user)
+      }
+    } catch {
+      // Silent failure
+    }
+  }
 
   return null
 }
