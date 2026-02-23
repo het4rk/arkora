@@ -16,6 +16,7 @@ export interface Post {
   nullifierHash: string
   pseudoHandle: string | null
   sessionTag: string
+  imageUrl: string | null
   upvotes: number
   downvotes: number
   replyCount: number
@@ -30,6 +31,7 @@ export interface Reply {
   nullifierHash: string
   pseudoHandle: string | null
   sessionTag: string
+  imageUrl: string | null
   upvotes: number
   downvotes: number
   createdAt: Date
@@ -60,6 +62,7 @@ export interface CreatePostInput {
   boardId: BoardId
   nullifierHash: string
   pseudoHandle?: string | undefined
+  imageUrl?: string | undefined
 }
 
 export interface CreateReplyInput {
@@ -68,6 +71,7 @@ export interface CreateReplyInput {
   body: string
   nullifierHash: string
   pseudoHandle?: string | undefined
+  imageUrl?: string | undefined
 }
 
 export interface VoteInput {

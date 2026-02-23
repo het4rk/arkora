@@ -39,6 +39,19 @@ export function ThreadCard({ post, topReply }: Props) {
 
         <HumanBadge label={displayName} size="md" />
 
+        {/* Post image */}
+        {post.imageUrl && (
+          <div className="mt-4 rounded-[var(--r-lg)] overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={post.imageUrl}
+              alt=""
+              className="w-full max-h-56 object-cover"
+              loading="lazy"
+            />
+          </div>
+        )}
+
         {/* Top reply preview — glass card */}
         {topReply && (
           <div className="mt-5 glass rounded-[var(--r-lg)] px-4 py-4">

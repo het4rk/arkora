@@ -7,9 +7,10 @@ import { TimeAgo } from '@/components/ui/TimeAgo'
 interface Props {
   reply: Reply
   isTopReply?: boolean
+  onReplyTo?: (reply: Reply) => void
 }
 
-export function ReplyCard({ reply, isTopReply }: Props) {
+export function ReplyCard({ reply, isTopReply, onReplyTo }: Props) {
   const displayName = reply.pseudoHandle ?? reply.sessionTag
 
   return (
@@ -32,8 +33,22 @@ export function ReplyCard({ reply, isTopReply }: Props) {
         {reply.body}
       </p>
 
-      {/* Vote indicators */}
-      <div className="flex items-center gap-3 pt-0.5">
+      {/* Reply image */}
+      {reply.imageUrl && (
+        <div className="rounded-[var(--r-md)] overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={reply.imageUrl}
+            alt=""
+            className="w-full max-h-72 object-contain bg-surface-up"
+            loading="lazy"
+          />
+        </div>
+      )}
+
+      {/* Actions row */}
+      <div className="flex items-center justify-between pt-0.5">
+        <div className="flex items-center gap-3">
         <span className="flex items-center gap-1 text-text-muted text-xs">
           <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor" className="text-upvote/70">
             <path d="M6 1L11.196 9.5H0.804L6 1Z" />
@@ -46,6 +61,21 @@ export function ReplyCard({ reply, isTopReply }: Props) {
           </svg>
           {reply.downvotes}
         </span>
+        </div>
+
+        {onReplyTo && (
+          <button
+            onClick={() => onReplyTo(reply)}
+            className="flex items-center gap-1 text-text-muted text-xs active:opacity-60 transition-opacity"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 17 4 12 9 7" />
+              <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+            </svg>
+            Reply
+          </button>
+        )}
       </div>
     </div>
   )

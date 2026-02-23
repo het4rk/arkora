@@ -2,17 +2,21 @@
 
 import { useState } from 'react'
 import { haptic } from '@/lib/utils'
+import { ImagePicker } from '@/components/ui/ImagePicker'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 
 interface Props {
   postId: string
   onSuccess: () => void
+  parentReplyId?: string | undefined
+  replyingToName?: string | undefined
 }
 
-export function ReplyComposer({ postId, onSuccess }: Props) {
+export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName }: Props) {
   const [body, setBody] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const { nullifierHash, isVerified, setVerifySheetOpen } = useArkoraStore()
@@ -32,7 +36,7 @@ export function ReplyComposer({ postId, onSuccess }: Props) {
       const res = await fetch('/api/replies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, body, nullifierHash }),
+        body: JSON.stringify({ postId, body, nullifierHash, imageUrl: imageUrl ?? undefined, parentReplyId }),
       })
 
       const json = (await res.json()) as { success: boolean; error?: string }
@@ -42,6 +46,7 @@ export function ReplyComposer({ postId, onSuccess }: Props) {
       }
 
       setBody('')
+      setImageUrl(null)
       onSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -54,6 +59,35 @@ export function ReplyComposer({ postId, onSuccess }: Props) {
     <div className="glass-compose px-[5vw] pt-3 pb-[max(env(safe-area-inset-bottom),16px)]">
       {error && (
         <p className="text-downvote text-xs mb-2 px-1">{error}</p>
+      )}
+      {replyingToName && (
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className="text-accent shrink-0">
+            <polyline points="9 17 4 12 9 7" />
+            <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+          </svg>
+          <span className="text-accent text-xs font-medium truncate">
+            Replying to {replyingToName}
+          </span>
+        </div>
+      )}
+      {imageUrl === null && (
+        <ImagePicker
+          previewUrl={null}
+          onUpload={setImageUrl}
+          onClear={() => setImageUrl(null)}
+          className="mb-2"
+        />
+      )}
+      {imageUrl && (
+        <ImagePicker
+          previewUrl={imageUrl}
+          onUpload={setImageUrl}
+          onClear={() => setImageUrl(null)}
+          className="mb-2"
+        />
       )}
       <div className="flex items-end gap-3">
         <HumanBadge size="sm" className="mb-[3px] shrink-0" />

@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Post, Reply, CommunityNote } from '@/lib/types'
+import type { Post, CommunityNote } from '@/lib/types'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { BoardTag } from '@/components/ui/BoardTag'
 import { VoteButtons } from '@/components/ui/VoteButtons'
 import { TimeAgo } from '@/components/ui/TimeAgo'
-import { ReplyCard } from './ReplyCard'
+import { ReplyTree } from './ReplyTree'
 import { ReplyComposer } from './ReplyComposer'
+import type { Reply } from '@/lib/types'
 
 interface ThreadData {
   post: Post
@@ -25,6 +26,7 @@ export function ThreadView({ postId }: Props) {
   const [data, setData] = useState<ThreadData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [replyingTo, setReplyingTo] = useState<Reply | null>(null)
 
   const fetchThread = useCallback(async () => {
     try {
@@ -99,6 +101,19 @@ export function ThreadView({ postId }: Props) {
 
           <HumanBadge label={displayName} size="md" />
 
+          {/* Post image */}
+          {post.imageUrl && (
+            <div className="rounded-[var(--r-lg)] overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={post.imageUrl}
+                alt=""
+                className="w-full max-h-96 object-contain bg-surface-up"
+                loading="lazy"
+              />
+            </div>
+          )}
+
           <p className="text-text-secondary text-[15px] leading-[1.65] whitespace-pre-wrap">
             {post.body}
           </p>
@@ -131,9 +146,7 @@ export function ThreadView({ postId }: Props) {
             </p>
           )}
 
-          {replies.map((reply, i) => (
-            <ReplyCard key={reply.id} reply={reply} isTopReply={i === 0} />
-          ))}
+          <ReplyTree replies={replies} onReplyTo={setReplyingTo} />
 
           {replies.length === 0 && (
             <p className="text-text-muted text-sm text-center py-12">
@@ -145,7 +158,12 @@ export function ThreadView({ postId }: Props) {
 
       {/* Fixed reply composer */}
       <div className="fixed bottom-0 left-0 right-0 z-20">
-        <ReplyComposer postId={postId} onSuccess={() => void fetchThread()} />
+        <ReplyComposer
+          postId={postId}
+          parentReplyId={replyingTo?.id ?? undefined}
+          replyingToName={replyingTo ? (replyingTo.pseudoHandle ?? replyingTo.sessionTag) : undefined}
+          onSuccess={() => { setReplyingTo(null); void fetchThread() }}
+        />
       </div>
     </div>
   )

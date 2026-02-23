@@ -14,6 +14,7 @@ function toReply(row: typeof replies.$inferSelect): Reply {
     nullifierHash: row.nullifierHash,
     pseudoHandle: row.pseudoHandle ?? null,
     sessionTag: row.sessionTag,
+    imageUrl: row.imageUrl ?? null,
     upvotes: row.upvotes,
     downvotes: row.downvotes,
     createdAt: row.createdAt,
@@ -31,6 +32,7 @@ export async function createReply(input: CreateReplyInput): Promise<Reply> {
       nullifierHash: input.nullifierHash,
       pseudoHandle: input.pseudoHandle ?? null,
       sessionTag,
+      imageUrl: input.imageUrl ?? null,
     })
     .returning()
 

@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const reply = await createReply({ postId, body: replyBody, nullifierHash, parentReplyId, pseudoHandle })
+    const { imageUrl } = body
+    const reply = await createReply({ postId, body: replyBody, nullifierHash, parentReplyId, pseudoHandle, imageUrl: imageUrl ?? undefined })
     return NextResponse.json({ success: true, data: reply }, { status: 201 })
   } catch (err) {
     console.error('[replies POST]', err)

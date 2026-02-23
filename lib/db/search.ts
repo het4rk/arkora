@@ -12,6 +12,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
     nullifierHash: row.nullifierHash,
     pseudoHandle: row.pseudoHandle ?? null,
     sessionTag: row.sessionTag,
+    imageUrl: row.imageUrl ?? null,
     upvotes: row.upvotes,
     downvotes: row.downvotes,
     replyCount: row.replyCount,

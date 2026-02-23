@@ -9,6 +9,7 @@ import { usePost } from '@/hooks/usePost'
 import { generateAlias } from '@/lib/session'
 import { BOARDS, type BoardId } from '@/lib/types'
 import { cn, haptic } from '@/lib/utils'
+import { ImagePicker } from '@/components/ui/ImagePicker'
 
 export function PostComposer() {
   const router = useRouter()
@@ -25,6 +26,7 @@ export function PostComposer() {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [boardId, setBoardId] = useState<BoardId>('arkora')
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
 
   // Ensure alias exists when mode is selected
   useEffect(() => {
@@ -57,10 +59,11 @@ export function PostComposer() {
 
   async function handleSubmit() {
     if (!title.trim() || !body.trim()) return
-    const post = await submit({ title, body, boardId, pseudoHandle: getPseudoHandle() })
+    const post = await submit({ title, body, boardId, pseudoHandle: getPseudoHandle(), imageUrl: imageUrl ?? undefined })
     if (post) {
       setTitle('')
       setBody('')
+      setImageUrl(null)
       setComposerOpen(false)
       router.push(`/post/${post.id}`)
     }
@@ -142,6 +145,13 @@ export function PostComposer() {
             {' '}Change →
           </span>
         </button>
+
+        {/* Image attachment */}
+        <ImagePicker
+          previewUrl={imageUrl}
+          onUpload={setImageUrl}
+          onClear={() => setImageUrl(null)}
+        />
 
         {error && (
           <p className="text-downvote text-sm rounded-[var(--r-md)] px-4 py-3 bg-downvote/10 border border-downvote/20">

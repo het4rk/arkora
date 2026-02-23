@@ -14,6 +14,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
     nullifierHash: row.nullifierHash,
     pseudoHandle: row.pseudoHandle ?? null,
     sessionTag: row.sessionTag,
+    imageUrl: row.imageUrl ?? null,
     upvotes: row.upvotes,
     downvotes: row.downvotes,
     replyCount: row.replyCount,
@@ -32,6 +33,7 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       nullifierHash: input.nullifierHash,
       pseudoHandle: input.pseudoHandle ?? null,
       sessionTag,
+      imageUrl: input.imageUrl ?? null,
     })
     .returning()
 
