@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getFeed, createPost } from '@/lib/db/posts'
 import { isVerifiedHuman } from '@/lib/db/users'
+import { BOARDS } from '@/lib/types'
 import type { BoardId, CreatePostInput, FeedParams } from '@/lib/types'
+
+const VALID_BOARD_IDS = new Set(BOARDS.map((b) => b.id))
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
+    const rawBoardId = searchParams.get('boardId')
     const params: FeedParams = {
-      boardId: (searchParams.get('boardId') as BoardId) ?? undefined,
+      boardId: rawBoardId && VALID_BOARD_IDS.has(rawBoardId as BoardId) ? (rawBoardId as BoardId) : undefined,
       cursor: searchParams.get('cursor') ?? undefined,
       limit: parseInt(searchParams.get('limit') ?? '10', 10),
     }
@@ -32,6 +36,13 @@ export async function POST(req: NextRequest) {
     if (!title?.trim() || !postBody?.trim() || !boardId || !nullifierHash) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    if (!VALID_BOARD_IDS.has(boardId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid board' },
         { status: 400 }
       )
     }

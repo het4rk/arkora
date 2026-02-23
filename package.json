@@ -13,6 +13,7 @@
     "db:seed": "node --env-file=.env.local --import tsx/esm scripts/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.995.0",
     "@worldcoin/minikit-js": "^1.7.0",
     "@worldcoin/minikit-react": "^1.7.0",
     "clsx": "^2.1.1",

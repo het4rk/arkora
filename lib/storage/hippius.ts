@@ -1,79 +1,59 @@
 /**
- * Hippius Bittensor subnet adapter
+ * Hippius Bittensor subnet — S3-compatible adapter
  * ─────────────────────────────────────────────────────────────────────────────
- * Hippius is a decentralized IPFS-backed storage network running on Bittensor.
- * Files are uploaded to their IPFS node and served via their public gateway.
+ * Hippius runs S3-compatible object storage on top of the Bittensor network.
  *
- * npm:     hippius-sdk (v0.0.1, early alpha — JS SDK only takes file paths)
- * We use the raw IPFS HTTP API directly (supports Buffer natively).
+ * Endpoint:  https://s3.hippius.com
+ * Region:    "decentralized"  (constant regardless of location)
+ * Console:   https://console.hippius.com
  *
  * SETUP:
- *   1. Get your API credentials at https://hippius.com/account/api-keys
- *   2. Add to .env.local:
- *        HIPPIUS_STORE_URL=https://store.hippius.network     # upload endpoint
- *        HIPPIUS_GATEWAY_URL=https://get.hippius.network     # retrieval base
- *        HIPPIUS_API_KEY=<your-key>                          # optional; may be required
- *   3. In lib/storage/index.ts, swap `localAdapter` → `hippiusAdapter`
- *   4. For long-term persistence call pin() after upload (see below)
- *
- * GATEWAY URL format: https://get.hippius.network/ipfs/<CID>
+ *   1. Create a bucket at https://console.hippius.com/dashboard/storage
+ *   2. Set the bucket to public (or configure ACL per object)
+ *   3. Add to .env.local:
+ *        HIPPIUS_ACCESS_KEY_ID=hip_...
+ *        HIPPIUS_SECRET_ACCESS_KEY=...
+ *        HIPPIUS_BUCKET=arkora-uploads          # your bucket name
+ *        HIPPIUS_S3_ENDPOINT=https://s3.hippius.com   # default
+ *        HIPPIUS_PUBLIC_URL=https://s3.hippius.com    # base for public URLs
+ *   4. In lib/storage/index.ts, swap `localAdapter` → `hippiusAdapter`
  * ─────────────────────────────────────────────────────────────────────────────
  */
-import FormData from 'form-data'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import type { StorageAdapter } from './adapter'
 
-const STORE_URL  = process.env.HIPPIUS_STORE_URL   ?? 'https://store.hippius.network'
-const GATEWAY    = process.env.HIPPIUS_GATEWAY_URL ?? 'https://get.hippius.network'
-const API_KEY    = process.env.HIPPIUS_API_KEY
+const ENDPOINT   = process.env.HIPPIUS_S3_ENDPOINT    ?? 'https://s3.hippius.com'
+const BUCKET     = process.env.HIPPIUS_BUCKET          ?? 'arkora-uploads'
+const PUBLIC_URL = process.env.HIPPIUS_PUBLIC_URL      ?? ENDPOINT
+const ACCESS_KEY = process.env.HIPPIUS_ACCESS_KEY_ID   ?? ''
+const SECRET_KEY = process.env.HIPPIUS_SECRET_ACCESS_KEY ?? ''
 
-interface IpfsAddResult {
-  Hash?: string
-  cid?: string
-  Name?: string
-  Size?: string
-}
+const s3 = new S3Client({
+  region: 'decentralized',
+  endpoint: ENDPOINT,
+  forcePathStyle: true, // required for non-AWS S3-compatible services
+  credentials: {
+    accessKeyId: ACCESS_KEY,
+    secretAccessKey: SECRET_KEY,
+  },
+})
 
 export const hippiusAdapter: StorageAdapter = {
   async upload(buffer, filename, mimetype): Promise<string> {
-    const form = new FormData()
-    form.append('file', buffer, {
-      filename,
-      contentType: mimetype,
-      knownLength: buffer.length,
-    })
+    // Prefix with timestamp to avoid collisions
+    const key = `uploads/${Date.now()}-${filename}`
 
-    const headers: Record<string, string> = {
-      ...form.getHeaders(),
-    }
-    if (API_KEY) headers['Authorization'] = `Bearer ${API_KEY}`
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+        Body: buffer,
+        ContentType: mimetype,
+        ACL: 'public-read',
+      })
+    )
 
-    const res = await fetch(`${STORE_URL}/api/v0/add`, {
-      method: 'POST',
-      // @ts-expect-error — form-data is node-compatible; Next.js edge won't need this
-      body: form,
-      headers,
-    })
-
-    if (!res.ok) {
-      throw new Error(`Hippius upload failed: ${res.status} ${res.statusText}`)
-    }
-
-    const json = (await res.json()) as IpfsAddResult
-    const cid = json.Hash ?? json.cid
-
-    if (!cid) {
-      throw new Error('Hippius upload: no CID returned')
-    }
-
-    // Optional: pin the file so it's not garbage-collected
-    // This is a fire-and-forget; failure doesn't affect the returned URL.
-    void fetch(`${STORE_URL}/api/v0/pin/add?arg=${cid}`, {
-      method: 'POST',
-      headers: API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {},
-    }).catch((err: unknown) => {
-      console.warn('[Hippius] pin failed for', cid, err)
-    })
-
-    return `${GATEWAY}/ipfs/${cid}`
+    // Path-style URL: https://s3.hippius.com/<bucket>/<key>
+    return `${PUBLIC_URL}/${BUCKET}/${key}`
   },
 }

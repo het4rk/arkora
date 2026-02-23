@@ -14,14 +14,21 @@ function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
 
 export async function getOrCreateUser(
   nullifierHash: string,
-  walletAddress: string
+  walletAddress: string,
+  username?: string
 ): Promise<HumanUser> {
   const existing = await getUserByNullifier(nullifierHash)
-  if (existing) return existing
+  if (existing) {
+    // Backfill pseudoHandle if we now have a username and it wasn't set before
+    if (username && !existing.pseudoHandle) {
+      return updatePseudoHandle(nullifierHash, username)
+    }
+    return existing
+  }
 
   const [row] = await db
     .insert(humanUsers)
-    .values({ nullifierHash, walletAddress })
+    .values({ nullifierHash, walletAddress, pseudoHandle: username ?? null })
     .onConflictDoNothing()
     .returning()
 

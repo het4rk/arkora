@@ -71,8 +71,8 @@ export function ThreadView({ postId }: Props) {
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-36">
+      {/* Scrollable content — pb must clear the fixed composer (which covers the nav bar) */}
+      <div className="flex-1 overflow-y-auto pb-72">
 
         {/* Back button */}
         <div className="px-[5vw] pt-5 pb-2">
@@ -156,8 +156,8 @@ export function ThreadView({ postId }: Props) {
         </div>
       </div>
 
-      {/* Fixed reply composer */}
-      <div className="fixed bottom-0 left-0 right-0 z-20">
+      {/* Fixed reply composer — z-40 sits above BottomNav (z-30) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40">
         <ReplyComposer
           postId={postId}
           parentReplyId={replyingTo?.id ?? undefined}

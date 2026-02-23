@@ -9,10 +9,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: [] })
     }
 
-    const limit = Math.min(
-      parseInt(req.nextUrl.searchParams.get('limit') ?? '20', 10),
-      50
-    )
+    const parsedLimit = parseInt(req.nextUrl.searchParams.get('limit') ?? '20', 10)
+    const limit = Math.min(Number.isNaN(parsedLimit) ? 20 : parsedLimit, 50)
 
     const results = await searchPosts(q, limit)
     return NextResponse.json({ success: true, data: results })

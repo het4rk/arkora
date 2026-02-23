@@ -18,7 +18,9 @@ export function PostComposer() {
     setDrawerOpen,
     identityMode,
     persistentAlias, setPersistentAlias,
+    customHandle,
     nullifierHash,
+    walletAddress,
     user,
   } = useArkoraStore()
   const { submit, isSubmitting, error } = usePost()
@@ -35,13 +37,21 @@ export function PostComposer() {
     }
   }, [identityMode, nullifierHash, persistentAlias, setPersistentAlias])
 
+  function shortWallet(): string | undefined {
+    if (!walletAddress) return undefined
+    return walletAddress.slice(0, 6) + '…' + walletAddress.slice(-4)
+  }
+
   function getPreviewName(): string {
     if (identityMode === 'alias') {
       return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : 'alias.pending')
     }
+    if (identityMode === 'custom') {
+      return customHandle?.trim() || 'unnamed'
+    }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
-      return username ?? user?.pseudoHandle ?? 'World ID user'
+      return username ?? user?.pseudoHandle ?? shortWallet() ?? 'World ID user'
     }
     return 'Human #????'
   }
@@ -50,9 +60,12 @@ export function PostComposer() {
     if (identityMode === 'alias') {
       return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : undefined)
     }
+    if (identityMode === 'custom') {
+      return customHandle?.trim() || undefined
+    }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
-      return username ?? user?.pseudoHandle ?? undefined
+      return username ?? user?.pseudoHandle ?? shortWallet()
     }
     return undefined
   }
@@ -141,7 +154,7 @@ export function PostComposer() {
             <span className="text-accent text-xs font-semibold">{getPreviewName()} ✓</span>
           </div>
           <span className="text-text-muted text-[11px]">
-            {identityMode === 'anonymous' ? '🎲' : identityMode === 'alias' ? '👤' : '📛'}
+            {identityMode === 'anonymous' ? '🎲' : identityMode === 'alias' ? '👤' : identityMode === 'custom' ? '✏️' : '📛'}
             {' '}Change →
           </span>
         </button>

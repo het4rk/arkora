@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkoraStore'
@@ -11,6 +12,7 @@ import { cn } from '@/lib/utils'
 const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: string }[] = [
   { mode: 'anonymous', label: 'Random',  sub: 'New Human # each post',    icon: '🎲' },
   { mode: 'alias',     label: 'Alias',   sub: 'Same handle, always',      icon: '👤' },
+  { mode: 'custom',    label: 'Custom',  sub: 'Your chosen name',         icon: '✏️' },
   { mode: 'named',     label: 'Named',   sub: 'Your World ID username',   icon: '📛' },
 ]
 
@@ -26,19 +28,30 @@ export function LeftDrawer() {
     identityMode, setIdentityMode,
     theme, setTheme,
     isVerified, nullifierHash, persistentAlias,
+    customHandle, setCustomHandle,
     user,
   } = useArkoraStore()
+
+  const [customDraft, setCustomDraft] = useState(customHandle ?? '')
 
   function displayName(): string {
     if (!isVerified) return 'Unverified'
     if (identityMode === 'alias') {
       return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : '…')
     }
+    if (identityMode === 'custom') {
+      return customHandle?.trim() || 'unnamed'
+    }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
       return username ?? user?.pseudoHandle ?? 'World ID user'
     }
     return 'Human #????'
+  }
+
+  function commitCustomHandle() {
+    const trimmed = customDraft.trim().slice(0, 32)
+    setCustomHandle(trimmed || null)
   }
 
   return (
@@ -92,42 +105,63 @@ export function LeftDrawer() {
                 </p>
                 <div className="space-y-2">
                   {PRIVACY.map((opt) => (
-                    <button
-                      key={opt.mode}
-                      onClick={() => {
-                        if (!isVerified) {
-                          useArkoraStore.getState().setVerifySheetOpen(true)
-                          setDrawerOpen(false)
-                          return
-                        }
-                        setIdentityMode(opt.mode)
-                      }}
-                      className={cn(
-                        'w-full flex items-center gap-3 px-4 py-3.5 rounded-[var(--r-lg)] border transition-all active:scale-[0.97]',
-                        identityMode === opt.mode
-                          ? 'bg-accent/12 border-accent/40'
-                          : 'glass'
+                    <div key={opt.mode}>
+                      <button
+                        onClick={() => {
+                          if (!isVerified) {
+                            useArkoraStore.getState().setVerifySheetOpen(true)
+                            setDrawerOpen(false)
+                            return
+                          }
+                          setIdentityMode(opt.mode)
+                        }}
+                        className={cn(
+                          'w-full flex items-center gap-3 px-4 py-3.5 rounded-[var(--r-lg)] border transition-all active:scale-[0.97]',
+                          identityMode === opt.mode
+                            ? 'bg-accent/12 border-accent/40'
+                            : 'glass'
+                        )}
+                      >
+                        <span className="text-lg leading-none flex-shrink-0">{opt.icon}</span>
+                        <div className="text-left min-w-0">
+                          <p className={cn(
+                            'text-sm font-semibold leading-tight',
+                            identityMode === opt.mode ? 'text-accent' : 'text-text'
+                          )}>
+                            {opt.label}
+                          </p>
+                          <p className="text-[11px] text-text-muted mt-0.5 leading-tight">
+                            {opt.sub}
+                          </p>
+                        </div>
+                        {identityMode === opt.mode && (
+                          <svg width="14" height="14" viewBox="0 0 14 14" className="ml-auto shrink-0 text-accent" fill="none">
+                            <path d="M2 7L6 11L12 3" stroke="currentColor" strokeWidth="2.2"
+                              strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </button>
+
+                      {/* Custom name input — shown inline when Custom is selected */}
+                      {opt.mode === 'custom' && identityMode === 'custom' && (
+                        <div className="mt-2 flex gap-2">
+                          <input
+                            type="text"
+                            value={customDraft}
+                            onChange={(e) => setCustomDraft(e.target.value.slice(0, 32))}
+                            onBlur={commitCustomHandle}
+                            placeholder="Your name…"
+                            className="glass-input flex-1 rounded-[var(--r-md)] px-3 py-2.5 text-sm min-w-0"
+                          />
+                          <button
+                            onClick={commitCustomHandle}
+                            className="px-3 py-2.5 bg-accent text-white text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all shrink-0"
+                          >
+                            Set
+                          </button>
+                        </div>
                       )}
-                    >
-                      <span className="text-lg leading-none flex-shrink-0">{opt.icon}</span>
-                      <div className="text-left min-w-0">
-                        <p className={cn(
-                          'text-sm font-semibold leading-tight',
-                          identityMode === opt.mode ? 'text-accent' : 'text-text'
-                        )}>
-                          {opt.label}
-                        </p>
-                        <p className="text-[11px] text-text-muted mt-0.5 leading-tight">
-                          {opt.sub}
-                        </p>
-                      </div>
-                      {identityMode === opt.mode && (
-                        <svg width="14" height="14" viewBox="0 0 14 14" className="ml-auto shrink-0 text-accent" fill="none">
-                          <path d="M2 7L6 11L12 3" stroke="currentColor" strokeWidth="2.2"
-                            strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>

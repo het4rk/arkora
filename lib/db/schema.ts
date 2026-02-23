@@ -6,6 +6,7 @@ import {
   timestamp,
   uuid,
   index,
+  primaryKey,
 } from 'drizzle-orm/pg-core'
 
 export const posts = pgTable(
@@ -92,7 +93,7 @@ export const postVotes = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
-    pk: index('post_votes_pk_idx').on(table.postId, table.nullifierHash),
+    pk: primaryKey({ columns: [table.postId, table.nullifierHash] }),
   })
 )
 

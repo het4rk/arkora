@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { MiniKit } from '@worldcoin/minikit-js'
 import { haptic } from '@/lib/utils'
+import { generateAlias } from '@/lib/session'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { HumanBadge } from '@/components/ui/HumanBadge'
@@ -19,7 +21,26 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const { nullifierHash, isVerified, setVerifySheetOpen } = useArkoraStore()
+  const { nullifierHash, isVerified, setVerifySheetOpen, identityMode, persistentAlias, customHandle, walletAddress, user } = useArkoraStore()
+
+  function shortWallet(): string | undefined {
+    if (!walletAddress) return undefined
+    return walletAddress.slice(0, 6) + '…' + walletAddress.slice(-4)
+  }
+
+  function getPseudoHandle(): string | undefined {
+    if (identityMode === 'alias') {
+      return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : undefined)
+    }
+    if (identityMode === 'custom') {
+      return customHandle?.trim() || undefined
+    }
+    if (identityMode === 'named') {
+      const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
+      return username ?? user?.pseudoHandle ?? shortWallet()
+    }
+    return undefined
+  }
 
   async function handleSubmit() {
     if (!body.trim()) return
@@ -36,7 +57,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
       const res = await fetch('/api/replies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, body, nullifierHash, imageUrl: imageUrl ?? undefined, parentReplyId }),
+        body: JSON.stringify({ postId, body, nullifierHash, pseudoHandle: getPseudoHandle(), imageUrl: imageUrl ?? undefined, parentReplyId }),
       })
 
       const json = (await res.json()) as { success: boolean; error?: string }

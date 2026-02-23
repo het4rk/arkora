@@ -84,8 +84,11 @@ export function WalletConnect() {
 
           if (!authJson.success || !authJson.walletAddress) return
 
+          // Capture World App username right after walletAuth while MiniKit.user is fresh
+          const miniKitUsername = MiniKit.user?.username ?? undefined
+
           setWalletAddress(authJson.walletAddress)
-          await callUserEndpoint(authJson.walletAddress)
+          await callUserEndpoint(authJson.walletAddress, miniKitUsername)
         } catch {
           // Silent failure — user can still browse anonymously
         }
@@ -101,12 +104,12 @@ export function WalletConnect() {
     }
   }, [walletAddress, isVerified, setWalletAddress, setVerified])
 
-  async function callUserEndpoint(address: string) {
+  async function callUserEndpoint(address: string, username?: string) {
     try {
       const userRes = await fetch('/api/auth/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: address }),
+        body: JSON.stringify({ walletAddress: address, username }),
       })
       const userJson = (await userRes.json()) as {
         success: boolean

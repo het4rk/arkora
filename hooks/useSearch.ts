@@ -28,6 +28,7 @@ export function useSearch(): UseSearchReturn {
       setHasSearched(true)
     } catch {
       setResults([])
+      setHasSearched(true)
     } finally {
       setIsSearching(false)
     }

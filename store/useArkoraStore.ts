@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { HumanUser, BoardId } from '@/lib/types'
 
-export type IdentityMode = 'anonymous' | 'alias' | 'named'
+export type IdentityMode = 'anonymous' | 'alias' | 'custom' | 'named'
 export type Theme = 'dark' | 'light'
 
 interface ArkoraState {
@@ -18,9 +18,14 @@ interface ArkoraState {
   identityMode: IdentityMode
   // Cached alias — generated once from nullifier, reused across all alias posts
   persistentAlias: string | null
+  // User-chosen custom handle (no verification, stored locally)
+  customHandle: string | null
 
   // Appearance
   theme: Theme
+
+  // Onboarding
+  hasOnboarded: boolean
 
   // UI State
   activeBoard: BoardId | null
@@ -37,13 +42,16 @@ interface ArkoraState {
   setVerified: (nullifierHash: string, user: HumanUser) => void
   setIdentityMode: (mode: IdentityMode) => void
   setPersistentAlias: (alias: string) => void
+  setCustomHandle: (handle: string | null) => void
   setTheme: (theme: Theme) => void
+  setHasOnboarded: (v: boolean) => void
   setActiveBoard: (boardId: BoardId | null) => void
   setComposerOpen: (open: boolean) => void
   setVerifySheetOpen: (open: boolean) => void
   setDrawerOpen: (open: boolean) => void
   setSearchOpen: (open: boolean) => void
   setOptimisticVote: (postId: string, direction: 1 | -1) => void
+  clearOptimisticVote: (postId: string) => void
   reset: () => void
 }
 
@@ -54,7 +62,9 @@ const initialState = {
   user: null,
   identityMode: 'anonymous' as IdentityMode,
   persistentAlias: null,
+  customHandle: null,
   theme: 'dark' as Theme,
+  hasOnboarded: false,
   activeBoard: null,
   isComposerOpen: false,
   isVerifySheetOpen: false,
@@ -77,7 +87,11 @@ export const useArkoraStore = create<ArkoraState>()(
 
       setPersistentAlias: (alias) => set({ persistentAlias: alias }),
 
+      setCustomHandle: (handle) => set({ customHandle: handle }),
+
       setTheme: (theme) => set({ theme }),
+
+      setHasOnboarded: (v) => set({ hasOnboarded: v }),
 
       setActiveBoard: (boardId) => set({ activeBoard: boardId }),
 
@@ -94,6 +108,13 @@ export const useArkoraStore = create<ArkoraState>()(
           optimisticVotes: { ...state.optimisticVotes, [postId]: direction },
         })),
 
+      clearOptimisticVote: (postId) =>
+        set((state) => {
+          const next = { ...state.optimisticVotes }
+          delete next[postId]
+          return { optimisticVotes: next }
+        }),
+
       reset: () => set(initialState),
     }),
     {
@@ -105,7 +126,9 @@ export const useArkoraStore = create<ArkoraState>()(
         user: state.user,
         identityMode: state.identityMode,
         persistentAlias: state.persistentAlias,
+        customHandle: state.customHandle,
         theme: state.theme,
+        hasOnboarded: state.hasOnboarded,
       }),
     }
   )

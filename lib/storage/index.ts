@@ -1,8 +1,8 @@
 /**
  * Active storage adapter.
- * Swap `localAdapter` → `hippiusAdapter` when ready to go decentralized.
+ * Swap back to `localAdapter` for offline development without Hippius credentials.
  */
-import { localAdapter } from './local'
-// import { hippiusAdapter } from './hippius'  ← uncomment when ready
+import { hippiusAdapter } from './hippius'
+// import { localAdapter } from './local'
 
-export const storage = localAdapter
+export const storage = hippiusAdapter

@@ -20,7 +20,7 @@ function walletToNullifier(walletAddress: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { walletAddress } = (await req.json()) as { walletAddress: string }
+    const { walletAddress, username } = (await req.json()) as { walletAddress: string; username?: string }
 
     if (!walletAddress || typeof walletAddress !== 'string') {
       return NextResponse.json(
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     const nullifierHash = walletToNullifier(walletAddress)
-    const user = await getOrCreateUser(nullifierHash, walletAddress)
+    const user = await getOrCreateUser(nullifierHash, walletAddress, username ?? undefined)
 
     return NextResponse.json({ success: true, nullifierHash, user })
   } catch (err) {

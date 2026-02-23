@@ -14,7 +14,7 @@ interface UseVoteReturn {
 
 export function useVote(): UseVoteReturn {
   const [isVoting, setIsVoting] = useState(false)
-  const { nullifierHash, isVerified, optimisticVotes, setOptimisticVote } =
+  const { nullifierHash, isVerified, optimisticVotes, setOptimisticVote, clearOptimisticVote } =
     useArkoraStore()
 
   const myVote = useCallback(
@@ -28,6 +28,9 @@ export function useVote(): UseVoteReturn {
         useArkoraStore.getState().setVerifySheetOpen(true)
         return
       }
+
+      // Capture previous state so we can restore it on failure
+      const previousVote = optimisticVotes[postId] ?? null
 
       // Optimistic update immediately
       setOptimisticVote(postId, direction)
@@ -59,13 +62,17 @@ export function useVote(): UseVoteReturn {
           // We fire-and-forget the chain tx — optimistic UI already updated
         }
       } catch {
-        // Revert optimistic vote on failure
-        setOptimisticVote(postId, direction === 1 ? -1 : 1)
+        // Restore exact previous state on failure
+        if (previousVote !== null) {
+          setOptimisticVote(postId, previousVote)
+        } else {
+          clearOptimisticVote(postId)
+        }
       } finally {
         setIsVoting(false)
       }
     },
-    [isVerified, nullifierHash, setOptimisticVote]
+    [isVerified, nullifierHash, optimisticVotes, setOptimisticVote, clearOptimisticVote]
   )
 
   return { castVote, isVoting, myVote }
