@@ -5,7 +5,8 @@
  * Requires DATABASE_URL in .env.local
  */
 
-import 'dotenv/config'
+import { config } from 'dotenv'
+config({ path: '.env.local' })
 import { db } from '../lib/db/index'
 import { humanUsers, posts } from '../lib/db/schema'
 
