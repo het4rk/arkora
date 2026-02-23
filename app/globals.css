@@ -3,45 +3,53 @@
 @tailwind utilities;
 
 /* ─── Themed Color Tokens ─────────────────────────────────────────────────────
-   Stored as RGB channel triplets so Tailwind opacity utilities work:
-   e.g. bg-background/80, border-border/40, text-text/60                      */
+   RGB channel triplets so Tailwind opacity modifiers work:
+   bg-background/80, border-border/40, text-text/60, etc.               */
 
 :root {
   /* Dark (default) */
   --clr-bg:         10 10 10;
-  --clr-surface:    20 20 20;
-  --clr-surface-up: 28 28 28;
-  --clr-border:     42 42 42;
+  --clr-surface:    18 18 18;
+  --clr-surface-up: 26 26 26;
+  --clr-border:     44 44 44;
   --clr-text:       255 255 255;
-  --clr-text-sec:   160 160 160;
-  --clr-text-muted: 96 96 96;
+  --clr-text-sec:   158 158 168;
+  --clr-text-muted: 88 88 96;
 
-  /* Fixed brand colors */
-  --accent:         108 59 255;   /* #6C3BFF as RGB */
-  --accent-hex:     #6C3BFF;
-  --accent-hover:   #7C4FFF;
+  /* Brand */
+  --accent-rgb:   108 59 255;
+  --accent-hex:   #6C3BFF;
+  --accent-hover: #7C4FFF;
 
-  /* Glass layer variables */
-  --glass-bg:       rgba(255, 255, 255, 0.05);
-  --glass-border:   rgba(255, 255, 255, 0.10);
-  --glass-shine:    rgba(255, 255, 255, 0.14);
-  --glass-shadow:   rgba(0, 0, 0, 0.50);
-  --glass-blur:     48px;
+  /* iOS 26 Liquid Glass tokens */
+  --glass-bg:     rgba(255,255,255,0.055);
+  --glass-border: rgba(255,255,255,0.10);
+  --glass-shine:  rgba(255,255,255,0.15);
+  --glass-shadow: rgba(0,0,0,0.55);
+  --glass-blur:   52px;
+  --glass-sat:    190%;
+
+  /* Spatial system */
+  --r-sm:   12px;
+  --r-md:   18px;
+  --r-lg:   24px;
+  --r-xl:   32px;
 }
 
 [data-theme="light"] {
-  --clr-bg:         245 245 247;
+  --clr-bg:         244 244 246;
   --clr-surface:    255 255 255;
-  --clr-surface-up: 238 238 242;
-  --clr-border:     210 210 216;
-  --clr-text:       20 20 20;
-  --clr-text-sec:   88 88 96;
-  --clr-text-muted: 148 148 158;
+  --clr-surface-up: 237 237 241;
+  --clr-border:     208 208 216;
+  --clr-text:       18 18 20;
+  --clr-text-sec:   88 88 100;
+  --clr-text-muted: 150 150 162;
 
-  --glass-bg:       rgba(255, 255, 255, 0.55);
-  --glass-border:   rgba(255, 255, 255, 0.85);
-  --glass-shine:    rgba(255, 255, 255, 0.95);
-  --glass-shadow:   rgba(0, 0, 0, 0.12);
+  --glass-bg:     rgba(255,255,255,0.62);
+  --glass-border: rgba(255,255,255,0.88);
+  --glass-shine:  rgba(255,255,255,0.96);
+  --glass-shadow: rgba(0,0,0,0.10);
+  --glass-blur:   40px;
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
@@ -61,16 +69,18 @@ html,
 body {
   background-color: rgb(var(--clr-bg));
   color: rgb(var(--clr-text));
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  /* SF Pro on iOS = premium system font, no extra loading needed */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+               'Helvetica Neue', system-ui, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-/* Prevent pull-to-refresh & bounce in World App WebView */
 body {
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ─── Typography ─────────────────────────────────────────────────────────── */
@@ -83,17 +93,22 @@ h1, h2, h3, h4, h5, h6 {
 /* ─── Scrollbars ─────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 0; height: 0; }
 
-/* ─── Safe areas (World App / notched devices) ───────────────────────────── */
-.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
-.safe-top    { padding-top:    env(safe-area-inset-top,    0px);  }
+/* ─── Safe areas ─────────────────────────────────────────────────────────── */
+.safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+.safe-top    { padding-top:    env(safe-area-inset-top, 0px); }
+
+/* ─── Fluid type helpers ─────────────────────────────────────────────────── */
+/* Scales smoothly from iPhone SE (375px) to Pro Max (430px)                 */
+.text-fluid-hero  { font-size: clamp(1.7rem, 6.5vw, 2.2rem); line-height: 1.08; letter-spacing: -0.03em; }
+.text-fluid-title { font-size: clamp(1.2rem, 5vw, 1.6rem);   line-height: 1.12; letter-spacing: -0.025em; }
 
 /* ─── Interactions ───────────────────────────────────────────────────────── */
 * { -webkit-tap-highlight-color: transparent; }
 
 :focus-visible {
-  outline: 2px solid rgb(var(--accent));
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline: 2px solid rgb(var(--accent-rgb));
+  outline-offset: 3px;
+  border-radius: 8px;
 }
 
 ::selection {
@@ -212,18 +227,58 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(
     to bottom,
     rgba(255,255,255,0.075) 0%,
-    rgba(20,20,20,0.9)      80%
+    rgba(18,18,18,0.93)     72%
   );
   backdrop-filter: blur(56px) saturate(180%);
   -webkit-backdrop-filter: blur(56px) saturate(180%);
   border-top: 1px solid rgba(255,255,255,0.11);
   box-shadow:
     inset 0 1.5px 0 rgba(255,255,255,0.14),
-    0 -8px 60px rgba(0,0,0,0.5);
+    0 -8px 64px rgba(0,0,0,0.52);
+}
+[data-theme="light"] .glass-sheet {
+  background: rgba(244,244,246,0.90);
+  border-top: 1px solid rgba(255,255,255,0.92);
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.08);
 }
 
-[data-theme="light"] .glass-sheet {
-  background: rgba(245,245,247,0.88);
-  border-top: 1px solid rgba(255,255,255,0.9);
-  box-shadow: 0 -4px 40px rgba(0,0,0,0.10);
+/* Composer bar — like nav but with input area */
+.glass-compose {
+  background: linear-gradient(
+    to top,
+    rgba(8,8,8,0.92)         0%,
+    rgba(255,255,255,0.062) 100%
+  );
+  backdrop-filter: blur(48px) saturate(180%);
+  -webkit-backdrop-filter: blur(48px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 -4px 24px rgba(0,0,0,0.28);
+}
+[data-theme="light"] .glass-compose {
+  background: rgba(244,244,246,0.92);
+  border-top: 1px solid rgba(255,255,255,0.90);
+}
+
+/* Glass input field */
+.glass-input {
+  background: rgba(255,255,255,0.055);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: rgb(var(--clr-text));
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.glass-input::placeholder { color: rgb(var(--clr-text-muted)); }
+.glass-input:focus {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(108,59,255,0.55);
+  outline: none;
+}
+[data-theme="light"] .glass-input {
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(0,0,0,0.09);
+}
+[data-theme="light"] .glass-input:focus {
+  background: #fff;
+  border-color: rgba(108,59,255,0.50);
 }

@@ -50,32 +50,28 @@ export function ReplyComposer({ postId, onSuccess }: Props) {
   }
 
   return (
-    <div className="border-t border-border bg-surface px-4 py-4 safe-bottom">
-      <div className="flex items-start gap-3">
-        <HumanBadge size="sm" className="mt-2 shrink-0" />
-        <div className="flex-1">
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value.slice(0, 10000))}
-            placeholder="Add a reply…"
-            rows={2}
-            className="w-full bg-surface-up border border-border rounded-xl px-3 py-2.5 text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors resize-none text-sm"
-          />
+    <div className="glass-compose px-[5vw] pt-3 pb-[max(env(safe-area-inset-bottom),16px)]">
+      {error && (
+        <p className="text-downvote text-xs mb-2 px-1">{error}</p>
+      )}
+      <div className="flex items-end gap-3">
+        <HumanBadge size="sm" className="mb-[3px] shrink-0" />
 
-          {error && (
-            <p className="text-downvote text-xs mt-1">{error}</p>
-          )}
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value.slice(0, 10000))}
+          placeholder="Add a reply…"
+          rows={2}
+          className="glass-input flex-1 rounded-[var(--r-md)] px-3.5 py-3 text-sm resize-none leading-relaxed"
+        />
 
-          <div className="flex justify-end mt-2">
-            <button
-              onClick={() => void handleSubmit()}
-              disabled={isSubmitting || !body.trim()}
-              className="bg-accent hover:bg-accent-hover disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors active:scale-95"
-            >
-              {isSubmitting ? 'Posting…' : 'Reply'}
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={() => void handleSubmit()}
+          disabled={isSubmitting || !body.trim()}
+          className="mb-[3px] h-10 px-4 bg-accent disabled:opacity-35 text-white text-sm font-semibold rounded-[var(--r-md)] transition-all active:scale-95 active:bg-accent-hover shrink-0"
+        >
+          {isSubmitting ? '…' : 'Reply'}
+        </button>
       </div>
     </div>
   )

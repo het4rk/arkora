@@ -74,20 +74,20 @@ export function LeftDrawer() {
             {/* Subtle top specular line */}
             <div className="absolute inset-x-0 top-0 h-px bg-white/20 pointer-events-none" />
 
-            {/* ── Identity section ─────────────────────────────────── */}
-            <div className="px-6 pt-14 pb-5 border-b border-white/[0.07]">
-              <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.12em] mb-3">
+            {/* ── Identity header ───────────────────────────────────── */}
+            <div className="px-6 pt-[max(env(safe-area-inset-top),48px)] pb-5 border-b border-white/[0.07]">
+              <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
                 Posting as
               </p>
               <HumanBadge label={displayName()} size="md" />
             </div>
 
             {/* ── Scrollable content ───────────────────────────────── */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-7">
+            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
 
               {/* Privacy mode */}
               <div>
-                <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.12em] mb-3">
+                <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
                   Privacy
                 </p>
                 <div className="space-y-2">
@@ -103,14 +103,14 @@ export function LeftDrawer() {
                         setIdentityMode(opt.mode)
                       }}
                       className={cn(
-                        'w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all active:scale-[0.98]',
+                        'w-full flex items-center gap-3 px-4 py-3.5 rounded-[var(--r-lg)] border transition-all active:scale-[0.97]',
                         identityMode === opt.mode
-                          ? 'bg-accent/12 border-accent/40 text-accent'
-                          : 'bg-white/[0.04] border-white/[0.07] text-text-secondary'
+                          ? 'bg-accent/12 border-accent/40'
+                          : 'glass'
                       )}
                     >
                       <span className="text-lg leading-none flex-shrink-0">{opt.icon}</span>
-                      <div className="text-left">
+                      <div className="text-left min-w-0">
                         <p className={cn(
                           'text-sm font-semibold leading-tight',
                           identityMode === opt.mode ? 'text-accent' : 'text-text'
@@ -122,12 +122,10 @@ export function LeftDrawer() {
                         </p>
                       </div>
                       {identityMode === opt.mode && (
-                        <span className="ml-auto text-accent">
-                          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                            <path d="M2 7L6 11L12 3" stroke="currentColor" strokeWidth="2"
-                              strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                          </svg>
-                        </span>
+                        <svg width="14" height="14" viewBox="0 0 14 14" className="ml-auto shrink-0 text-accent" fill="none">
+                          <path d="M2 7L6 11L12 3" stroke="currentColor" strokeWidth="2.2"
+                            strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                       )}
                     </button>
                   ))}
@@ -137,9 +135,9 @@ export function LeftDrawer() {
               {/* Divider */}
               <div className="h-px bg-white/[0.07]" />
 
-              {/* Appearance / theme */}
+              {/* Appearance */}
               <div>
-                <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.12em] mb-3">
+                <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
                   Appearance
                 </p>
                 <div className="flex gap-2">
@@ -148,10 +146,10 @@ export function LeftDrawer() {
                       key={t.value}
                       onClick={() => setTheme(t.value)}
                       className={cn(
-                        'flex-1 flex flex-col items-center gap-1.5 py-3.5 rounded-2xl border transition-all active:scale-95',
+                        'flex-1 flex flex-col items-center gap-2 py-4 rounded-[var(--r-lg)] border transition-all active:scale-95',
                         theme === t.value
                           ? 'bg-accent/12 border-accent/40'
-                          : 'bg-white/[0.04] border-white/[0.07]'
+                          : 'glass'
                       )}
                     >
                       <span className="text-xl leading-none">{t.icon}</span>
@@ -168,11 +166,11 @@ export function LeftDrawer() {
             </div>
 
             {/* ── Footer ───────────────────────────────────────────── */}
-            <div className="px-6 pb-10 pt-4 border-t border-white/[0.07]">
-              <p className="text-text-muted text-[11px] text-center leading-relaxed">
+            <div className="px-6 pb-[max(env(safe-area-inset-bottom),24px)] pt-4 border-t border-white/[0.07]">
+              <p className="text-text-muted/70 text-[11px] text-center leading-relaxed">
                 Every voice is verified human.
               </p>
-              <p className="text-text-muted/50 text-[10px] text-center mt-1">
+              <p className="text-text-muted/40 text-[10px] text-center mt-1">
                 Powered by World ID
               </p>
             </div>

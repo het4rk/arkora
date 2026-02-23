@@ -68,37 +68,45 @@ export function ThreadView({ postId }: Props) {
   const displayName = post.pseudoHandle ?? post.sessionTag
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-32">
-        {/* Back */}
-        <div className="px-4 pt-4 pb-2">
+      <div className="flex-1 overflow-y-auto pb-36">
+
+        {/* Back button */}
+        <div className="px-[5vw] pt-5 pb-2">
           <button
             onClick={() => router.back()}
-            className="text-text-muted text-sm flex items-center gap-1"
+            className="flex items-center gap-1.5 text-text-muted text-sm font-medium active:opacity-60 transition-opacity"
           >
-            ← Back
+            <svg width="7" height="12" viewBox="0 0 7 12" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 1L1 6l5 5" />
+            </svg>
+            Back
           </button>
         </div>
 
         {/* Post */}
-        <article className="px-4 py-4 border-b border-border space-y-4">
-          <BoardTag boardId={post.boardId} />
+        <article className="px-[5vw] py-5 space-y-5 border-b border-border/30">
+          <div className="flex items-center justify-between">
+            <BoardTag boardId={post.boardId} />
+            <TimeAgo date={post.createdAt} />
+          </div>
 
-          <h1 className="text-text text-2xl font-bold leading-tight">
+          <h1 className="text-fluid-title font-bold text-text">
             {post.title}
           </h1>
 
           <HumanBadge label={displayName} size="md" />
 
-          <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">
+          <p className="text-text-secondary text-[15px] leading-[1.65] whitespace-pre-wrap">
             {post.body}
           </p>
 
           {/* Community Note */}
           {promotedNote && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
-              <p className="text-amber-400 text-xs font-semibold mb-2">
+            <div className="glass rounded-[var(--r-lg)] p-4 border-l-2 border-amber-400/60">
+              <p className="text-amber-400 text-[10px] font-bold uppercase tracking-[0.12em] mb-2">
                 📝 Community Note
               </p>
               <p className="text-text-secondary text-sm leading-relaxed">
@@ -107,24 +115,28 @@ export function ThreadView({ postId }: Props) {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between pt-1">
             <VoteButtons post={post} />
-            <TimeAgo date={post.createdAt} />
+            <span className="text-text-muted text-xs">
+              {post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}
+            </span>
           </div>
         </article>
 
         {/* Replies */}
-        <div className="px-4 py-4 space-y-3">
-          <h2 className="text-text-secondary text-xs font-semibold uppercase tracking-wide">
-            {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
-          </h2>
+        <div className="px-[5vw] py-5 space-y-3">
+          {replies.length > 0 && (
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-4">
+              {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+            </p>
+          )}
 
           {replies.map((reply, i) => (
             <ReplyCard key={reply.id} reply={reply} isTopReply={i === 0} />
           ))}
 
           {replies.length === 0 && (
-            <p className="text-text-muted text-sm text-center py-8">
+            <p className="text-text-muted text-sm text-center py-12">
               No replies yet. Be the first.
             </p>
           )}

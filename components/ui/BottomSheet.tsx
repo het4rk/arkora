@@ -54,17 +54,17 @@ export function BottomSheet({ isOpen, onClose, children, title, className }: Pro
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           >
             {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-border" />
+            <div className="flex justify-center pt-3.5 pb-1">
+              <div className="w-9 h-[3px] rounded-full bg-white/20" />
             </div>
 
             {title && (
-              <div className="px-4 py-3 border-b border-border">
-                <h2 className="text-text font-semibold text-lg">{title}</h2>
+              <div className="px-5 pt-2 pb-4 border-b border-white/[0.07]">
+                <h2 className="text-text font-bold text-lg tracking-[-0.02em]">{title}</h2>
               </div>
             )}
 
-            <div className="px-4 pb-6 pt-4">{children}</div>
+            <div className="px-5 pb-8 pt-5">{children}</div>
           </motion.div>
         </>
       )}

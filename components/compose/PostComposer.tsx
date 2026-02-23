@@ -78,17 +78,17 @@ export function PostComposer() {
 
         {/* Board selector */}
         <div>
-          <p className="text-text-muted text-[11px] font-semibold uppercase tracking-wider mb-3">Board</p>
+          <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">Board</p>
           <div className="flex flex-wrap gap-2">
             {BOARDS.map((board) => (
               <button
                 key={board.id}
                 onClick={() => setBoardId(board.id)}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all active:scale-95',
+                  'flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--r-full)] text-sm font-medium transition-all active:scale-95',
                   boardId === board.id
-                    ? 'bg-accent text-white'
-                    : 'bg-surface-up text-text-secondary border border-border'
+                    ? 'bg-accent text-white shadow-sm shadow-accent/30'
+                    : 'glass text-text-secondary'
                 )}
               >
                 <span className="text-xs">{board.emoji}</span>
@@ -101,37 +101,37 @@ export function PostComposer() {
         {/* Title */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-wider">Title</p>
-            <span className="text-text-muted text-[11px]">{title.length}/280</span>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Title</p>
+            <span className="text-text-muted/60 text-[11px] tabular-nums">{title.length}/280</span>
           </div>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value.slice(0, 280))}
             placeholder="What's on your mind?"
-            className="w-full bg-surface-up border border-border rounded-2xl px-4 py-3.5 text-text text-base placeholder:text-text-muted focus:outline-none focus:border-accent/60 focus:bg-surface transition-all"
+            className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base"
           />
         </div>
 
         {/* Body */}
         <div>
-          <p className="text-text-muted text-[11px] font-semibold uppercase tracking-wider mb-2">Body</p>
+          <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">Body</p>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value.slice(0, 10000))}
             placeholder="Say more…"
             rows={4}
-            className="w-full bg-surface-up border border-border rounded-2xl px-4 py-3.5 text-text text-base placeholder:text-text-muted focus:outline-none focus:border-accent/60 focus:bg-surface transition-all resize-none"
+            className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed"
           />
         </div>
 
-        {/* Identity — read-only row; tap to open the settings drawer */}
+        {/* Identity row — tappable, opens drawer */}
         <button
           onClick={() => {
             setComposerOpen(false)
             setTimeout(() => setDrawerOpen(true), 250)
           }}
-          className="w-full flex items-center justify-between px-4 py-3 bg-surface-up rounded-2xl border border-border active:scale-[0.99] transition-all"
+          className="w-full flex items-center justify-between px-4 py-3.5 glass rounded-[var(--r-lg)] active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-2">
             <span className="text-text-muted text-xs">Posting as</span>
@@ -144,7 +144,7 @@ export function PostComposer() {
         </button>
 
         {error && (
-          <p className="text-downvote text-sm bg-downvote/10 rounded-xl px-4 py-2.5 border border-downvote/20">
+          <p className="text-downvote text-sm rounded-[var(--r-md)] px-4 py-3 bg-downvote/10 border border-downvote/20">
             {error}
           </p>
         )}
@@ -152,7 +152,7 @@ export function PostComposer() {
         <button
           onClick={() => void handleSubmit()}
           disabled={isSubmitting || !title.trim() || !body.trim()}
-          className="w-full bg-accent disabled:opacity-30 text-white font-semibold py-4 rounded-2xl transition-all active:scale-[0.98] active:bg-accent-hover text-base tracking-tight"
+          className="w-full bg-accent disabled:opacity-30 text-white font-semibold py-4 rounded-[var(--r-lg)] transition-all active:scale-[0.98] active:bg-accent-hover text-base tracking-[-0.01em] shadow-lg shadow-accent/25"
         >
           {isSubmitting ? 'Posting…' : 'Post'}
         </button>
