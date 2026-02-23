@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Post, BoardId } from '@/lib/types'
 
 interface UseFeedReturn {
@@ -19,34 +19,39 @@ export function useFeed(boardId?: BoardId): UseFeedReturn {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [cursor, setCursor] = useState<string | undefined>()
+
+  // Use a ref for cursor so fetchPosts doesn't need it in its dep array,
+  // eliminating the stale-closure problem and unnecessary re-creations.
+  const cursorRef = useRef<string | undefined>(undefined)
+
+  const applyPage = useCallback((fetched: Post[], reset: boolean) => {
+    setPosts((prev) => (reset ? fetched : [...prev, ...fetched]))
+    setHasMore(fetched.length === 10)
+    if (fetched.length > 0) {
+      const last = fetched[fetched.length - 1]
+      if (last) cursorRef.current = new Date(last.createdAt).toISOString()
+    }
+  }, [])
 
   const fetchPosts = useCallback(
     async (reset: boolean) => {
       const params = new URLSearchParams({ limit: '10' })
       if (boardId) params.set('boardId', boardId)
-      if (!reset && cursor) params.set('cursor', cursor)
+      if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
 
       const res = await fetch(`/api/posts?${params.toString()}`)
       if (!res.ok) throw new Error('Failed to fetch feed')
 
       const json = (await res.json()) as { data: Post[] }
-      const fetched = json.data
-
-      setPosts((prev) => (reset ? fetched : [...prev, ...fetched]))
-      setHasMore(fetched.length === 10)
-      if (fetched.length > 0) {
-        const last = fetched[fetched.length - 1]
-        if (last) setCursor(new Date(last.createdAt).toISOString())
-      }
+      applyPage(json.data, reset)
     },
-    [boardId, cursor]
+    [boardId, applyPage]
   )
 
   const refresh = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-    setCursor(undefined)
+    cursorRef.current = undefined
     try {
       await fetchPosts(true)
     } catch (err) {
@@ -69,33 +74,13 @@ export function useFeed(boardId?: BoardId): UseFeedReturn {
   }, [isLoadingMore, hasMore, fetchPosts])
 
   useEffect(() => {
-    setCursor(undefined)
+    cursorRef.current = undefined
     setPosts([])
     setHasMore(true)
     setIsLoading(true)
     setError(null)
-
-    const params = new URLSearchParams({ limit: '10' })
-    if (boardId) params.set('boardId', boardId)
-
-    fetch(`/api/posts?${params.toString()}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch feed')
-        return res.json() as Promise<{ data: Post[] }>
-      })
-      .then(({ data }) => {
-        setPosts(data)
-        setHasMore(data.length === 10)
-        if (data.length > 0) {
-          const last = data[data.length - 1]
-          if (last) setCursor(new Date(last.createdAt).toISOString())
-        }
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Error loading feed')
-      })
-      .finally(() => setIsLoading(false))
-  }, [boardId])
+    void fetchPosts(true).finally(() => setIsLoading(false))
+  }, [boardId, fetchPosts])
 
   return { posts, isLoading, isLoadingMore, hasMore, error, loadMore, refresh }
 }

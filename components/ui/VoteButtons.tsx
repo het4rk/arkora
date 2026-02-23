@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { cn, haptic } from '@/lib/utils'
 import { useVote } from '@/hooks/useVote'
 import type { Post } from '@/lib/types'
 
@@ -19,7 +19,7 @@ export function VoteButtons({ post, className }: Props) {
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <button
-        onClick={() => void castVote(post.id, 1)}
+        onClick={() => { haptic('light'); void castVote(post.id, 1) }}
         disabled={isVoting}
         className={cn(
           'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold transition-all active:scale-95',
@@ -35,7 +35,7 @@ export function VoteButtons({ post, className }: Props) {
       </button>
 
       <button
-        onClick={() => void castVote(post.id, -1)}
+        onClick={() => { haptic('light'); void castVote(post.id, -1) }}
         disabled={isVoting}
         className={cn(
           'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold transition-all active:scale-95',

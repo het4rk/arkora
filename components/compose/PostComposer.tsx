@@ -8,7 +8,7 @@ import { useArkoraStore } from '@/store/useArkoraStore'
 import { usePost } from '@/hooks/usePost'
 import { generateAlias } from '@/lib/session'
 import { BOARDS, type BoardId } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { cn, haptic } from '@/lib/utils'
 
 export function PostComposer() {
   const router = useRouter()
@@ -150,7 +150,7 @@ export function PostComposer() {
         )}
 
         <button
-          onClick={() => void handleSubmit()}
+          onClick={() => { haptic('medium'); void handleSubmit() }}
           disabled={isSubmitting || !title.trim() || !body.trim()}
           className="w-full bg-accent disabled:opacity-30 text-white font-semibold py-4 rounded-[var(--r-lg)] transition-all active:scale-[0.98] active:bg-accent-hover text-base tracking-[-0.01em] shadow-lg shadow-accent/25"
         >

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { haptic } from '@/lib/utils'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 
@@ -66,7 +67,7 @@ export function ReplyComposer({ postId, onSuccess }: Props) {
         />
 
         <button
-          onClick={() => void handleSubmit()}
+          onClick={() => { haptic('medium'); void handleSubmit() }}
           disabled={isSubmitting || !body.trim()}
           className="mb-[3px] h-10 px-4 bg-accent disabled:opacity-35 text-white text-sm font-semibold rounded-[var(--r-md)] transition-all active:scale-95 active:bg-accent-hover shrink-0"
         >

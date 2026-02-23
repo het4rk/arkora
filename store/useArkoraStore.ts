@@ -85,9 +85,15 @@ export const useArkoraStore = create<ArkoraState>()(
       setDrawerOpen: (open) => set({ isDrawerOpen: open }),
 
       setOptimisticVote: (postId, direction) =>
-        set((state) => ({
-          optimisticVotes: { ...state.optimisticVotes, [postId]: direction },
-        })),
+        set((state) => {
+          const next = { ...state.optimisticVotes, [postId]: direction }
+          // Prevent unbounded growth: evict oldest entries beyond 500
+          const keys = Object.keys(next)
+          if (keys.length > 500) {
+            keys.slice(0, keys.length - 500).forEach((k) => delete next[k])
+          }
+          return { optimisticVotes: next }
+        }),
 
       reset: () => set(initialState),
     }),

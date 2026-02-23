@@ -25,3 +25,11 @@ export function truncateAddress(address: string): string {
   if (address.length < 10) return address
   return `${address.slice(0, 6)}…${address.slice(-4)}`
 }
+
+// Haptic feedback — uses the Vibration API (supported in World App / Android WebView)
+// Silently no-ops in Safari/desktop where the API is unavailable.
+export function haptic(pattern: 'light' | 'medium' | 'heavy' = 'light'): void {
+  if (typeof navigator === 'undefined' || !navigator.vibrate) return
+  const ms = pattern === 'light' ? 8 : pattern === 'medium' ? 18 : 32
+  navigator.vibrate(ms)
+}

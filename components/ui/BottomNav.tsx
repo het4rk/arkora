@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { cn, haptic } from '@/lib/utils'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { LeftDrawer } from '@/components/ui/LeftDrawer'
 
@@ -22,7 +22,7 @@ export function BottomNav() {
 
             {/* Left: hamburger → identity / settings drawer */}
             <button
-              onClick={() => setDrawerOpen(true)}
+              onClick={() => { haptic('light'); setDrawerOpen(true) }}
               aria-label="Open settings"
               className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all active:scale-90"
             >
@@ -38,7 +38,7 @@ export function BottomNav() {
 
             {/* Center: compose FAB */}
             <button
-              onClick={() => setComposerOpen(true)}
+              onClick={() => { haptic('medium'); setComposerOpen(true) }}
               className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center shadow-lg shadow-accent/30 active:scale-95 transition-all active:bg-accent-hover"
               aria-label="Create post"
             >

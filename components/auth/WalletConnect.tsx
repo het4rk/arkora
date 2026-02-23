@@ -29,12 +29,12 @@ export function WalletConnect() {
     // ── Full path: no wallet yet — wait for MiniKit, then walletAuth ──────
     let retries = 0
     const MAX_RETRIES = 20 // up to ~6s (20 × 300ms)
-    let timer: ReturnType<typeof setTimeout>
+    let pendingTimer: ReturnType<typeof setTimeout> | null = null
 
     function tryAuth() {
       if (!MiniKit.isInstalled()) {
         if (retries++ < MAX_RETRIES) {
-          timer = setTimeout(tryAuth, 300)
+          pendingTimer = setTimeout(tryAuth, 300)
         }
         return
       }
@@ -77,10 +77,14 @@ export function WalletConnect() {
         }
       })()
 
-      return () => clearTimeout(timer)
     }
 
     tryAuth()
+
+    // Cleanup: cancel any pending MiniKit-wait timer if component unmounts
+    return () => {
+      if (pendingTimer !== null) clearTimeout(pendingTimer)
+    }
   }, [walletAddress, isVerified, setWalletAddress, setVerified])
 
   async function callUserEndpoint(address: string) {
