@@ -68,7 +68,7 @@ export function Feed() {
 
   return (
     <>
-      <div className="overflow-y-scroll snap-y snap-mandatory h-screen scroll-smooth">
+      <div className="overflow-y-scroll snap-y snap-mandatory h-[calc(100dvh-56px)] scroll-smooth">
         {posts.map((post) => (
           <ThreadCard key={post.id} post={post} />
         ))}

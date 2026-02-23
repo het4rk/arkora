@@ -19,7 +19,7 @@ export function ThreadCard({ post, topReply }: Props) {
 
   return (
     <motion.article
-      className="h-screen w-full flex-shrink-0 snap-start bg-background flex flex-col justify-between px-5 py-6"
+      className="h-[calc(100dvh-56px)] w-full flex-shrink-0 snap-start bg-background flex flex-col justify-between px-5 py-6 pb-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.25 }}

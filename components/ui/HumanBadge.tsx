@@ -24,7 +24,7 @@ export function HumanBadge({ label, size = 'md', className }: Props) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full font-medium',
+        'inline-flex self-start w-fit items-center rounded-full font-medium',
         'bg-accent/15 text-accent border border-accent/30',
         sizeStyles[size],
         className
