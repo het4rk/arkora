@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { MiniKitProvider } from '@/components/providers/MiniKitProvider'
+import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { WalletConnect } from '@/components/auth/WalletConnect'
 import { BottomNav } from '@/components/ui/BottomNav'
 
@@ -27,6 +28,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-background text-text min-h-screen">
         <MiniKitProvider>
+          <ThemeProvider />
           {/* Auto-triggers walletAuth on mount */}
           <WalletConnect />
           <main className="pb-20 safe-top">{children}</main>

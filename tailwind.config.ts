@@ -11,17 +11,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#0A0A0A',
-        surface: '#141414',
-        'surface-up': '#1C1C1C',
-        border: '#2A2A2A',
-        accent: '#6C3BFF',
-        'accent-hover': '#7C4FFF',
-        text: '#FFFFFF',
-        'text-secondary': '#A0A0A0',
-        'text-muted': '#606060',
-        upvote: '#22C55E',
-        downvote: '#EF4444',
+        // RGB-channel format so Tailwind opacity modifiers work:
+        // e.g. bg-background/80, border-border/40, text-text/60
+        background:      'rgb(var(--clr-bg) / <alpha-value>)',
+        surface:         'rgb(var(--clr-surface) / <alpha-value>)',
+        'surface-up':    'rgb(var(--clr-surface-up) / <alpha-value>)',
+        border:          'rgb(var(--clr-border) / <alpha-value>)',
+        text:            'rgb(var(--clr-text) / <alpha-value>)',
+        'text-secondary':'rgb(var(--clr-text-sec) / <alpha-value>)',
+        'text-muted':    'rgb(var(--clr-text-muted) / <alpha-value>)',
+
+        // Fixed brand / semantic colors (no theming needed)
+        accent:        '#6C3BFF',
+        'accent-hover':'#7C4FFF',
+        upvote:        '#22C55E',
+        downvote:      '#EF4444',
       },
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],

@@ -4,30 +4,20 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { BottomSheet } from '@/components/ui/BottomSheet'
-import { useArkoraStore, type IdentityMode } from '@/store/useArkoraStore'
+import { useArkoraStore } from '@/store/useArkoraStore'
 import { usePost } from '@/hooks/usePost'
 import { generateAlias } from '@/lib/session'
 import { BOARDS, type BoardId } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-const IDENTITY_OPTIONS: {
-  mode: IdentityMode
-  label: string
-  description: string
-  icon: string
-}[] = [
-  { mode: 'anonymous', label: 'Random', description: 'New Human # each post', icon: '🎲' },
-  { mode: 'alias', label: 'Alias', description: 'Same handle, always', icon: '👤' },
-  { mode: 'named', label: 'Named', description: 'Your World ID username', icon: '📛' },
-]
-
 export function PostComposer() {
   const router = useRouter()
   const {
     isComposerOpen, setComposerOpen,
-    identityMode, setIdentityMode,
+    setDrawerOpen,
+    identityMode,
     persistentAlias, setPersistentAlias,
-    nullifierHash, isVerified,
+    nullifierHash,
     user,
   } = useArkoraStore()
   const { submit, isSubmitting, error } = usePost()
@@ -135,40 +125,23 @@ export function PostComposer() {
           />
         </div>
 
-        {/* Identity toggle */}
-        <div>
-          <p className="text-text-muted text-[11px] font-semibold uppercase tracking-wider mb-3">Post as</p>
-          <div className="grid grid-cols-3 gap-2">
-            {IDENTITY_OPTIONS.map((opt) => (
-              <button
-                key={opt.mode}
-                onClick={() => {
-                  if (!isVerified) {
-                    useArkoraStore.getState().setVerifySheetOpen(true)
-                    return
-                  }
-                  setIdentityMode(opt.mode)
-                }}
-                className={cn(
-                  'flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-all active:scale-95',
-                  identityMode === opt.mode
-                    ? 'bg-accent/15 border-accent/50 text-accent'
-                    : 'bg-surface-up border-border text-text-secondary'
-                )}
-              >
-                <span className="text-lg leading-none">{opt.icon}</span>
-                <span className="text-xs font-semibold">{opt.label}</span>
-                <span className="text-[10px] text-center leading-tight opacity-70">{opt.description}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Preview */}
-          <div className="mt-3 flex items-center gap-2 px-3 py-2.5 bg-surface-up rounded-xl border border-border">
+        {/* Identity — read-only row; tap to open the settings drawer */}
+        <button
+          onClick={() => {
+            setComposerOpen(false)
+            setTimeout(() => setDrawerOpen(true), 250)
+          }}
+          className="w-full flex items-center justify-between px-4 py-3 bg-surface-up rounded-2xl border border-border active:scale-[0.99] transition-all"
+        >
+          <div className="flex items-center gap-2">
             <span className="text-text-muted text-xs">Posting as</span>
             <span className="text-accent text-xs font-semibold">{getPreviewName()} ✓</span>
           </div>
-        </div>
+          <span className="text-text-muted text-[11px]">
+            {identityMode === 'anonymous' ? '🎲' : identityMode === 'alias' ? '👤' : '📛'}
+            {' '}Change →
+          </span>
+        </button>
 
         {error && (
           <p className="text-downvote text-sm bg-downvote/10 rounded-xl px-4 py-2.5 border border-downvote/20">

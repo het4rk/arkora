@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware'
 import type { HumanUser, BoardId } from '@/lib/types'
 
 export type IdentityMode = 'anonymous' | 'alias' | 'named'
+export type Theme = 'dark' | 'light'
 
 interface ArkoraState {
   // Auth & Identity
@@ -18,10 +19,14 @@ interface ArkoraState {
   // Cached alias — generated once from nullifier, reused across all alias posts
   persistentAlias: string | null
 
+  // Appearance
+  theme: Theme
+
   // UI State
   activeBoard: BoardId | null
   isComposerOpen: boolean
   isVerifySheetOpen: boolean
+  isDrawerOpen: boolean
 
   // Optimistic vote cache: postId → direction
   optimisticVotes: Record<string, 1 | -1>
@@ -31,9 +36,11 @@ interface ArkoraState {
   setVerified: (nullifierHash: string, user: HumanUser) => void
   setIdentityMode: (mode: IdentityMode) => void
   setPersistentAlias: (alias: string) => void
+  setTheme: (theme: Theme) => void
   setActiveBoard: (boardId: BoardId | null) => void
   setComposerOpen: (open: boolean) => void
   setVerifySheetOpen: (open: boolean) => void
+  setDrawerOpen: (open: boolean) => void
   setOptimisticVote: (postId: string, direction: 1 | -1) => void
   reset: () => void
 }
@@ -45,9 +52,11 @@ const initialState = {
   user: null,
   identityMode: 'anonymous' as IdentityMode,
   persistentAlias: null,
+  theme: 'dark' as Theme,
   activeBoard: null,
   isComposerOpen: false,
   isVerifySheetOpen: false,
+  isDrawerOpen: false,
   optimisticVotes: {},
 }
 
@@ -65,11 +74,15 @@ export const useArkoraStore = create<ArkoraState>()(
 
       setPersistentAlias: (alias) => set({ persistentAlias: alias }),
 
+      setTheme: (theme) => set({ theme }),
+
       setActiveBoard: (boardId) => set({ activeBoard: boardId }),
 
       setComposerOpen: (open) => set({ isComposerOpen: open }),
 
       setVerifySheetOpen: (open) => set({ isVerifySheetOpen: open }),
+
+      setDrawerOpen: (open) => set({ isDrawerOpen: open }),
 
       setOptimisticVote: (postId, direction) =>
         set((state) => ({
@@ -87,6 +100,7 @@ export const useArkoraStore = create<ArkoraState>()(
         user: state.user,
         identityMode: state.identityMode,
         persistentAlias: state.persistentAlias,
+        theme: state.theme,
       }),
     }
   )

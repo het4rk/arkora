@@ -42,7 +42,7 @@ export function BottomSheet({ isOpen, onClose, children, title, className }: Pro
           <motion.div
             className={cn(
               'fixed bottom-0 left-0 right-0 z-50',
-              'bg-surface border-t border-border',
+              'glass-sheet',
               'rounded-t-3xl',
               'max-h-[90dvh] overflow-y-auto',
               'safe-bottom',
