@@ -1,41 +1,79 @@
 /**
  * Hippius Bittensor subnet adapter
  * ─────────────────────────────────────────────────────────────────────────────
- * Hippius is a decentralized storage subnet on Bittensor that provides
- * censorship-resistant, distributed object storage backed by miners.
+ * Hippius is a decentralized IPFS-backed storage network running on Bittensor.
+ * Files are uploaded to their IPFS node and served via their public gateway.
  *
- * Docs: https://docs.hippius.com
- * npm:  https://www.npmjs.com/package/@hippius/sdk  (or the current package name)
+ * npm:     hippius-sdk (v0.0.1, early alpha — JS SDK only takes file paths)
+ * We use the raw IPFS HTTP API directly (supports Buffer natively).
  *
- * TO ACTIVATE:
- *   1. `pnpm add @hippius/sdk`  (check npm for latest package name)
- *   2. Add HIPPIUS_API_KEY to .env.local (get from Hippius dashboard / validator)
- *   3. Implement the upload() method below using the SDK
- *   4. In lib/storage/index.ts, swap `localAdapter` → `hippiusAdapter`
+ * SETUP:
+ *   1. Get your API credentials at https://hippius.com/account/api-keys
+ *   2. Add to .env.local:
+ *        HIPPIUS_STORE_URL=https://store.hippius.network     # upload endpoint
+ *        HIPPIUS_GATEWAY_URL=https://get.hippius.network     # retrieval base
+ *        HIPPIUS_API_KEY=<your-key>                          # optional; may be required
+ *   3. In lib/storage/index.ts, swap `localAdapter` → `hippiusAdapter`
+ *   4. For long-term persistence call pin() after upload (see below)
  *
+ * GATEWAY URL format: https://get.hippius.network/ipfs/<CID>
  * ─────────────────────────────────────────────────────────────────────────────
  */
+import FormData from 'form-data'
 import type { StorageAdapter } from './adapter'
+
+const STORE_URL  = process.env.HIPPIUS_STORE_URL   ?? 'https://store.hippius.network'
+const GATEWAY    = process.env.HIPPIUS_GATEWAY_URL ?? 'https://get.hippius.network'
+const API_KEY    = process.env.HIPPIUS_API_KEY
+
+interface IpfsAddResult {
+  Hash?: string
+  cid?: string
+  Name?: string
+  Size?: string
+}
 
 export const hippiusAdapter: StorageAdapter = {
   async upload(buffer, filename, mimetype): Promise<string> {
-    // TODO: implement when connecting to Hippius subnet
-    //
-    // const { HippiusClient } = await import('@hippius/sdk')
-    // const client = new HippiusClient({ apiKey: process.env.HIPPIUS_API_KEY! })
-    //
-    // const result = await client.upload({
-    //   data: buffer,
-    //   filename,
-    //   contentType: mimetype,
-    // })
-    //
-    // return result.url   // e.g. https://gateway.hippius.com/ipfs/<cid>
+    const form = new FormData()
+    form.append('file', buffer, {
+      filename,
+      contentType: mimetype,
+      knownLength: buffer.length,
+    })
 
-    void buffer; void filename; void mimetype
-    throw new Error(
-      '[Hippius] Adapter not yet connected. ' +
-      'See lib/storage/hippius.ts for setup instructions.'
-    )
+    const headers: Record<string, string> = {
+      ...form.getHeaders(),
+    }
+    if (API_KEY) headers['Authorization'] = `Bearer ${API_KEY}`
+
+    const res = await fetch(`${STORE_URL}/api/v0/add`, {
+      method: 'POST',
+      // @ts-expect-error — form-data is node-compatible; Next.js edge won't need this
+      body: form,
+      headers,
+    })
+
+    if (!res.ok) {
+      throw new Error(`Hippius upload failed: ${res.status} ${res.statusText}`)
+    }
+
+    const json = (await res.json()) as IpfsAddResult
+    const cid = json.Hash ?? json.cid
+
+    if (!cid) {
+      throw new Error('Hippius upload: no CID returned')
+    }
+
+    // Optional: pin the file so it's not garbage-collected
+    // This is a fire-and-forget; failure doesn't affect the returned URL.
+    void fetch(`${STORE_URL}/api/v0/pin/add?arg=${cid}`, {
+      method: 'POST',
+      headers: API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {},
+    }).catch((err: unknown) => {
+      console.warn('[Hippius] pin failed for', cid, err)
+    })
+
+    return `${GATEWAY}/ipfs/${cid}`
   },
 }
