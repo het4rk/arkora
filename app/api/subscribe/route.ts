@@ -6,6 +6,7 @@ import {
 } from '@/lib/db/subscriptions'
 import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 function daysLeft(expiresAt: Date): number {
   return Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000))
@@ -13,11 +14,13 @@ function daysLeft(expiresAt: Date): number {
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const subscriberHash = searchParams.get('subscriberHash')
-    const creatorHash = searchParams.get('creatorHash')
+    const subscriberHash = await getCallerNullifier()
+    if (!subscriberHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
 
-    if (!subscriberHash || !creatorHash) {
+    const creatorHash = new URL(req.url).searchParams.get('creatorHash')
+    if (!creatorHash) {
       return NextResponse.json({ success: false, error: 'Missing params' }, { status: 400 })
     }
 
@@ -42,14 +45,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { subscriberHash, creatorHash, amountWld = '1', txId } = (await req.json()) as {
-      subscriberHash?: string
+    const subscriberHash = await getCallerNullifier()
+    if (!subscriberHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { creatorHash, amountWld = '1', txId } = (await req.json()) as {
       creatorHash?: string
       amountWld?: string
       txId?: string
     }
 
-    if (!subscriberHash || !creatorHash) {
+    if (!creatorHash) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
 
@@ -86,16 +93,20 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { subscriberHash, creatorHash } = (await req.json()) as {
-      subscriberHash?: string
+    const callerHash = await getCallerNullifier()
+    if (!callerHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { creatorHash } = (await req.json()) as {
       creatorHash?: string
     }
 
-    if (!subscriberHash || !creatorHash) {
+    if (!creatorHash) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
 
-    await cancelSubscription(subscriberHash, creatorHash)
+    await cancelSubscription(callerHash, creatorHash)
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[subscribe DELETE]', err)

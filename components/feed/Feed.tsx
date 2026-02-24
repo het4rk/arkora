@@ -67,7 +67,7 @@ export function Feed() {
   const fetchBookmarks = useCallback((postIds: string[], userHash: string) => {
     if (postIds.length === 0 || !userHash) return
     const ids = postIds.join(',')
-    void fetch(`/api/bookmarks?nullifierHash=${encodeURIComponent(userHash)}&postIds=${encodeURIComponent(ids)}`)
+    void fetch(`/api/bookmarks?postIds=${encodeURIComponent(ids)}`)
       .then((r) => r.json())
       .then((j: { success: boolean; data?: { bookmarkedIds: string[] } }) => {
         if (j.success && j.data) {

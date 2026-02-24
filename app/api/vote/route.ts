@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { upsertVote, getPostNullifier } from '@/lib/db/posts'
+import { upsertVote, getPostNullifier, deletePostVote } from '@/lib/db/posts'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
-import type { VoteInput } from '@/lib/types'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as VoteInput
-    const { postId, direction, nullifierHash } = body
+    const nullifierHash = await getCallerNullifier()
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
 
-    if (!postId || !nullifierHash || (direction !== 1 && direction !== -1)) {
+    const { postId, direction } = (await req.json()) as { postId?: string; direction?: number }
+
+    if (!postId || (direction !== 1 && direction !== -1 && direction !== 0)) {
       return NextResponse.json(
         { success: false, error: 'Missing or invalid fields' },
         { status: 400 }
@@ -21,25 +25,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Too many votes. Slow down.' }, { status: 429 })
     }
 
-    // Both checks are independent — run in parallel to save a round-trip
-    const [verified, postOwner] = await Promise.all([
-      isVerifiedHuman(nullifierHash),
-      getPostNullifier(postId),
-    ])
-
-    if (!verified) {
+    if (!(await isVerifiedHuman(nullifierHash))) {
       return NextResponse.json(
         { success: false, error: 'World ID verification required' },
         { status: 403 }
       )
     }
+
+    // direction=0 means un-vote — no self-vote check needed
+    if (direction === 0) {
+      await deletePostVote(postId, nullifierHash)
+      return NextResponse.json({ success: true })
+    }
+
+    const postOwner = await getPostNullifier(postId)
     if (!postOwner) {
       return NextResponse.json(
         { success: false, error: 'Post not found' },
         { status: 404 }
       )
     }
-
     if (postOwner === nullifierHash) {
       return NextResponse.json(
         { success: false, error: 'Cannot vote on your own post' },

@@ -2,17 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { recordTip } from '@/lib/db/tips'
 import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function POST(req: NextRequest) {
   try {
-    const { senderHash, recipientHash, amountWld, txId } = (await req.json()) as {
-      senderHash?: string
+    const senderHash = await getCallerNullifier()
+    if (!senderHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { recipientHash, amountWld, txId } = (await req.json()) as {
       recipientHash?: string
       amountWld?: string
       txId?: string
     }
 
-    if (!senderHash || !recipientHash || !amountWld) {
+    if (!recipientHash || !amountWld) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
 

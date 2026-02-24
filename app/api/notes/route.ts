@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createNote, voteOnNote } from '@/lib/db/notes'
 import { isVerifiedHuman } from '@/lib/db/users'
-import type { CreateNoteInput } from '@/lib/types'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as CreateNoteInput
+    const submitterNullifierHash = await getCallerNullifier()
+    if (!submitterNullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const { postId, body: noteBody, submitterNullifierHash } = body
+    const body = (await req.json()) as { postId?: string; body?: string }
+    const { postId, body: noteBody } = body
 
-    if (!postId || !noteBody?.trim() || !submitterNullifierHash) {
+    if (!postId || !noteBody?.trim()) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -37,15 +41,15 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const body = (await req.json()) as {
-      noteId: string
-      isHelpful: boolean
-      nullifierHash: string
+    const nullifierHash = await getCallerNullifier()
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { noteId, isHelpful, nullifierHash } = body
+    const body = (await req.json()) as { noteId?: string; isHelpful?: boolean }
+    const { noteId, isHelpful } = body
 
-    if (!noteId || typeof isHelpful !== 'boolean' || !nullifierHash) {
+    if (!noteId || typeof isHelpful !== 'boolean') {
       return NextResponse.json(
         { success: false, error: 'Missing or invalid fields' },
         { status: 400 }

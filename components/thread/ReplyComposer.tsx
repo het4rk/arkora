@@ -54,7 +54,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
       const res = await fetch('/api/replies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, body, nullifierHash, pseudoHandle: getPseudoHandle(), imageUrl: imageUrl ?? undefined, parentReplyId }),
+        body: JSON.stringify({ postId, body, pseudoHandle: getPseudoHandle(), imageUrl: imageUrl ?? undefined, parentReplyId }),
       })
 
       const json = (await res.json()) as { success: boolean; error?: string }

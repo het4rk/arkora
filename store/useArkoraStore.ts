@@ -156,6 +156,7 @@ export const useArkoraStore = create<ArkoraState>()(
         locationEnabled: state.locationEnabled,
         locationRadius: state.locationRadius,
         dmPrivateKey: state.dmPrivateKey,
+        optimisticVotes: state.optimisticVotes,
       }),
     }
   )

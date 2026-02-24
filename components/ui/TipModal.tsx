@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { sendWld } from '@/hooks/useTip'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
@@ -8,6 +9,8 @@ import { haptic } from '@/lib/utils'
 interface Props {
   recipientHash: string
   recipientName: string
+  /** Pre-fetched wallet — skips extra /api/u round-trip when available. */
+  recipientWallet?: string | undefined
   onClose: () => void
 }
 
@@ -15,7 +18,7 @@ const AMOUNTS = [0.1, 0.5, 1, 5]
 
 type State = 'pick' | 'sending' | 'success' | 'error'
 
-export function TipModal({ recipientHash, recipientName, onClose }: Props) {
+export function TipModal({ recipientHash, recipientName, recipientWallet, onClose }: Props) {
   const { nullifierHash, isVerified, setVerifySheetOpen } = useArkoraStore()
   const [selected, setSelected] = useState<number>(1)
   const [custom, setCustom] = useState('')
@@ -33,18 +36,23 @@ export function TipModal({ recipientHash, recipientName, onClose }: Props) {
     setErrorMsg('')
 
     try {
-      // Fetch recipient wallet via profile API
-      const profileRes = await fetch(`/api/u/${encodeURIComponent(recipientHash)}`)
-      const profileJson = (await profileRes.json()) as { success: boolean; data?: { user?: { walletAddress: string } } }
-      const wallet = profileJson.data?.user?.walletAddress
+      // Use pre-fetched wallet if provided; otherwise fetch from profile API
+      let wallet = recipientWallet
+      if (!wallet) {
+        const profileRes = await fetch(`/api/u/${encodeURIComponent(recipientHash)}`)
+        const profileJson = (await profileRes.json()) as {
+          success: boolean
+          data?: { user?: { walletAddress: string } }
+        }
+        wallet = profileJson.data?.user?.walletAddress
+      }
       if (!wallet) throw new Error('Could not find recipient wallet')
 
       const txId = await sendWld(wallet, amount)
-      // Record tip in DB (fire-and-forget — tx may be pending)
       await fetch('/api/tip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senderHash: nullifierHash, recipientHash, amountWld: amount.toString(), txId }),
+        body: JSON.stringify({ recipientHash, amountWld: amount.toString(), txId }),
       })
       haptic('heavy')
       setState('success')
@@ -57,21 +65,38 @@ export function TipModal({ recipientHash, recipientName, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={state === 'sending' ? undefined : onClose}
+      />
 
       {/* Sheet */}
-      <div className="relative w-full max-w-md glass rounded-t-[28px] px-6 pt-5 pb-[max(env(safe-area-inset-bottom),24px)] space-y-5">
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 32, stiffness: 300 }}
+        className="relative w-full max-w-md glass rounded-t-[28px] px-6 pt-5 pb-[max(env(safe-area-inset-bottom),24px)] space-y-5"
+      >
         {/* Handle */}
         <div className="w-10 h-1 bg-border rounded-full mx-auto" />
 
         {state === 'success' ? (
           <div className="text-center space-y-3 py-4">
-            <p className="text-4xl">🎉</p>
-            <p className="font-bold text-text text-lg">Sent!</p>
-            <p className="text-text-secondary text-sm">{amount} WLD sent to {recipientName}</p>
+            <div className="w-16 h-16 rounded-full bg-accent/15 flex items-center justify-center mx-auto">
+              <span className="text-3xl">⚡</span>
+            </div>
+            <p className="font-bold text-text text-xl">Sent!</p>
+            <p className="text-text-secondary text-sm">
+              {amount} WLD tipped to {recipientName}
+            </p>
             <button
               onClick={onClose}
-              className="mt-2 px-6 py-2.5 bg-accent text-white rounded-[var(--r-full)] font-semibold active:scale-95 transition-all"
+              className="mt-2 px-8 py-3 bg-accent text-white rounded-[var(--r-full)] font-semibold active:scale-95 transition-all"
             >
               Done
             </button>
@@ -79,7 +104,10 @@ export function TipModal({ recipientHash, recipientName, onClose }: Props) {
         ) : (
           <>
             <div>
-              <p className="font-bold text-text text-lg">Tip {recipientName}</p>
+              <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center mb-3">
+                <span className="text-xl">⚡</span>
+              </div>
+              <p className="font-bold text-text text-xl">Tip {recipientName}</p>
               <p className="text-text-muted text-xs mt-0.5">WLD sent directly onchain</p>
             </div>
 
@@ -89,7 +117,7 @@ export function TipModal({ recipientHash, recipientName, onClose }: Props) {
                 <button
                   key={a}
                   onClick={() => { setCustom(''); setSelected(a) }}
-                  className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all ${
+                  className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 ${
                     !custom && selected === a
                       ? 'bg-accent text-white shadow-sm shadow-accent/30'
                       : 'glass border border-border text-text-muted'
@@ -112,7 +140,9 @@ export function TipModal({ recipientHash, recipientName, onClose }: Props) {
                 step="0.01"
                 className="glass-input w-full rounded-[var(--r-md)] px-3 py-2.5 text-sm pr-12"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs font-medium">WLD</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs font-medium">
+                WLD
+              </span>
             </div>
 
             {state === 'error' && (
@@ -124,11 +154,13 @@ export function TipModal({ recipientHash, recipientName, onClose }: Props) {
               disabled={state === 'sending' || !amountValid}
               className="w-full py-3 bg-accent text-white rounded-[var(--r-full)] font-semibold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
             >
-              {state === 'sending' ? 'Confirming in World App…' : `Send ${amountValid ? amount : ''} WLD`}
+              {state === 'sending'
+                ? 'Confirming in World App…'
+                : `Send ${amountValid ? amount : ''} WLD`}
             </button>
           </>
         )}
-      </div>
+      </motion.div>
     </div>
   )
 }

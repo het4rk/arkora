@@ -55,12 +55,15 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
 
   if (!row) throw new Error('Failed to create post')
 
-  // Increment quote count on the original post (fire-and-forget)
+  // Increment quote count on the original post (fire-and-forget).
+  // Must call .execute() — Drizzle builders are lazy and don't run unless consumed.
   if (input.quotedPostId) {
     void db
       .update(posts)
       .set({ quoteCount: sql`${posts.quoteCount} + 1` })
       .where(eq(posts.id, input.quotedPostId))
+      .execute()
+      .catch((err) => console.error('[quoteCount update]', err))
   }
 
   return toPost(row)
@@ -222,6 +225,20 @@ export async function upsertVote(
           DO UPDATE SET direction = ${direction}, created_at = now()
         )
         UPDATE posts
+        SET
+          upvotes   = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction =  1),
+          downvotes = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction = -1)
+        WHERE id = ${postId}`
+  )
+}
+
+/** Delete a post vote and recount. Two statements so COUNT(*) sees the post-DELETE state. */
+export async function deletePostVote(postId: string, nullifierHash: string): Promise<void> {
+  await db.execute(
+    sql`DELETE FROM post_votes WHERE post_id = ${postId} AND nullifier_hash = ${nullifierHash}`
+  )
+  await db.execute(
+    sql`UPDATE posts
         SET
           upvotes   = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction =  1),
           downvotes = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction = -1)

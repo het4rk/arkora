@@ -9,6 +9,7 @@ import {
   index,
   primaryKey,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 export const posts = pgTable(
   'posts',
@@ -66,6 +67,8 @@ export const replies = pgTable(
     postIdIdx: index('replies_post_id_idx').on(table.postId),
     createdAtIdx: index('replies_created_at_idx').on(table.createdAt),
     nullifierIdx: index('replies_nullifier_hash_idx').on(table.nullifierHash),
+    // Covers getRepliesByPostId sort: filter by postId + order by upvotes DESC, createdAt DESC
+    postSortIdx: index('replies_post_sort_idx').on(table.postId, table.upvotes, table.createdAt),
   })
 )
 
@@ -215,6 +218,8 @@ export const notifications = pgTable(
   },
   (table) => ({
     recipientIdx: index('notifications_recipient_idx').on(table.recipientHash, table.createdAt),
+    // Partial index for the unread-count query — only indexes unread rows
+    unreadIdx: index('notifications_unread_idx').on(table.recipientHash, table.createdAt).where(sql`read = false`),
   })
 )
 
@@ -265,6 +270,8 @@ export const subscriptions = pgTable(
     pk: primaryKey({ columns: [t.subscriberHash, t.creatorHash] }),
     creatorIdx: index('subscriptions_creator_idx').on(t.creatorHash),
     subscriberIdx: index('subscriptions_subscriber_idx').on(t.subscriberHash),
+    // Partial index for active subscription lookups (getSubscriberCount, getActiveSubscription)
+    activeCreatorIdx: index('subscriptions_active_creator_idx').on(t.creatorHash, t.expiresAt).where(sql`is_active = true`),
   })
 )
 

@@ -25,8 +25,6 @@ export function ProfileReplyCard({ reply, onDeleted }: Props) {
     try {
       const res = await fetch(`/api/replies/${reply.id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nullifierHash }),
       })
       if (res.ok) onDeleted?.(reply.id)
     } finally {

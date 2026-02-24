@@ -26,6 +26,15 @@ export function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
 }
 
+/**
+ * Title-cases a World ID username or pseudoHandle for display.
+ * World ID handles are lowercase with _ . - as word separators.
+ * e.g. "john_doe" → "John Doe", "alice.smith" → "Alice Smith", "bob" → "Bob"
+ */
+export function formatDisplayName(name: string): string {
+  return name.split(/[_.\-\s]+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 // Haptic feedback — uses the Vibration API (supported in World App / Android WebView)
 // Silently no-ops in Safari/desktop where the API is unavailable.
 export function haptic(pattern: 'light' | 'medium' | 'heavy' = 'light'): void {

@@ -2,17 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createCommunityNote } from '@/lib/db/communityNotes'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 // POST /api/community-notes — submit a note on a post
 export async function POST(req: NextRequest) {
   try {
-    const { postId, body, submitterNullifierHash } = (await req.json()) as {
-      postId?: string
-      body?: string
-      submitterNullifierHash?: string
+    const submitterNullifierHash = await getCallerNullifier()
+    if (!submitterNullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!postId || !body?.trim() || !submitterNullifierHash) {
+    const { postId, body } = (await req.json()) as {
+      postId?: string
+      body?: string
+    }
+
+    if (!postId || !body?.trim()) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
     if (body.length > 500) {

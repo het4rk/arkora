@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { Avatar } from '@/components/ui/Avatar'
 import { encryptDm, decryptDm, generateDmKeyPair } from '@/lib/crypto/dm'
-import { haptic } from '@/lib/utils'
+import { haptic, formatDisplayName } from '@/lib/utils'
 import type { RawDmMessage } from '@/lib/db/dm'
 
 interface DecryptedMessage {
@@ -45,7 +45,7 @@ export function ConversationView({ otherHash }: Props) {
     await fetch('/api/dm/keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nullifierHash, publicKey: pair.publicKeyB64 }),
+      body: JSON.stringify({ publicKey: pair.publicKeyB64 }),
     })
     return pair.privateKeyB64
   }, [nullifierHash, dmPrivateKey, setDmPrivateKey])
@@ -63,7 +63,7 @@ export function ConversationView({ otherHash }: Props) {
     const [keyRes, profileRes, msgsRes] = await Promise.all([
       fetch(`/api/dm/keys?nullifierHash=${encodeURIComponent(otherHash)}`),
       fetch(`/api/u/${encodeURIComponent(otherHash)}`),
-      fetch(`/api/dm/messages?myHash=${encodeURIComponent(nullifierHash)}&otherHash=${encodeURIComponent(otherHash)}`),
+      fetch(`/api/dm/messages?otherHash=${encodeURIComponent(otherHash)}`),
     ])
 
     const keyJson = (await keyRes.json()) as { success: boolean; data?: { publicKey: string } }
@@ -121,7 +121,7 @@ export function ConversationView({ otherHash }: Props) {
       if (!theirKey || !myKey) return
       try {
         const res = await fetch(
-          `/api/dm/messages?myHash=${encodeURIComponent(nullifierHash)}&otherHash=${encodeURIComponent(otherHash)}&since=${encodeURIComponent(latestMsgAt.current)}`
+          `/api/dm/messages?otherHash=${encodeURIComponent(otherHash)}&since=${encodeURIComponent(latestMsgAt.current)}`
         )
         const json = (await res.json()) as { success: boolean; data?: import('@/lib/db/dm').RawDmMessage[] }
         if (!json.success || !json.data || json.data.length === 0) return
@@ -168,7 +168,6 @@ export function ConversationView({ otherHash }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          senderHash: nullifierHash,
           recipientHash: otherHash,
           ciphertext: encrypted.ciphertext,
           nonce: encrypted.nonce,
@@ -188,7 +187,7 @@ export function ConversationView({ otherHash }: Props) {
     }
   }
 
-  const displayName = otherHandle ?? `Human #${otherHash.slice(-6)}`
+  const displayName = otherHandle ? formatDisplayName(otherHandle) : `Human #${otherHash.slice(-6)}`
 
   if (!isVerified || !nullifierHash) {
     return (

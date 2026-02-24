@@ -43,13 +43,14 @@ export async function createReply(input: CreateReplyInput): Promise<Reply> {
 }
 
 export async function getRepliesByPostId(postId: string): Promise<Reply[]> {
-  // Return ALL replies including deleted ones so thread tree stays intact.
-  // UI renders deleted replies as tombstones.
+  // Return replies including deleted ones so thread tree stays intact.
+  // UI renders deleted replies as tombstones. Cap at 500 as a safety valve.
   const rows = await db
     .select()
     .from(replies)
     .where(and(eq(replies.postId, postId)))
     .orderBy(desc(replies.upvotes), desc(replies.createdAt))
+    .limit(500)
 
   return rows.map(toReply)
 }
@@ -64,13 +65,13 @@ export async function softDeleteReply(replyId: string, nullifierHash: string): P
   return result.length > 0
 }
 
-/** Atomic upsert vote + recount, same CTE pattern as post votes. */
+/** Atomic upsert vote + recount. Returns the updated vote counts. */
 export async function upsertReplyVote(
   replyId: string,
   nullifierHash: string,
   direction: 1 | -1
-): Promise<void> {
-  await db.execute(
+): Promise<{ upvotes: number; downvotes: number }> {
+  const [row] = await db.execute<{ upvotes: number | string; downvotes: number | string }>(
     sql`WITH upsert AS (
           INSERT INTO reply_votes (reply_id, nullifier_hash, direction)
           VALUES (${replyId}, ${nullifierHash}, ${direction})
@@ -81,8 +82,37 @@ export async function upsertReplyVote(
         SET
           upvotes   = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction =  1),
           downvotes = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction = -1)
-        WHERE id = ${replyId}`
+        WHERE id = ${replyId}
+        RETURNING upvotes, downvotes`
   )
+  return {
+    upvotes: Number(row?.upvotes ?? 0),
+    downvotes: Number(row?.downvotes ?? 0),
+  }
+}
+
+/** Delete a reply vote and recount. Returns the updated vote counts. */
+export async function deleteReplyVote(
+  replyId: string,
+  nullifierHash: string
+): Promise<{ upvotes: number; downvotes: number }> {
+  // Two separate statements so the COUNT(*) sees the post-DELETE state.
+  // (CTE snapshot semantics would return a count that still includes the deleted row.)
+  await db.execute(
+    sql`DELETE FROM reply_votes WHERE reply_id = ${replyId} AND nullifier_hash = ${nullifierHash}`
+  )
+  const [row] = await db.execute<{ upvotes: number | string; downvotes: number | string }>(
+    sql`UPDATE replies
+        SET
+          upvotes   = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction =  1),
+          downvotes = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction = -1)
+        WHERE id = ${replyId}
+        RETURNING upvotes, downvotes`
+  )
+  return {
+    upvotes: Number(row?.upvotes ?? 0),
+    downvotes: Number(row?.downvotes ?? 0),
+  }
 }
 
 export async function getRepliesByNullifier(

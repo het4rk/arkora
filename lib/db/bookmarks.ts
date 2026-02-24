@@ -1,6 +1,6 @@
 import { db } from './index'
 import { bookmarks, posts } from './schema'
-import { eq, and, desc, isNull, inArray } from 'drizzle-orm'
+import { eq, and, desc, isNull, inArray, sql } from 'drizzle-orm'
 import type { Post, BoardId } from '@/lib/types'
 
 function toPost(row: typeof posts.$inferSelect): Post {
@@ -46,7 +46,7 @@ export async function toggleBookmark(
 
 export async function isBookmarked(nullifierHash: string, postId: string): Promise<boolean> {
   const [row] = await db
-    .select()
+    .select({ v: sql<number>`1` })
     .from(bookmarks)
     .where(and(eq(bookmarks.nullifierHash, nullifierHash), eq(bookmarks.postId, postId)))
     .limit(1)

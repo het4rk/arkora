@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostsByNullifier, getVotedPostsByNullifier } from '@/lib/db/posts'
 import { getRepliesByNullifier } from '@/lib/db/replies'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function GET(req: NextRequest) {
   try {
+    const nullifierHash = await getCallerNullifier()
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url)
-    const nullifierHash = searchParams.get('nullifierHash')
     const tab = searchParams.get('tab') ?? 'posts'
     const cursor = searchParams.get('cursor') ?? undefined
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '20', 10) || 20, 50)
-
-    if (!nullifierHash) {
-      return NextResponse.json({ success: false, error: 'nullifierHash required' }, { status: 400 })
-    }
 
     if (tab === 'posts') {
       const items = await getPostsByNullifier(nullifierHash, cursor, limit)

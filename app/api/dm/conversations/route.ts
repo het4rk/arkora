@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getConversations } from '@/lib/db/dm'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
-// GET /api/dm/conversations?nullifierHash=xxx
-export async function GET(req: NextRequest) {
+// GET /api/dm/conversations — returns conversations for the authenticated caller
+export async function GET() {
   try {
-    const nullifierHash = new URL(req.url).searchParams.get('nullifierHash')
+    const nullifierHash = await getCallerNullifier()
     if (!nullifierHash) {
-      return NextResponse.json({ success: false, error: 'nullifierHash required' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
     const conversations = await getConversations(nullifierHash)
     return NextResponse.json({ success: true, data: conversations })

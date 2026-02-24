@@ -42,7 +42,7 @@ export function ConversationList() {
       await fetch('/api/dm/keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nullifierHash, publicKey: pair.publicKeyB64 }),
+        body: JSON.stringify({ publicKey: pair.publicKeyB64 }),
       })
     }
   }
@@ -50,7 +50,7 @@ export function ConversationList() {
   async function fetchConversations() {
     if (!nullifierHash) return
     try {
-      const res = await fetch(`/api/dm/conversations?nullifierHash=${encodeURIComponent(nullifierHash)}`)
+      const res = await fetch('/api/dm/conversations')
       const json = (await res.json()) as { success: boolean; data?: ConversationSummary[] }
       if (json.success && json.data) setConversations(json.data)
     } finally {

@@ -1,6 +1,7 @@
 import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { getOrCreateUser, updateAvatarUrl, updateBio, updateIdentityMode } from '@/lib/db/users'
+import { getOrCreateUser, updateBio, updateIdentityMode } from '@/lib/db/users'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 /**
  * Derives a stable pseudonymous identity from the wallet address
@@ -32,7 +33,16 @@ export async function POST(req: NextRequest) {
     const nullifierHash = walletToNullifier(walletAddress)
     const user = await getOrCreateUser(nullifierHash, walletAddress, username ?? undefined)
 
-    return NextResponse.json({ success: true, nullifierHash, user })
+    const res = NextResponse.json({ success: true, nullifierHash, user })
+    // Set server-side identity cookie so protected endpoints can verify the caller
+    res.cookies.set('arkora-nh', nullifierHash, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    })
+    return res
   } catch (err) {
     console.error('[auth/user]', err)
     return NextResponse.json(
@@ -44,20 +54,19 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    // Identity always comes from the server-set cookie, never from the request body
+    const nullifierHash = await getCallerNullifier()
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = (await req.json()) as {
-      nullifierHash?: string
-      avatarUrl?: string | null
       bio?: string | null
       identityMode?: 'anonymous' | 'alias' | 'named'
     }
-    const { nullifierHash, avatarUrl, bio, identityMode } = body
-    if (!nullifierHash) {
-      return NextResponse.json({ success: false, error: 'nullifierHash required' }, { status: 400 })
-    }
+    const { bio, identityMode } = body
     let user
-    if (avatarUrl !== undefined) {
-      user = await updateAvatarUrl(nullifierHash, avatarUrl ?? null)
-    } else if (bio !== undefined) {
+    if (bio !== undefined) {
       user = await updateBio(nullifierHash, bio ?? null)
     } else if (identityMode !== undefined) {
       await updateIdentityMode(nullifierHash, identityMode)

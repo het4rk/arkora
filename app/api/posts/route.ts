@@ -3,6 +3,7 @@ import { getFeed, createPost, getLocalFeed } from '@/lib/db/posts'
 import { getFeedFollowing } from '@/lib/db/follows'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
+import { getCallerNullifier } from '@/lib/serverAuth'
 import { BOARDS } from '@/lib/types'
 import type { BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 
@@ -22,13 +23,16 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const feed = searchParams.get('feed')
-    const nullifierHash = searchParams.get('nullifierHash')
     const cursor = searchParams.get('cursor') ?? undefined
     const limit = parseInt(searchParams.get('limit') ?? '10', 10)
 
-    // Following feed
-    if (feed === 'following' && nullifierHash) {
-      const posts = await getFeedFollowing(nullifierHash, cursor, limit)
+    // Following feed — caller identity from cookie
+    if (feed === 'following') {
+      const callerHash = await getCallerNullifier()
+      if (!callerHash) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      }
+      const posts = await getFeedFollowing(callerHash, cursor, limit)
       return NextResponse.json({ success: true, data: posts })
     }
 
@@ -75,17 +79,27 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as CreatePostInput
+    const nullifierHash = await getCallerNullifier()
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const { title, body: postBody, boardId, nullifierHash, pseudoHandle } = body
+    const body = (await req.json()) as {
+      title?: string; body?: string; boardId?: string
+      pseudoHandle?: string; imageUrl?: string; quotedPostId?: string
+      lat?: number; lng?: number
+    }
 
-    if (!title?.trim() || !postBody?.trim() || !boardId || !nullifierHash) {
+    const { title, body: postBody, boardId: rawBoardId, pseudoHandle } = body
+
+    if (!title?.trim() || !postBody?.trim() || !rawBoardId) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
+    const boardId = rawBoardId as BoardId
     if (!VALID_BOARD_IDS.has(boardId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid board' },

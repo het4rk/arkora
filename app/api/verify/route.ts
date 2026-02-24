@@ -34,11 +34,20 @@ export async function POST(req: NextRequest) {
     // Upsert user — idempotent, safe to call multiple times
     const user = await getOrCreateUser(result.nullifierHash, walletAddress)
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       nullifierHash: result.nullifierHash,
       user,
     })
+    // Set server-side identity cookie so protected endpoints can verify the caller
+    res.cookies.set('arkora-nh', result.nullifierHash, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    })
+    return res
   } catch (err) {
     console.error('[verify/route]', err)
     return NextResponse.json(

@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore } from '@/store/useArkoraStore'
+import { formatDisplayName } from '@/lib/utils'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { ProfilePostCard } from './ProfilePostCard'
 import { ProfileReplyCard } from './ProfileReplyCard'
-import { generateAlias } from '@/lib/session'
 import type { Post, Reply } from '@/lib/types'
 
 type Tab = 'posts' | 'replies' | 'votes' | 'saved'
@@ -19,7 +19,7 @@ interface ReplyWithTitle extends Reply { postTitle: string | null }
 
 export function ProfileView() {
   const router = useRouter()
-  const { nullifierHash, isVerified, identityMode, persistentAlias, user, setVerified, unreadNotificationCount } = useArkoraStore()
+  const { nullifierHash, isVerified, user, setVerified, unreadNotificationCount } = useArkoraStore()
   const [tab, setTab] = useState<Tab>('posts')
   const [posts, setPosts] = useState<Post[]>([])
   const [replies, setReplies] = useState<ReplyWithTitle[]>([])
@@ -30,19 +30,23 @@ export function ProfileView() {
   const [subscriberCount, setSubscriberCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [bioEditMode, setBioEditMode] = useState(false)
-  const [bioDraft, setBioDraft] = useState(user?.bio ?? '')
-  const [bioSaving, setBioSaving] = useState(false)
 
+  // Edit bio state
+  const [editMode, setEditMode] = useState(false)
+  const [bioDraft, setBioDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  // Your own profile always shows your real World ID identity, regardless of chosen identity mode
   function displayName(): string {
-    if (identityMode === 'alias') {
-      return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : '…')
-    }
-    if (identityMode === 'named') {
-      const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
-      return username ?? user?.pseudoHandle ?? 'World ID user'
-    }
-    return 'Anonymous'
+    const worldUsername = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
+    const raw = worldUsername ?? user?.pseudoHandle ?? null
+    if (raw) return formatDisplayName(raw)
+    return nullifierHash ? `Human #${nullifierHash.slice(-6)}` : '…'
+  }
+
+  function openEdit() {
+    setBioDraft(user?.bio ?? '')
+    setEditMode(true)
   }
 
   useEffect(() => {
@@ -76,22 +80,22 @@ export function ProfileView() {
     } catch { /* ignore */ }
   }
 
-  async function saveBio() {
-    if (!nullifierHash) return
-    setBioSaving(true)
+  async function saveProfile() {
+    if (!nullifierHash || !user) return
+    setSaving(true)
     try {
       const res = await fetch('/api/auth/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nullifierHash, bio: bioDraft.trim() || null }),
+        body: JSON.stringify({ bio: bioDraft.trim() || null }),
       })
-      const json = (await res.json()) as { success: boolean }
-      if (json.success && user) {
+      const json = (await res.json()) as { success: boolean; user?: typeof user }
+      if (json.success) {
         setVerified(nullifierHash, { ...user, bio: bioDraft.trim() || null })
-        setBioEditMode(false)
+        setEditMode(false)
       }
     } finally {
-      setBioSaving(false)
+      setSaving(false)
     }
   }
 
@@ -101,12 +105,12 @@ export function ProfileView() {
     setError(null)
     try {
       if (t === 'saved') {
-        const res = await fetch(`/api/bookmarks?nullifierHash=${encodeURIComponent(nullifierHash)}`)
+        const res = await fetch(`/api/bookmarks`)
         const json = (await res.json()) as { success: boolean; data?: Post[]; error?: string }
         if (!json.success) throw new Error(json.error ?? 'Failed to load')
         setSaved(json.data ?? [])
       } else {
-        const res = await fetch(`/api/profile?nullifierHash=${encodeURIComponent(nullifierHash)}&tab=${t}`)
+        const res = await fetch(`/api/profile?tab=${t}`)
         const json = (await res.json()) as { success: boolean; data?: { items: unknown[] }; error?: string }
         if (!json.success) throw new Error(json.error ?? 'Failed to load')
 
@@ -197,61 +201,67 @@ export function ProfileView() {
 
         {/* Identity card */}
         <div className="glass rounded-[var(--r-xl)] px-5 py-5 mb-5">
-          <div className="flex items-center gap-3 mb-3">
-            <Avatar avatarUrl={user?.avatarUrl ?? null} label={displayName()} size="md" />
-            <HumanBadge label={displayName()} size="lg" />
-          </div>
-          <div className="flex items-center gap-4 text-xs text-text-muted flex-wrap">
-            <span><span className="text-text font-semibold">{followerCount}</span> followers</span>
-            <span><span className="text-text font-semibold">{followingCount}</span> following</span>
-            {subscriberCount > 0 && (
-              <span><span className="text-amber-400 font-semibold">{subscriberCount}</span> subscribers</span>
-            )}
-          </div>
-
-          {/* Bio */}
-          {bioEditMode ? (
-            <div className="mt-3 space-y-2">
-              <textarea
-                value={bioDraft}
-                onChange={(e) => setBioDraft(e.target.value.slice(0, 160))}
-                placeholder="Write a short bio…"
-                rows={2}
-                className="glass-input w-full rounded-[var(--r-md)] px-3 py-2.5 text-sm resize-none leading-relaxed"
-                autoFocus
-              />
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-text-muted/60 flex-1">{bioDraft.length}/160</span>
+          {editMode ? (
+            /* ── Edit bio mode ── */
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] text-text-muted uppercase tracking-[0.1em] font-semibold">Bio</label>
+                <textarea
+                  value={bioDraft}
+                  onChange={(e) => setBioDraft(e.target.value.slice(0, 160))}
+                  placeholder="Write a short bio…"
+                  rows={3}
+                  autoFocus
+                  className="glass-input w-full rounded-[var(--r-md)] px-3 py-2.5 text-sm resize-none leading-relaxed mt-1"
+                />
+                <p className="text-[10px] text-text-muted/50 text-right mt-0.5">{bioDraft.length}/160</p>
+              </div>
+              <div className="flex gap-2 pt-1">
                 <button
-                  onClick={() => { setBioEditMode(false); setBioDraft(user?.bio ?? '') }}
-                  className="px-3 py-1.5 text-xs text-text-muted glass rounded-[var(--r-md)] active:opacity-70"
+                  onClick={() => setEditMode(false)}
+                  className="flex-1 py-2.5 text-sm text-text-muted glass rounded-[var(--r-full)] font-semibold active:opacity-70"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => void saveBio()}
-                  disabled={bioSaving}
-                  className="px-3 py-1.5 text-xs font-semibold bg-accent text-white rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
+                  onClick={() => void saveProfile()}
+                  disabled={saving}
+                  className="flex-1 py-2.5 text-sm font-semibold bg-accent text-white rounded-[var(--r-full)] active:scale-[0.98] transition-all disabled:opacity-40"
                 >
-                  {bioSaving ? 'Saving…' : 'Save'}
+                  {saving ? 'Saving…' : 'Save'}
                 </button>
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => { setBioDraft(user?.bio ?? ''); setBioEditMode(true) }}
-              className="mt-3 text-left w-full group"
-            >
+            /* ── View mode ── */
+            <>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar avatarUrl={user?.avatarUrl ?? null} label={displayName()} size="md" />
+                  <HumanBadge label={displayName()} size="lg" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 text-xs text-text-muted flex-wrap">
+                <span><span className="text-text font-semibold">{followerCount}</span> followers</span>
+                <span><span className="text-text font-semibold">{followingCount}</span> following</span>
+                {subscriberCount > 0 && (
+                  <span><span className="text-amber-400 font-semibold">{subscriberCount}</span> subscribers</span>
+                )}
+              </div>
+
               {user?.bio ? (
-                <p className="text-text-secondary text-sm leading-relaxed group-active:opacity-70 transition-opacity">
-                  {user.bio}
-                </p>
+                <button onClick={openEdit} className="mt-3 text-left w-full group">
+                  <p className="text-text-secondary text-sm leading-relaxed group-active:opacity-70 transition-opacity">
+                    {user.bio}
+                  </p>
+                </button>
               ) : (
-                <p className="text-text-muted/50 text-[11px] leading-relaxed">
-                  + Add a bio
-                </p>
+                <button onClick={openEdit} className="mt-3">
+                  <p className="text-text-muted/50 text-[11px]">+ Add a bio</p>
+                </button>
               )}
-            </button>
+            </>
           )}
         </div>
 

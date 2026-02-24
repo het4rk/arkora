@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import type { Post } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { cn, formatDisplayName } from '@/lib/utils'
 
 interface Props {
   post: Post
@@ -12,7 +12,7 @@ interface Props {
 
 export function QuotedPost({ post, interactive = true, className }: Props) {
   const router = useRouter()
-  const displayName = post.pseudoHandle ?? post.sessionTag
+  const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
 
   return (
     <div

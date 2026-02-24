@@ -33,15 +33,12 @@ export function NotificationList() {
   async function load() {
     if (!nullifierHash) return
     try {
-      const res = await fetch(`/api/notifications?nullifierHash=${encodeURIComponent(nullifierHash)}`)
+      const res = await fetch('/api/notifications')
       const json = (await res.json()) as { success: boolean; data?: Notification[] }
       if (json.success && json.data) setNotifications(json.data)
       // Mark all as read after viewing
-      void fetch('/api/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nullifierHash }),
-      }).then(() => setUnreadNotificationCount(0))
+      void fetch('/api/notifications', { method: 'POST' })
+        .then(() => setUnreadNotificationCount(0))
     } finally {
       setIsLoading(false)
     }

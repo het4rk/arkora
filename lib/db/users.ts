@@ -1,6 +1,6 @@
 import { db } from './index'
 import { humanUsers } from './schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { HumanUser } from '@/lib/types'
 
 function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
@@ -105,6 +105,10 @@ export async function updateIdentityMode(
 }
 
 export async function isVerifiedHuman(nullifierHash: string): Promise<boolean> {
-  const user = await getUserByNullifier(nullifierHash)
-  return user !== null
+  const [row] = await db
+    .select({ v: sql<number>`1` })
+    .from(humanUsers)
+    .where(eq(humanUsers.nullifierHash, nullifierHash))
+    .limit(1)
+  return !!row
 }

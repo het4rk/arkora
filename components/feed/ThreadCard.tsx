@@ -11,7 +11,7 @@ import { TimeAgo } from '@/components/ui/TimeAgo'
 import { BookmarkButton } from '@/components/ui/BookmarkButton'
 import { QuotedPost } from '@/components/ui/QuotedPost'
 import { useArkoraStore } from '@/store/useArkoraStore'
-import { haptic } from '@/lib/utils'
+import { haptic, formatDisplayName } from '@/lib/utils'
 
 interface Props {
   post: Post
@@ -25,7 +25,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   const { nullifierHash, setComposerQuotedPost, setComposerOpen } = useArkoraStore()
   const [isDeleting, setIsDeleting] = useState(false)
   const isOwner = !!nullifierHash && post.nullifierHash === nullifierHash
-  const displayName = post.pseudoHandle ?? post.sessionTag
+  const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
@@ -35,8 +35,6 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
     try {
       const res = await fetch(`/api/posts/${post.id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nullifierHash }),
       })
       if (res.ok) {
         onDeleted?.(post.id)

@@ -7,7 +7,7 @@ import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkoraStore'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { generateAlias } from '@/lib/session'
-import { cn } from '@/lib/utils'
+import { cn, formatDisplayName } from '@/lib/utils'
 
 /* ─── Privacy options ──────────────────────────────────────────────────── */
 const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: string }[] = [
@@ -41,7 +41,8 @@ export function LeftDrawer() {
     }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
-      return username ?? user?.pseudoHandle ?? 'World ID user'
+      const raw = username ?? user?.pseudoHandle ?? null
+      return raw ? formatDisplayName(raw) : 'World ID user'
     }
     return 'Human #????'
   }

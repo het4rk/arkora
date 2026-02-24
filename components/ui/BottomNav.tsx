@@ -16,7 +16,7 @@ export function BottomNav() {
     if (!nullifierHash || !isVerified) return
 
     const fetchCount = () => {
-      void fetch(`/api/notifications?nullifierHash=${encodeURIComponent(nullifierHash)}&countOnly=1`)
+      void fetch('/api/notifications?countOnly=1')
         .then((r) => r.json())
         .then((j: { success: boolean; data?: { count: number } }) => {
           if (j.success && j.data) setUnreadNotificationCount(j.data.count)

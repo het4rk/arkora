@@ -54,9 +54,8 @@ export function useFeed(
       const params = new URLSearchParams({ limit: String(FEED_LIMIT) })
       if (boardId) params.set('boardId', boardId)
 
-      if (feedMode === 'following' && nullifierHash) {
+      if (feedMode === 'following') {
         params.set('feed', 'following')
-        params.set('nullifierHash', nullifierHash)
         if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
       } else if (feedMode === 'local') {
         params.set('feed', 'local')

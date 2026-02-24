@@ -61,7 +61,7 @@ export function SettingsView() {
   useEffect(() => {
     if (!nullifierHash || !isVerified) return
     setSubsLoading(true)
-    void fetch(`/api/subscribe/list?subscriberHash=${encodeURIComponent(nullifierHash)}`)
+    void fetch('/api/subscribe/list')
       .then((r) => r.json())
       .then((j: { success: boolean; data?: SubRow[] }) => {
         if (j.success && j.data) setSubs(j.data)
@@ -76,7 +76,7 @@ export function SettingsView() {
       const res = await fetch('/api/subscribe', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriberHash: nullifierHash, creatorHash }),
+        body: JSON.stringify({ creatorHash }),
       })
       const json = (await res.json()) as { success: boolean }
       if (json.success) setSubs((prev) => prev.filter((s) => s.creatorHash !== creatorHash))
@@ -139,7 +139,7 @@ export function SettingsView() {
                         void fetch('/api/auth/user', {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ nullifierHash, identityMode: opt.mode }),
+                          body: JSON.stringify({ identityMode: opt.mode }),
                         }).catch(() => null)
                       }
                     }}

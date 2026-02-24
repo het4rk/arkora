@@ -13,7 +13,7 @@ import { QuotedPost } from '@/components/ui/QuotedPost'
 import { ReplyTree } from './ReplyTree'
 import { ReplyComposer } from './ReplyComposer'
 import { useArkoraStore } from '@/store/useArkoraStore'
-import { haptic } from '@/lib/utils'
+import { haptic, formatDisplayName } from '@/lib/utils'
 import type { Reply } from '@/lib/types'
 
 interface ThreadData {
@@ -109,7 +109,7 @@ export function ThreadView({ postId }: Props) {
       const res = await fetch('/api/community-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, nullifierHash, body: noteDraft.trim() }),
+        body: JSON.stringify({ postId, body: noteDraft.trim() }),
       })
       const json = (await res.json()) as { success: boolean; error?: string }
       if (!json.success) throw new Error(json.error ?? 'Failed to submit note')
@@ -126,12 +126,14 @@ export function ThreadView({ postId }: Props) {
     if (!nullifierHash || !isVerified) return
     haptic('light')
     const prev = noteVotesRef.current.get(noteId) ?? null
-    noteVotesRef.current.set(noteId, prev === helpful ? null : helpful)
+    const next = prev === helpful ? null : helpful
+    noteVotesRef.current.set(noteId, next)
     try {
       await fetch('/api/community-notes/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ noteId, nullifierHash, helpful: prev === helpful ? !helpful : helpful }),
+        // next === null → toggle-off, send helpful: null to delete the vote in DB
+        body: JSON.stringify({ noteId, helpful: next }),
       })
     } catch {
       noteVotesRef.current.set(noteId, prev)
@@ -176,7 +178,7 @@ export function ThreadView({ postId }: Props) {
   }
 
   const { post, replies, notes } = data
-  const displayName = post.pseudoHandle ?? post.sessionTag
+  const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">

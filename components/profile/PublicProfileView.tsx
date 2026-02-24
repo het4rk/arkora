@@ -6,9 +6,10 @@ import { useArkoraStore } from '@/store/useArkoraStore'
 import { Avatar } from '@/components/ui/Avatar'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { ProfilePostCard } from './ProfilePostCard'
+import { AnimatePresence } from 'framer-motion'
 import { TipModal } from '@/components/ui/TipModal'
-import { sendWld } from '@/hooks/useTip'
-import { haptic } from '@/lib/utils'
+import { SubscribeModal } from '@/components/ui/SubscribeModal'
+import { haptic, formatDisplayName } from '@/lib/utils'
 import type { Post, HumanUser } from '@/lib/types'
 import Link from 'next/link'
 
@@ -35,19 +36,18 @@ export function PublicProfileView({ nullifierHash }: Props) {
   const [isLoading, setIsLoading] = useState(true)
   const [followLoading, setFollowLoading] = useState(false)
   const [tipOpen, setTipOpen] = useState(false)
-  const [subLoading, setSubLoading] = useState(false)
+  const [subOpen, setSubOpen] = useState(false)
   const isOwnProfile = viewerHash === nullifierHash
 
   const fetchProfile = useCallback(async () => {
     try {
-      const url = `/api/u/${encodeURIComponent(nullifierHash)}${viewerHash ? `?viewerHash=${encodeURIComponent(viewerHash)}` : ''}`
-      const res = await fetch(url)
+      const res = await fetch(`/api/u/${encodeURIComponent(nullifierHash)}`)
       const json = (await res.json()) as { success: boolean; data?: ProfileData }
       if (json.success && json.data) setData(json.data)
     } finally {
       setIsLoading(false)
     }
-  }, [nullifierHash, viewerHash])
+  }, [nullifierHash])
 
   useEffect(() => { void fetchProfile() }, [fetchProfile])
 
@@ -59,7 +59,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
       const res = await fetch('/api/follow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ followerId: viewerHash, followedId: nullifierHash }),
+        body: JSON.stringify({ followedId: nullifierHash }),
       })
       const json = (await res.json()) as { success: boolean; data?: { isFollowing: boolean } }
       if (json.success && json.data && data) {
@@ -75,43 +75,6 @@ export function PublicProfileView({ nullifierHash }: Props) {
     }
   }
 
-  async function handleSubscribe() {
-    if (!isVerified || !viewerHash) { setVerifySheetOpen(true); return }
-    if (!data) return
-    haptic('medium')
-    setSubLoading(true)
-    try {
-      const wallet = data.user?.walletAddress
-      if (!wallet) throw new Error('No wallet')
-      if (data.isSubscribed) {
-        // Cancel flow — ask confirmation via simple logic (toggle)
-        const res = await fetch('/api/subscribe', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscriberHash: viewerHash, creatorHash: nullifierHash }),
-        })
-        const json = (await res.json()) as { success: boolean }
-        if (json.success) {
-          setData({ ...data, isSubscribed: false, subscriptionDaysLeft: null, subscriberCount: Math.max(0, data.subscriberCount - 1) })
-        }
-      } else {
-        // New subscription — trigger WLD payment first
-        const txId = await sendWld(wallet, 1)
-        const res = await fetch('/api/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscriberHash: viewerHash, creatorHash: nullifierHash, amountWld: '1', txId }),
-        })
-        const json = (await res.json()) as { success: boolean; data?: { isSubscribed: boolean; daysLeft: number } }
-        if (json.success && json.data) {
-          setData({ ...data, isSubscribed: true, subscriptionDaysLeft: json.data.daysLeft, subscriberCount: data.subscriberCount + 1 })
-        }
-      }
-    } finally {
-      setSubLoading(false)
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-dvh bg-background p-5 animate-pulse space-y-4">
@@ -122,7 +85,8 @@ export function PublicProfileView({ nullifierHash }: Props) {
     )
   }
 
-  const displayName = data?.user?.pseudoHandle ?? `Human #${nullifierHash.slice(-6)}`
+  const displayName = data?.user?.pseudoHandle ? formatDisplayName(data.user.pseudoHandle) : `Human #${nullifierHash.slice(-6)}`
+  const wallet = data?.user?.walletAddress
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
@@ -158,7 +122,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
                 </div>
               </div>
 
-              {/* Follow + Message + Tip + Subscribe — hidden on own profile */}
+              {/* Action buttons — hidden on own profile */}
               {!isOwnProfile && (
                 <div className="shrink-0 flex flex-col gap-2">
                   <button
@@ -186,12 +150,15 @@ export function PublicProfileView({ nullifierHash }: Props) {
                   >
                     ⚡ Tip WLD
                   </button>
-                  {/* Subscribe button — only shown for named identity profiles */}
+                  {/* Subscribe — only for named identity profiles */}
                   {data?.user?.identityMode === 'named' && (
                     <button
-                      onClick={() => void handleSubscribe()}
-                      disabled={subLoading}
-                      className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 disabled:opacity-40 ${
+                      onClick={() => {
+                        if (!isVerified || !viewerHash) { setVerifySheetOpen(true); return }
+                        haptic('light')
+                        setSubOpen(true)
+                      }}
+                      className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 ${
                         data?.isSubscribed
                           ? 'glass border border-amber-400/40 text-amber-400'
                           : 'glass border border-border text-text-muted'
@@ -206,7 +173,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
               )}
             </div>
 
-            {/* Stats — subscriber count is private, only shown on own profile */}
+            {/* Stats */}
             <div className="flex items-center gap-4 mt-4 text-xs text-text-muted flex-wrap">
               <span><span className="text-text font-semibold">{data?.followerCount ?? 0}</span> followers</span>
               <span><span className="text-text font-semibold">{data?.followingCount ?? 0}</span> following</span>
@@ -231,14 +198,48 @@ export function PublicProfileView({ nullifierHash }: Props) {
         </div>
       </div>
 
-      {/* Tip modal */}
-      {tipOpen && (
-        <TipModal
-          recipientHash={nullifierHash}
-          recipientName={displayName}
-          onClose={() => setTipOpen(false)}
-        />
-      )}
+      {/* Modals — wrapped in AnimatePresence for spring exit animation */}
+      <AnimatePresence>
+        {tipOpen && (
+          <TipModal
+            recipientHash={nullifierHash}
+            recipientName={displayName}
+            recipientWallet={wallet ?? undefined}
+            onClose={() => setTipOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {subOpen && wallet && (
+          <SubscribeModal
+            creatorHash={nullifierHash}
+            creatorName={displayName}
+            creatorWallet={wallet}
+            isSubscribed={data?.isSubscribed ?? false}
+            daysLeft={data?.subscriptionDaysLeft ?? null}
+            onClose={() => setSubOpen(false)}
+            onSubscribed={(daysLeft) => {
+              if (!data) return
+              setData({
+                ...data,
+                isSubscribed: true,
+                subscriptionDaysLeft: daysLeft,
+                subscriberCount: data.isSubscribed ? data.subscriberCount : data.subscriberCount + 1,
+              })
+            }}
+            onCancelled={() => {
+              if (!data) return
+              setData({
+                ...data,
+                isSubscribed: false,
+                subscriptionDaysLeft: null,
+                subscriberCount: Math.max(0, data.subscriberCount - 1),
+              })
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { HumanBadge } from '@/components/ui/HumanBadge'
 import { InlineFollowButton } from '@/components/ui/InlineFollowButton'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { useArkoraStore } from '@/store/useArkoraStore'
-import { haptic } from '@/lib/utils'
+import { haptic, formatDisplayName } from '@/lib/utils'
 
 type VoteDir = 1 | -1 | null
 
@@ -50,7 +50,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
       const res = await fetch('/api/replies/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ replyId: reply.id, nullifierHash, direction: next ?? dir }),
+        body: JSON.stringify({ replyId: reply.id, direction: next ?? 0 }),
       })
       const json = (await res.json()) as { success: boolean; data?: { upvotes: number; downvotes: number } }
       if (json.success && json.data) {
@@ -71,7 +71,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
     }
   }
 
-  const displayName = isDeleted ? 'deleted' : (reply.pseudoHandle ?? reply.sessionTag)
+  const displayName = isDeleted ? 'deleted' : (reply.pseudoHandle ? formatDisplayName(reply.pseudoHandle) : reply.sessionTag)
 
   async function handleDelete() {
     if (!nullifierHash || isDeleting) return
@@ -80,8 +80,6 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
     try {
       const res = await fetch(`/api/replies/${reply.id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nullifierHash }),
       })
       if (res.ok) {
         onDeleted?.()

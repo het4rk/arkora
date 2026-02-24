@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { toggleBookmark, getBookmarksByNullifier, isBookmarked, getBulkBookmarkStatus } from '@/lib/db/bookmarks'
 import { isVerifiedHuman } from '@/lib/db/users'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const nullifierHash = searchParams.get('nullifierHash')
-    const postId = searchParams.get('postId')
+    const nullifierHash = await getCallerNullifier()
     if (!nullifierHash) {
-      return NextResponse.json({ success: false, error: 'nullifierHash required' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
+    const { searchParams } = new URL(req.url)
+    const postId = searchParams.get('postId')
     // ?postId= → single O(1) lookup
     if (postId) {
       const bookmarked = await isBookmarked(nullifierHash, postId)
@@ -32,9 +33,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { nullifierHash, postId } = (await req.json()) as { nullifierHash?: string; postId?: string }
-    if (!nullifierHash || !postId) {
-      return NextResponse.json({ success: false, error: 'nullifierHash and postId required' }, { status: 400 })
+    const nullifierHash = await getCallerNullifier()
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+    const { postId } = (await req.json()) as { postId?: string }
+    if (!postId) {
+      return NextResponse.json({ success: false, error: 'postId required' }, { status: 400 })
     }
     if (!(await isVerifiedHuman(nullifierHash))) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })

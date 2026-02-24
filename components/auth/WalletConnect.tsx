@@ -8,23 +8,28 @@ import type { HumanUser } from '@/lib/types'
 // Silently triggers walletAuth on app open, then auto-verifies the user
 // using a wallet-derived identity — no separate World ID ZK step required.
 export function WalletConnect() {
-  const { walletAddress, isVerified, setWalletAddress, setVerified } = useArkoraStore()
+  const { walletAddress, isVerified, user, setWalletAddress, setVerified } = useArkoraStore()
   const attempted = useRef(false)
 
   useEffect(() => {
-    // Already fully signed in and verified — nothing to do
-    if (isVerified || attempted.current) return
-
+    // Guard: only run once per session mount
+    if (attempted.current) return
     attempted.current = true
 
-    // ── Fast path: wallet address already persisted, just re-verify ──────
-    // This happens when the user signed in before auto-verify was added,
-    // or when the store is hydrated from localStorage with walletAddress
-    // but isVerified=false (e.g. after a code update).
+    // ── Fast path: wallet address already persisted ───────────────────────
+    // Always call callUserEndpoint when walletAddress is cached — this:
+    //   1. Sets the `arkora-nh` httpOnly session cookie (required for DM auth)
+    //   2. Captures the MiniKit username if pseudoHandle is still null
+    // MiniKitProvider populates MiniKit.user on mount so the username is
+    // available here even without a fresh walletAuth.
     if (walletAddress) {
-      void callUserEndpoint(walletAddress)
+      const miniKitUsername = MiniKit.isInstalled() ? (MiniKit.user?.username ?? undefined) : undefined
+      void callUserEndpoint(walletAddress, miniKitUsername)
       return
     }
+
+    // Already verified via some other path without a wallet — nothing to do
+    if (isVerified) return
 
     // ── Full path: no wallet yet — wait for MiniKit, then walletAuth ──────
     let retries = 0
@@ -102,7 +107,8 @@ export function WalletConnect() {
     return () => {
       if (pendingTimer !== null) clearTimeout(pendingTimer)
     }
-  }, [walletAddress, isVerified, setWalletAddress, setVerified])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function callUserEndpoint(address: string, username?: string) {
     try {

@@ -3,16 +3,18 @@ import { toggleFollow, isFollowing, getFollowerCount, getFollowingCount } from '
 import { isVerifiedHuman } from '@/lib/db/users'
 import { createNotification } from '@/lib/db/notifications'
 import { rateLimit } from '@/lib/rateLimit'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const nullifierHash = searchParams.get('nullifierHash')
-    const viewerHash = searchParams.get('viewerHash')
 
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'nullifierHash required' }, { status: 400 })
     }
+
+    const viewerHash = await getCallerNullifier()
 
     const [followerCount, followingCount, following] = await Promise.all([
       getFollowerCount(nullifierHash),
@@ -29,9 +31,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { followerId, followedId } = (await req.json()) as { followerId?: string; followedId?: string }
-    if (!followerId || !followedId) {
-      return NextResponse.json({ success: false, error: 'followerId and followedId required' }, { status: 400 })
+    const followerId = await getCallerNullifier()
+    if (!followerId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+    const { followedId } = (await req.json()) as { followedId?: string }
+    if (!followedId) {
+      return NextResponse.json({ success: false, error: 'followedId required' }, { status: 400 })
     }
     if (followerId === followedId) {
       return NextResponse.json({ success: false, error: 'Cannot follow yourself' }, { status: 400 })

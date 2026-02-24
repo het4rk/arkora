@@ -3,21 +3,23 @@ import { saveDmMessage, getDmMessages } from '@/lib/db/dm'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { createNotification } from '@/lib/db/notifications'
 import { rateLimit } from '@/lib/rateLimit'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
-// GET /api/dm/messages?myHash=&otherHash=&cursor=&since=
+// GET /api/dm/messages?otherHash=&cursor=&since=
+// myHash is derived from the auth cookie — never trusted from query params
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const myHash = searchParams.get('myHash')
     const otherHash = searchParams.get('otherHash')
     const cursor = searchParams.get('cursor') ?? undefined
     const since = searchParams.get('since') ?? undefined
 
-    if (!myHash || !otherHash) {
-      return NextResponse.json({ success: false, error: 'myHash and otherHash required' }, { status: 400 })
+    const myHash = await getCallerNullifier()
+    if (!myHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
-    if (!(await isVerifiedHuman(myHash))) {
-      return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
+    if (!otherHash) {
+      return NextResponse.json({ success: false, error: 'otherHash required' }, { status: 400 })
     }
 
     const messages = await getDmMessages(myHash, otherHash, cursor, since)
@@ -29,16 +31,20 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/dm/messages — store encrypted message
+// senderHash is derived from the auth cookie — never trusted from body
 export async function POST(req: NextRequest) {
   try {
-    const { senderHash, recipientHash, ciphertext, nonce } = (await req.json()) as {
-      senderHash?: string
+    const { recipientHash, ciphertext, nonce } = (await req.json()) as {
       recipientHash?: string
       ciphertext?: string
       nonce?: string
     }
 
-    if (!senderHash || !recipientHash || !ciphertext || !nonce) {
+    const senderHash = await getCallerNullifier()
+    if (!senderHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+    if (!recipientHash || !ciphertext || !nonce) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
     if (senderHash === recipientHash) {

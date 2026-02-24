@@ -4,15 +4,24 @@ import { isVerifiedHuman } from '@/lib/db/users'
 import { getPostNullifier } from '@/lib/db/posts'
 import { createNotification } from '@/lib/db/notifications'
 import { rateLimit } from '@/lib/rateLimit'
-import type { CreateReplyInput } from '@/lib/types'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as CreateReplyInput
+    const nullifierHash = await getCallerNullifier()
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const { postId, body: replyBody, nullifierHash, parentReplyId, pseudoHandle } = body
+    const { postId, body: replyBody, pseudoHandle, parentReplyId, imageUrl } = (await req.json()) as {
+      postId?: string
+      body?: string
+      pseudoHandle?: string
+      parentReplyId?: string
+      imageUrl?: string
+    }
 
-    if (!postId || !replyBody?.trim() || !nullifierHash) {
+    if (!postId || !replyBody?.trim()) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -42,7 +51,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { imageUrl } = body
     const reply = await createReply({ postId, body: replyBody, nullifierHash, parentReplyId, pseudoHandle, imageUrl: imageUrl ?? undefined })
 
     // Notify post author — fire-and-forget, does not block the response

@@ -2,10 +2,12 @@
 
 import { useState, useCallback } from 'react'
 import { useArkoraStore } from '@/store/useArkoraStore'
-import type { Post, BoardId, CreatePostInput } from '@/lib/types'
+import type { Post, CreatePostInput } from '@/lib/types'
+
+type PostBody = Omit<CreatePostInput, 'nullifierHash' | 'countryCode'>
 
 interface UsePostReturn {
-  submit: (input: Omit<CreatePostInput, 'nullifierHash'>) => Promise<Post | null>
+  submit: (input: PostBody) => Promise<Post | null>
   isSubmitting: boolean
   error: string | null
 }
@@ -13,13 +15,11 @@ interface UsePostReturn {
 export function usePost(): UsePostReturn {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { nullifierHash, isVerified } = useArkoraStore()
+  const { isVerified } = useArkoraStore()
 
   const submit = useCallback(
-    async (
-      input: Omit<CreatePostInput, 'nullifierHash'>
-    ): Promise<Post | null> => {
-      if (!isVerified || !nullifierHash) {
+    async (input: PostBody): Promise<Post | null> => {
+      if (!isVerified) {
         useArkoraStore.getState().setVerifySheetOpen(true)
         return null
       }
@@ -31,7 +31,7 @@ export function usePost(): UsePostReturn {
         const res = await fetch('/api/posts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...input, nullifierHash } satisfies CreatePostInput),
+          body: JSON.stringify(input),
         })
 
         const json = (await res.json()) as { success: boolean; data?: Post; error?: string }
@@ -49,7 +49,7 @@ export function usePost(): UsePostReturn {
         setIsSubmitting(false)
       }
     },
-    [nullifierHash, isVerified]
+    [isVerified]
   )
 
   return { submit, isSubmitting, error }

@@ -3,15 +3,16 @@ import { getUserByNullifier } from '@/lib/db/users'
 import { getPostsByNullifier } from '@/lib/db/posts'
 import { getPublicProfileData, isFollowing } from '@/lib/db/follows'
 import { getSubscriberCount, getActiveSubscription } from '@/lib/db/subscriptions'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 interface Params {
   params: Promise<{ id: string }>
 }
 
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(_req: NextRequest, { params }: Params) {
   try {
     const { id: nullifierHash } = await params
-    const viewerHash = new URL(req.url).searchParams.get('viewerHash')
+    const viewerHash = await getCallerNullifier()
 
     const [user, posts, profileStats, following, subscriberCount, activeSub] = await Promise.all([
       getUserByNullifier(nullifierHash),

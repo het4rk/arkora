@@ -18,8 +18,7 @@ export function BookmarkButton({ postId, initialBookmarked, className }: Props) 
   // Only fetch on mount when the parent hasn't pre-fetched the state
   useEffect(() => {
     if (initialBookmarked !== undefined || !nullifierHash) return
-    const url = `/api/bookmarks?nullifierHash=${encodeURIComponent(nullifierHash)}&postId=${encodeURIComponent(postId)}`
-    void fetch(url)
+    void fetch(`/api/bookmarks?postId=${encodeURIComponent(postId)}`)
       .then((r) => r.json())
       .then((j: { success: boolean; data?: { isBookmarked: boolean } }) => {
         if (j.success && j.data) setBookmarked(j.data.isBookmarked)
@@ -40,7 +39,7 @@ export function BookmarkButton({ postId, initialBookmarked, className }: Props) 
       const res = await fetch('/api/bookmarks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nullifierHash, postId }),
+        body: JSON.stringify({ postId }),
       })
       const json = (await res.json()) as { success: boolean; data?: { isBookmarked: boolean } }
       if (json.success && json.data) setBookmarked(json.data.isBookmarked)

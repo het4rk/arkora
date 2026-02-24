@@ -26,7 +26,7 @@ export function InlineFollowButton({ targetHash }: Props) {
   useEffect(() => {
     if (!nullifierHash) return
     void fetch(
-      `/api/follow?nullifierHash=${encodeURIComponent(targetHash)}&viewerHash=${encodeURIComponent(nullifierHash)}`
+      `/api/follow?nullifierHash=${encodeURIComponent(targetHash)}`
     )
       .then((r) => r.json())
       .then((j: { success: boolean; data?: { isFollowing: boolean } }) => {
@@ -53,7 +53,7 @@ export function InlineFollowButton({ targetHash }: Props) {
       const res = await fetch('/api/follow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ followerId: nullifierHash, followedId: targetHash }),
+        body: JSON.stringify({ followedId: targetHash }),
       })
       const json = (await res.json()) as { success: boolean; data?: { isFollowing: boolean } }
       if (json.success && json.data) setIsFollowing(json.data.isFollowing)

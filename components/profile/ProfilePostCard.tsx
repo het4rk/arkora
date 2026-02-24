@@ -26,8 +26,6 @@ export function ProfilePostCard({ post, onDeleted }: Props) {
     try {
       const res = await fetch(`/api/posts/${post.id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nullifierHash }),
       })
       if (res.ok) onDeleted?.(post.id)
     } finally {

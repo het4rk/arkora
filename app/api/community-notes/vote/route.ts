@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { voteOnNote } from '@/lib/db/communityNotes'
+import { voteOnNote, deleteNoteVote } from '@/lib/db/communityNotes'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
+import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function POST(req: NextRequest) {
   try {
-    const { noteId, nullifierHash, helpful } = (await req.json()) as {
-      noteId?: string
-      nullifierHash?: string
-      helpful?: boolean
+    const nullifierHash = await getCallerNullifier()
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!noteId || !nullifierHash || typeof helpful !== 'boolean') {
+    const { noteId, helpful } = (await req.json()) as {
+      noteId?: string
+      helpful?: boolean | null
+    }
+
+    if (!noteId || (typeof helpful !== 'boolean' && helpful !== null)) {
       return NextResponse.json({ success: false, error: 'Missing or invalid fields' }, { status: 400 })
     }
     if (!rateLimit(`note-vote:${nullifierHash}`, 10, 60_000)) {
@@ -21,7 +26,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
 
-    const note = await voteOnNote(noteId, nullifierHash, helpful)
+    const note = helpful === null
+      ? await deleteNoteVote(noteId, nullifierHash)
+      : await voteOnNote(noteId, nullifierHash, helpful)
     return NextResponse.json({ success: true, data: note })
   } catch (err) {
     console.error('[community-notes/vote POST]', err)
