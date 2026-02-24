@@ -24,6 +24,7 @@ export function PostComposer() {
     walletAddress,
     user,
     locationEnabled,
+    isVerified,
   } = useArkoraStore()
   const { submit, isSubmitting, error } = usePost()
 
@@ -168,23 +169,30 @@ export function PostComposer() {
           />
         </div>
 
-        {/* Identity row — tappable, opens drawer */}
-        <button
-          onClick={() => {
-            setComposerOpen(false)
-            setTimeout(() => setDrawerOpen(true), 250)
-          }}
-          className="w-full flex items-center justify-between px-4 py-3.5 glass rounded-[var(--r-lg)] active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted text-xs">Posting as</span>
-            <span className="text-accent text-xs font-semibold">{getPreviewName()} ✓</span>
+        {/* Identity row — tappable for verified; lock notice for guests */}
+        {isVerified ? (
+          <button
+            onClick={() => {
+              setComposerOpen(false)
+              setTimeout(() => setDrawerOpen(true), 250)
+            }}
+            className="w-full flex items-center justify-between px-4 py-3.5 glass rounded-[var(--r-lg)] active:scale-[0.99] transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-text-muted text-xs">Posting as</span>
+              <span className="text-accent text-xs font-semibold">{getPreviewName()} ✓</span>
+            </div>
+            <span className="text-text-muted text-[11px]">
+              {identityMode === 'anonymous' ? '🎲' : identityMode === 'alias' ? '👤' : '📛'}
+              {' '}Change →
+            </span>
+          </button>
+        ) : (
+          <div className="w-full flex items-center gap-3 px-4 py-3.5 glass rounded-[var(--r-lg)]">
+            <span className="text-base">🔒</span>
+            <span className="text-text-secondary text-sm">World ID verification required to post</span>
           </div>
-          <span className="text-text-muted text-[11px]">
-            {identityMode === 'anonymous' ? '🎲' : identityMode === 'alias' ? '👤' : '📛'}
-            {' '}Change →
-          </span>
-        </button>
+        )}
 
         {/* Image attachment */}
         <ImagePicker

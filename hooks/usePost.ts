@@ -20,6 +20,7 @@ export function usePost(): UsePostReturn {
   const submit = useCallback(
     async (input: PostBody): Promise<Post | null> => {
       if (!isVerified) {
+        setError('Only verified humans can post on Arkora. Complete World ID verification to join the conversation.')
         useArkoraStore.getState().setVerifySheetOpen(true)
         return null
       }
