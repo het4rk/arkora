@@ -56,7 +56,7 @@ export async function getPostById(id: string): Promise<Post | null> {
   const rows = await db
     .select({ post: posts, quoted: quotedPosts })
     .from(posts)
-    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
+    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
     .where(eq(posts.id, id))
     .limit(1) as PostWithQuoted[]
 
@@ -88,7 +88,7 @@ export async function getFeed(params: FeedParams): Promise<Post[]> {
   const rows = await db
     .select({ post: posts, quoted: quotedPosts })
     .from(posts)
-    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
+    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
     .limit(limit) as PostWithQuoted[]
@@ -134,25 +134,22 @@ export async function upsertVote(
   nullifierHash: string,
   direction: 1 | -1
 ): Promise<void> {
+  // Single atomic statement: upsert vote then immediately recount in one round-trip.
+  // The UPDATE subqueries run against the already-committed vote row, so the
+  // count is always consistent regardless of concurrent requests.
   await db.execute(
-    sql`INSERT INTO post_votes (post_id, nullifier_hash, direction)
-        VALUES (${postId}, ${nullifierHash}, ${direction})
-        ON CONFLICT (post_id, nullifier_hash)
-        DO UPDATE SET direction = ${direction}, created_at = now()`
+    sql`WITH upsert AS (
+          INSERT INTO post_votes (post_id, nullifier_hash, direction)
+          VALUES (${postId}, ${nullifierHash}, ${direction})
+          ON CONFLICT (post_id, nullifier_hash)
+          DO UPDATE SET direction = ${direction}, created_at = now()
+        )
+        UPDATE posts
+        SET
+          upvotes   = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction =  1),
+          downvotes = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction = -1)
+        WHERE id = ${postId}`
   )
-
-  const tallies = await db.execute<{ up: string | null; down: string | null }>(
-    sql`SELECT
-          SUM(CASE WHEN direction = 1 THEN 1 ELSE 0 END)::text AS up,
-          SUM(CASE WHEN direction = -1 THEN 1 ELSE 0 END)::text AS down
-        FROM post_votes
-        WHERE post_id = ${postId}`
-  )
-
-  const row = (tallies as unknown as Array<{ up: string | null; down: string | null }>)[0]
-  const up = parseInt(row?.up ?? '0', 10)
-  const down = parseInt(row?.down ?? '0', 10)
-  await updateVoteCounts(postId, up, down)
 }
 
 export async function softDeletePost(postId: string, nullifierHash: string): Promise<boolean> {
@@ -181,7 +178,7 @@ export async function getPostsByNullifier(
   const rows = await db
     .select({ post: posts, quoted: quotedPosts })
     .from(posts)
-    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
+    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
     .limit(Math.min(limit, 50)) as PostWithQuoted[]
@@ -201,7 +198,7 @@ export async function getVotedPostsByNullifier(
     })
     .from(postVotes)
     .innerJoin(posts, and(eq(postVotes.postId, posts.id), isNull(posts.deletedAt)))
-    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
+    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
     .where(eq(postVotes.nullifierHash, nullifierHash))
     .orderBy(desc(postVotes.createdAt))
     .limit(Math.min(limit, 50)) as Array<PostWithQuoted & { direction: number }>

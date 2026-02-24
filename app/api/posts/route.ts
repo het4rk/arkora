@@ -83,7 +83,19 @@ export async function POST(req: NextRequest) {
     }
 
     const quotedPostId = typeof body.quotedPostId === 'string' ? body.quotedPostId : undefined
-    const post = await createPost({ title, body: postBody, boardId, nullifierHash, pseudoHandle, imageUrl: body.imageUrl, quotedPostId })
+
+    // Validate imageUrl if provided — reject non-http(s) schemes (e.g. javascript:)
+    const rawImageUrl = body.imageUrl
+    if (rawImageUrl !== undefined && rawImageUrl !== null) {
+      try {
+        const parsed = new URL(String(rawImageUrl))
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error()
+      } catch {
+        return NextResponse.json({ success: false, error: 'Invalid image URL' }, { status: 400 })
+      }
+    }
+
+    const post = await createPost({ title, body: postBody, boardId, nullifierHash, pseudoHandle, imageUrl: rawImageUrl, quotedPostId })
     return NextResponse.json({ success: true, data: post }, { status: 201 })
   } catch (err) {
     console.error('[posts POST]', err)

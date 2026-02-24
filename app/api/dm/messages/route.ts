@@ -13,6 +13,9 @@ export async function GET(req: NextRequest) {
     if (!myHash || !otherHash) {
       return NextResponse.json({ success: false, error: 'myHash and otherHash required' }, { status: 400 })
     }
+    if (!(await isVerifiedHuman(myHash))) {
+      return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
+    }
 
     const messages = await getDmMessages(myHash, otherHash, cursor)
     return NextResponse.json({ success: true, data: messages })
