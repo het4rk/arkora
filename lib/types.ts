@@ -48,6 +48,7 @@ export interface HumanUser {
   pseudoHandle: string | null
   avatarUrl: string | null
   bio: string | null
+  identityMode: 'anonymous' | 'alias' | 'named'
   createdAt: Date
 }
 

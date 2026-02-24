@@ -67,6 +67,7 @@ export const humanUsers = pgTable('human_users', {
   pseudoHandle: text('pseudo_handle'),
   avatarUrl: text('avatar_url'),
   bio: text('bio'),
+  identityMode: text('identity_mode').default('anonymous').notNull(), // 'anonymous' | 'alias' | 'named'
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

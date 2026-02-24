@@ -10,6 +10,7 @@ function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
     pseudoHandle: row.pseudoHandle ?? null,
     avatarUrl: row.avatarUrl ?? null,
     bio: row.bio ?? null,
+    identityMode: (row.identityMode as HumanUser['identityMode']) ?? 'anonymous',
     createdAt: row.createdAt,
   }
 }
@@ -94,6 +95,13 @@ export async function updateBio(
 
   if (!row) throw new Error('User not found')
   return toUser(row)
+}
+
+export async function updateIdentityMode(
+  nullifierHash: string,
+  identityMode: 'anonymous' | 'alias' | 'named'
+): Promise<void> {
+  await db.update(humanUsers).set({ identityMode }).where(eq(humanUsers.nullifierHash, nullifierHash))
 }
 
 export async function isVerifiedHuman(nullifierHash: string): Promise<boolean> {

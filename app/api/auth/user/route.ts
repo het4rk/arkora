@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { getOrCreateUser, updateAvatarUrl, updateBio } from '@/lib/db/users'
+import { getOrCreateUser, updateAvatarUrl, updateBio, updateIdentityMode } from '@/lib/db/users'
 
 /**
  * Derives a stable pseudonymous identity from the wallet address
@@ -44,8 +44,13 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const body = (await req.json()) as { nullifierHash?: string; avatarUrl?: string | null; bio?: string | null }
-    const { nullifierHash, avatarUrl, bio } = body
+    const body = (await req.json()) as {
+      nullifierHash?: string
+      avatarUrl?: string | null
+      bio?: string | null
+      identityMode?: 'anonymous' | 'alias' | 'named'
+    }
+    const { nullifierHash, avatarUrl, bio, identityMode } = body
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'nullifierHash required' }, { status: 400 })
     }
@@ -54,6 +59,9 @@ export async function PATCH(req: NextRequest) {
       user = await updateAvatarUrl(nullifierHash, avatarUrl ?? null)
     } else if (bio !== undefined) {
       user = await updateBio(nullifierHash, bio ?? null)
+    } else if (identityMode !== undefined) {
+      await updateIdentityMode(nullifierHash, identityMode)
+      return NextResponse.json({ success: true })
     } else {
       return NextResponse.json({ success: false, error: 'Nothing to update' }, { status: 400 })
     }

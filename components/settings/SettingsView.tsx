@@ -119,6 +119,14 @@ export function SettingsView() {
                         return
                       }
                       setIdentityMode(opt.mode)
+                      // Sync to server so the profile API can gate subscriptions
+                      if (nullifierHash) {
+                        void fetch('/api/auth/user', {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ nullifierHash, identityMode: opt.mode }),
+                        }).catch(() => null)
+                      }
                     }}
                     className={cn(
                       'w-full flex items-center gap-3 px-4 py-3.5 rounded-[var(--r-lg)] border transition-all active:scale-[0.97]',

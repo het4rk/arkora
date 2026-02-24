@@ -186,32 +186,31 @@ export function PublicProfileView({ nullifierHash }: Props) {
                   >
                     ⚡ Tip WLD
                   </button>
-                  {/* Subscribe button */}
-                  <button
-                    onClick={() => void handleSubscribe()}
-                    disabled={subLoading}
-                    className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 disabled:opacity-40 ${
-                      data?.isSubscribed
-                        ? 'glass border border-amber-400/40 text-amber-400'
-                        : 'glass border border-border text-text-muted'
-                    }`}
-                  >
-                    {data?.isSubscribed
-                      ? `⭐ Subscribed · ${data.subscriptionDaysLeft ?? '?'}d`
-                      : '⭐ Subscribe · 1 WLD/mo'}
-                  </button>
+                  {/* Subscribe button — only shown for named identity profiles */}
+                  {data?.user?.identityMode === 'named' && (
+                    <button
+                      onClick={() => void handleSubscribe()}
+                      disabled={subLoading}
+                      className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 disabled:opacity-40 ${
+                        data?.isSubscribed
+                          ? 'glass border border-amber-400/40 text-amber-400'
+                          : 'glass border border-border text-text-muted'
+                      }`}
+                    >
+                      {data?.isSubscribed
+                        ? `⭐ Subscribed · ${data.subscriptionDaysLeft ?? '?'}d`
+                        : '⭐ Subscribe · 1 WLD/mo'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Stats */}
+            {/* Stats — subscriber count is private, only shown on own profile */}
             <div className="flex items-center gap-4 mt-4 text-xs text-text-muted flex-wrap">
               <span><span className="text-text font-semibold">{data?.followerCount ?? 0}</span> followers</span>
               <span><span className="text-text font-semibold">{data?.followingCount ?? 0}</span> following</span>
               <span><span className="text-text font-semibold">{data?.postCount ?? 0}</span> posts</span>
-              {(data?.subscriberCount ?? 0) > 0 && (
-                <span><span className="text-amber-400 font-semibold">{data?.subscriberCount}</span> subscribers</span>
-              )}
             </div>
 
             {/* Bio */}
