@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFeed, createPost, getLocalFeed } from '@/lib/db/posts'
+import { createPost } from '@/lib/db/posts'
 import { getFeedFollowing } from '@/lib/db/follows'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { getCachedFeed, getCachedLocalFeed, invalidatePosts } from '@/lib/cache'
 import { BOARDS } from '@/lib/types'
 import type { BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
         cursor,
         limit,
       }
-      const localPosts = await getLocalFeed(localParams)
+      const localPosts = await getCachedLocalFeed(localParams)
       return NextResponse.json({ success: true, data: localPosts })
     }
 
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
       limit,
     }
 
-    const posts = await getFeed(params)
+    const posts = await getCachedFeed(params)
     return NextResponse.json({ success: true, data: posts })
   } catch (err) {
     console.error('[posts GET]', err)
@@ -155,6 +156,7 @@ export async function POST(req: NextRequest) {
     const lng = typeof body.lng === 'number' && isFinite(body.lng) ? body.lng : undefined
 
     const post = await createPost({ title, body: postBody, boardId, nullifierHash, pseudoHandle, imageUrl: rawImageUrl, quotedPostId, lat, lng, countryCode })
+    invalidatePosts()
     return NextResponse.json({ success: true, data: post }, { status: 201 })
   } catch (err) {
     console.error('[posts POST]', err)

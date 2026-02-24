@@ -4,6 +4,7 @@ import { isVerifiedHuman } from '@/lib/db/users'
 import { createNotification } from '@/lib/db/notifications'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { pusherServer } from '@/lib/pusher'
 
 // GET /api/dm/messages?otherHash=&cursor=&since=
 // myHash is derived from the auth cookie — never trusted from query params
@@ -59,8 +60,22 @@ export async function POST(req: NextRequest) {
 
     const id = await saveDmMessage(senderHash, recipientHash, ciphertext, nonce)
 
-    // Notify recipient — fire-and-forget
+    // Notify recipient — fire-and-forget (DB notification + real-time Pusher ping)
     void createNotification(recipientHash, 'dm', undefined, senderHash)
+
+    // Push the encrypted message to the recipient's personal Pusher channel so
+    // their ConversationView receives it instantly without polling.
+    // ciphertext + nonce are already encrypted — safe to transmit over Pusher (TLS).
+    void pusherServer.trigger(`user-${recipientHash}`, 'new-dm', {
+      id,
+      senderHash,
+      ciphertext,
+      nonce,
+      createdAt: new Date().toISOString(),
+    })
+
+    // Also increment the recipient's unread badge in real-time
+    void pusherServer.trigger(`user-${recipientHash}`, 'notif-count', { delta: 1 })
 
     return NextResponse.json({ success: true, data: { id } }, { status: 201 })
   } catch (err) {

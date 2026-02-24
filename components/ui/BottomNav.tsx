@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import Pusher from 'pusher-js'
 import { usePathname } from 'next/navigation'
 import { cn, haptic } from '@/lib/utils'
 import { useArkoraStore } from '@/store/useArkoraStore'
@@ -12,21 +13,34 @@ export function BottomNav() {
   const pathname = usePathname()
   const { setComposerOpen, setDrawerOpen, setSearchOpen, nullifierHash, isVerified, unreadNotificationCount, setUnreadNotificationCount } = useArkoraStore()
 
+  // Fetch the initial unread count on mount, then subscribe to Pusher for
+  // real-time DM notification count bumps (replaces 60 s polling interval).
   useEffect(() => {
     if (!nullifierHash || !isVerified) return
 
-    const fetchCount = () => {
-      void fetch('/api/notifications?countOnly=1')
-        .then((r) => r.json())
-        .then((j: { success: boolean; data?: { count: number } }) => {
-          if (j.success && j.data) setUnreadNotificationCount(j.data.count)
-        })
-        .catch(() => { /* ignore */ })
-    }
+    // Hydrate on mount
+    void fetch('/api/notifications?countOnly=1')
+      .then((r) => r.json())
+      .then((j: { success: boolean; data?: { count: number } }) => {
+        if (j.success && j.data) setUnreadNotificationCount(j.data.count)
+      })
+      .catch(() => { /* ignore */ })
 
-    fetchCount()
-    const id = setInterval(fetchCount, 60_000)
-    return () => clearInterval(id)
+    // Real-time bump via Pusher
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    })
+    const channel = pusher.subscribe(`user-${nullifierHash}`)
+    channel.bind('notif-count', (data: { delta: number }) => {
+      const current = useArkoraStore.getState().unreadNotificationCount
+      setUnreadNotificationCount(Math.max(0, current + data.delta))
+    })
+
+    return () => {
+      channel.unbind_all()
+      pusher.unsubscribe(`user-${nullifierHash}`)
+      pusher.disconnect()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nullifierHash, isVerified])
 

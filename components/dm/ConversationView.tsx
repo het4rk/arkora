@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Pusher from 'pusher-js'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { Avatar } from '@/components/ui/Avatar'
 import { encryptDm, decryptDm, generateDmKeyPair } from '@/lib/crypto/dm'
@@ -33,7 +34,7 @@ export function ConversationView({ otherHash }: Props) {
   const [noKey, setNoKey] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  // Track the latest message timestamp so polling only fetches genuinely new messages
+  // Track the latest message timestamp for the Pusher duplicate-guard
   const latestMsgAt = useRef<string | null>(null)
 
   const ensureOwnKey = useCallback(async (): Promise<string | null> => {
@@ -111,41 +112,40 @@ export function ConversationView({ otherHash }: Props) {
     setIsLoading(false)
   }
 
-  // Poll for new messages every 7 seconds while the conversation is open
+  // Subscribe to Pusher for real-time incoming messages (replaces 7s polling)
   useEffect(() => {
-    if (!nullifierHash || !otherHash) return
-    const poll = async () => {
-      if (!latestMsgAt.current) return
-      const theirKey = otherPublicKey
-      const myKey = dmPrivateKey
-      if (!theirKey || !myKey) return
-      try {
-        const res = await fetch(
-          `/api/dm/messages?otherHash=${encodeURIComponent(otherHash)}&since=${encodeURIComponent(latestMsgAt.current)}`
-        )
-        const json = (await res.json()) as { success: boolean; data?: import('@/lib/db/dm').RawDmMessage[] }
-        if (!json.success || !json.data || json.data.length === 0) return
+    if (!nullifierHash || !otherHash || !otherPublicKey || !dmPrivateKey) return
 
-        const results = await Promise.allSettled(
-          json.data.map((msg) =>
-            decryptDm(myKey, theirKey, { ciphertext: msg.ciphertext, nonce: msg.nonce })
-          )
-        )
-        const newMsgs = json.data.map((msg, i) => {
-          const r = results[i]
-          return r?.status === 'fulfilled'
-            ? { id: msg.id, senderHash: msg.senderHash, text: r.value, createdAt: new Date(msg.createdAt) }
-            : { id: msg.id, senderHash: msg.senderHash, text: '[encrypted]', createdAt: new Date(msg.createdAt), failed: true as const }
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    })
+    const channel = pusher.subscribe(`user-${nullifierHash}`)
+
+    channel.bind('new-dm', async (data: { id: string; senderHash: string; ciphertext: string; nonce: string; createdAt: string }) => {
+      // Ignore messages from other conversations (this channel receives all DMs for this user)
+      if (data.senderHash !== otherHash) return
+      try {
+        const text = await decryptDm(dmPrivateKey, otherPublicKey, { ciphertext: data.ciphertext, nonce: data.nonce })
+        const msg: DecryptedMessage = {
+          id: data.id,
+          senderHash: data.senderHash,
+          text,
+          createdAt: new Date(data.createdAt),
+        }
+        setMessages((prev) => {
+          // Guard against duplicates (e.g. if own send already added it optimistically)
+          if (prev.some((m) => m.id === msg.id)) return prev
+          return [...prev, msg]
         })
-        // Oldest-first within the new batch (API returns desc for since-queries too)
-        newMsgs.reverse()
-        const last = newMsgs[newMsgs.length - 1]
-        if (last) latestMsgAt.current = last.createdAt.toISOString()
-        setMessages((prev) => [...prev, ...newMsgs])
-      } catch { /* ignore network errors during polling */ }
+        latestMsgAt.current = data.createdAt
+      } catch { /* decryption failure — silently ignore */ }
+    })
+
+    return () => {
+      channel.unbind_all()
+      pusher.unsubscribe(`user-${nullifierHash}`)
+      pusher.disconnect()
     }
-    const id = setInterval(() => void poll(), 7_000)
-    return () => clearInterval(id)
   }, [nullifierHash, otherHash, otherPublicKey, dmPrivateKey])
 
   useEffect(() => {

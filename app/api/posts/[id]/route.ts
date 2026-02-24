@@ -3,6 +3,7 @@ import { getPostById, softDeletePost } from '@/lib/db/posts'
 import { getRepliesByPostId } from '@/lib/db/replies'
 import { getNotesByPostId } from '@/lib/db/notes'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { invalidatePosts } from '@/lib/cache'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -51,6 +52,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       )
     }
 
+    invalidatePosts()
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[posts/[id] DELETE]', err)

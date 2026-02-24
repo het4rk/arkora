@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPostsByNullifier, getVotedPostsByNullifier } from '@/lib/db/posts'
 import { getRepliesByNullifier } from '@/lib/db/replies'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
   try {
     const nullifierHash = await getCallerNullifier()
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!rateLimit(`profile:${nullifierHash}`, 60, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })
     }
 
     const { searchParams } = new URL(req.url)
