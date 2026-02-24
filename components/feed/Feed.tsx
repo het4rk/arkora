@@ -141,23 +141,21 @@ export function Feed() {
 
   return (
     <>
-      {/* Feed mode toggle — floats over the snap feed */}
-      {isVerified && (
-        <div className="fixed top-[max(env(safe-area-inset-top),12px)] left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg">
-          {(['forYou', 'following', 'local'] as FeedMode[]).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => { haptic('light'); setFeedMode(mode) }}
-              className={cn(
-                'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all',
-                feedMode === mode ? 'bg-accent text-white shadow-sm' : 'text-text-muted'
-              )}
-            >
-              {mode === 'forYou' ? 'Curated' : mode === 'following' ? 'Following' : '📍 Local'}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Feed mode toggle — shown to all users; Following tab gated to verified */}
+      <div className="fixed top-[max(env(safe-area-inset-top),12px)] left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg">
+        {(['forYou', ...(isVerified ? ['following'] : []), 'local'] as FeedMode[]).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => { haptic('light'); setFeedMode(mode) }}
+            className={cn(
+              'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all',
+              feedMode === mode ? 'bg-accent text-white shadow-sm' : 'text-text-muted'
+            )}
+          >
+            {mode === 'forYou' ? 'Curated' : mode === 'following' ? 'Following' : '📍 Local'}
+          </button>
+        ))}
+      </div>
 
       {/* Radius slider — shown below tab bar when Local is active and location granted */}
       {hasLocalCoords && (

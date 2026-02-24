@@ -93,17 +93,39 @@ export function LeftDrawer() {
 
             {/* ── Identity header ───────────────────────────────────── */}
             <div className="px-6 pt-[max(env(safe-area-inset-top),48px)] pb-5 border-b border-white/[0.07]">
-              <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
-                Posting as
-              </p>
-              <HumanBadge label={displayName()} size="md" />
+              {isVerified ? (
+                <>
+                  <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
+                    Posting as
+                  </p>
+                  <HumanBadge label={displayName()} size="md" />
+                </>
+              ) : (
+                <>
+                  <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
+                    Browsing as guest
+                  </p>
+                  <p className="text-text-secondary text-sm leading-relaxed mb-4">
+                    You can read and search freely. To post, reply, or interact, verify your humanity on-chain with World ID.
+                  </p>
+                  <button
+                    onClick={() => {
+                      useArkoraStore.getState().setVerifySheetOpen(true)
+                      setDrawerOpen(false)
+                    }}
+                    className="w-full bg-accent text-white font-semibold py-3 rounded-[var(--r-lg)] text-sm active:scale-[0.98] active:bg-accent-hover transition-all"
+                  >
+                    Verify with World ID
+                  </button>
+                </>
+              )}
             </div>
 
             {/* ── Scrollable content ───────────────────────────────── */}
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
 
-              {/* Privacy mode */}
-              <div>
+              {/* Privacy mode — only relevant for verified users */}
+              {isVerified && <div>
                 <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
                   Privacy
                 </p>
@@ -168,7 +190,7 @@ export function LeftDrawer() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div>}
 
               {/* Divider */}
               <div className="h-px bg-white/[0.07]" />
