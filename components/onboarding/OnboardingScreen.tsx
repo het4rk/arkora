@@ -15,8 +15,8 @@ const SLIDES = [
       </svg>
     ),
     heading: 'Arkora',
-    sub: 'A provably human message board.',
-    body: 'Every post is verified. Every voice is real. No bots, no fake accounts — just humans.',
+    sub: 'Real people. Real conversations.',
+    body: 'Every voice here is Orb-verified by World ID. Real humans only — no bots, no noise, no exceptions.',
   },
   {
     icon: (
