@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { saveDmMessage, getDmMessages } from '@/lib/db/dm'
 import { isVerifiedHuman } from '@/lib/db/users'
+import { createNotification } from '@/lib/db/notifications'
+import { rateLimit } from '@/lib/rateLimit'
 
-// GET /api/dm/messages?myHash=&otherHash=&cursor=
+// GET /api/dm/messages?myHash=&otherHash=&cursor=&since=
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const myHash = searchParams.get('myHash')
     const otherHash = searchParams.get('otherHash')
     const cursor = searchParams.get('cursor') ?? undefined
+    const since = searchParams.get('since') ?? undefined
 
     if (!myHash || !otherHash) {
       return NextResponse.json({ success: false, error: 'myHash and otherHash required' }, { status: 400 })
@@ -17,7 +20,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
 
-    const messages = await getDmMessages(myHash, otherHash, cursor)
+    const messages = await getDmMessages(myHash, otherHash, cursor, since)
     return NextResponse.json({ success: true, data: messages })
   } catch (err) {
     console.error('[dm/messages GET]', err)
@@ -41,11 +44,18 @@ export async function POST(req: NextRequest) {
     if (senderHash === recipientHash) {
       return NextResponse.json({ success: false, error: 'Cannot DM yourself' }, { status: 400 })
     }
+    if (!rateLimit(`dm:${senderHash}`, 30, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many messages. Slow down.' }, { status: 429 })
+    }
     if (!(await isVerifiedHuman(senderHash))) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
 
     const id = await saveDmMessage(senderHash, recipientHash, ciphertext, nonce)
+
+    // Notify recipient — fire-and-forget
+    void createNotification(recipientHash, 'dm', undefined, senderHash)
+
     return NextResponse.json({ success: true, data: { id } }, { status: 201 })
   } catch (err) {
     console.error('[dm/messages POST]', err)

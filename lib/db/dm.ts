@@ -51,7 +51,8 @@ export interface RawDmMessage {
 export async function getDmMessages(
   myHash: string,
   otherHash: string,
-  cursor?: string,
+  cursor?: string,  // fetch BEFORE this ISO timestamp (pagination)
+  since?: string,   // fetch AFTER this ISO timestamp (polling for new messages)
   limit = 50
 ): Promise<RawDmMessage[]> {
   const conditions = [
@@ -62,6 +63,9 @@ export async function getDmMessages(
   ]
   if (cursor) {
     conditions.push(sql`${dmMessages.createdAt} < ${new Date(cursor)}` as ReturnType<typeof eq>)
+  }
+  if (since) {
+    conditions.push(sql`${dmMessages.createdAt} > ${new Date(since)}` as ReturnType<typeof eq>)
   }
 
   const rows = await db

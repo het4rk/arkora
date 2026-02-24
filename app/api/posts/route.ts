@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getFeed, createPost } from '@/lib/db/posts'
 import { getFeedFollowing } from '@/lib/db/follows'
 import { isVerifiedHuman } from '@/lib/db/users'
+import { rateLimit } from '@/lib/rateLimit'
 import { BOARDS } from '@/lib/types'
 import type { BoardId, CreatePostInput, FeedParams } from '@/lib/types'
 
@@ -71,6 +72,11 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Body exceeds 10,000 characters' },
         { status: 400 }
       )
+    }
+
+    // Rate limit: 5 posts per minute per user
+    if (!rateLimit(`post:${nullifierHash}`, 5, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many posts. Try again in a minute.' }, { status: 429 })
     }
 
     // Gate: must be a verified human

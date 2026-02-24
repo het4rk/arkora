@@ -33,6 +33,8 @@ export function ConversationView({ otherHash }: Props) {
   const [noKey, setNoKey] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  // Track the latest message timestamp so polling only fetches genuinely new messages
+  const latestMsgAt = useRef<string | null>(null)
 
   const ensureOwnKey = useCallback(async (): Promise<string | null> => {
     if (!nullifierHash) return null
@@ -100,10 +102,51 @@ export function ConversationView({ otherHash }: Props) {
         : { id: msg.id, senderHash: msg.senderHash, text: '[encrypted]', createdAt: new Date(msg.createdAt), failed: true }
     })
 
-    // Reverse to show oldest first
-    setMessages(decrypted.reverse())
+    // Reverse to show oldest first; track latest timestamp for polling
+    const chronological = decrypted.reverse()
+    if (chronological.length > 0) {
+      latestMsgAt.current = new Date(chronological[chronological.length - 1]!.createdAt).toISOString()
+    }
+    setMessages(chronological)
     setIsLoading(false)
   }
+
+  // Poll for new messages every 7 seconds while the conversation is open
+  useEffect(() => {
+    if (!nullifierHash || !otherHash) return
+    const poll = async () => {
+      if (!latestMsgAt.current) return
+      const theirKey = otherPublicKey
+      const myKey = dmPrivateKey
+      if (!theirKey || !myKey) return
+      try {
+        const res = await fetch(
+          `/api/dm/messages?myHash=${encodeURIComponent(nullifierHash)}&otherHash=${encodeURIComponent(otherHash)}&since=${encodeURIComponent(latestMsgAt.current)}`
+        )
+        const json = (await res.json()) as { success: boolean; data?: import('@/lib/db/dm').RawDmMessage[] }
+        if (!json.success || !json.data || json.data.length === 0) return
+
+        const results = await Promise.allSettled(
+          json.data.map((msg) =>
+            decryptDm(myKey, theirKey, { ciphertext: msg.ciphertext, nonce: msg.nonce })
+          )
+        )
+        const newMsgs = json.data.map((msg, i) => {
+          const r = results[i]
+          return r?.status === 'fulfilled'
+            ? { id: msg.id, senderHash: msg.senderHash, text: r.value, createdAt: new Date(msg.createdAt) }
+            : { id: msg.id, senderHash: msg.senderHash, text: '[encrypted]', createdAt: new Date(msg.createdAt), failed: true as const }
+        })
+        // Oldest-first within the new batch (API returns desc for since-queries too)
+        newMsgs.reverse()
+        const last = newMsgs[newMsgs.length - 1]
+        if (last) latestMsgAt.current = last.createdAt.toISOString()
+        setMessages((prev) => [...prev, ...newMsgs])
+      } catch { /* ignore network errors during polling */ }
+    }
+    const id = setInterval(() => void poll(), 7_000)
+    return () => clearInterval(id)
+  }, [nullifierHash, otherHash, otherPublicKey, dmPrivateKey])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'instant' })

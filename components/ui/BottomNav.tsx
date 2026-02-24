@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn, haptic } from '@/lib/utils'
@@ -9,7 +10,25 @@ import { SearchSheet } from '@/components/search/SearchSheet'
 
 export function BottomNav() {
   const pathname = usePathname()
-  const { setComposerOpen, setDrawerOpen, setSearchOpen } = useArkoraStore()
+  const { setComposerOpen, setDrawerOpen, setSearchOpen, nullifierHash, isVerified, unreadNotificationCount, setUnreadNotificationCount } = useArkoraStore()
+
+  useEffect(() => {
+    if (!nullifierHash || !isVerified) return
+
+    const fetchCount = () => {
+      void fetch(`/api/notifications?nullifierHash=${encodeURIComponent(nullifierHash)}&countOnly=1`)
+        .then((r) => r.json())
+        .then((j: { success: boolean; data?: { count: number } }) => {
+          if (j.success && j.data) setUnreadNotificationCount(j.data.count)
+        })
+        .catch(() => { /* ignore */ })
+    }
+
+    fetchCount()
+    const id = setInterval(fetchCount, 60_000)
+    return () => clearInterval(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nullifierHash, isVerified])
 
   return (
     <>
@@ -94,13 +113,18 @@ export function BottomNav() {
                 pathname === '/profile' ? 'text-white' : 'text-text-muted'
               )}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor"
-                strokeWidth={pathname === '/profile' ? 2.5 : 1.8}
-                strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+              <span className="relative">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor"
+                  strokeWidth={pathname === '/profile' ? 2.5 : 1.8}
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />
+                )}
+              </span>
               <span className={cn('text-[10px] font-medium', pathname === '/profile' && 'text-white')}>
                 Profile
               </span>

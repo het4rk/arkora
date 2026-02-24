@@ -161,6 +161,22 @@ export const dmMessages = pgTable(
   })
 )
 
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    recipientHash: text('recipient_hash').notNull(),
+    type: text('type').notNull(), // 'reply' | 'follow' | 'dm'
+    referenceId: text('reference_id'), // postId for reply, senderHash for dm
+    actorHash: text('actor_hash'),     // who triggered it (null = anonymous)
+    read: boolean('read').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    recipientIdx: index('notifications_recipient_idx').on(table.recipientHash, table.createdAt),
+  })
+)
+
 export type DbPost = typeof posts.$inferSelect
 export type DbReply = typeof replies.$inferSelect
 export type DbHumanUser = typeof humanUsers.$inferSelect

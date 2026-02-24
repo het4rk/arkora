@@ -39,6 +39,9 @@ interface ArkoraState {
   // Optimistic vote cache: postId → direction
   optimisticVotes: Record<string, 1 | -1>
 
+  // Notification badge (non-persisted)
+  unreadNotificationCount: number
+
   // Actions
   setWalletAddress: (address: string | null) => void
   setVerified: (nullifierHash: string, user: HumanUser) => void
@@ -55,6 +58,7 @@ interface ArkoraState {
   setSearchOpen: (open: boolean) => void
   setOptimisticVote: (postId: string, direction: 1 | -1) => void
   clearOptimisticVote: (postId: string) => void
+  setUnreadNotificationCount: (count: number) => void
   reset: () => void
 }
 
@@ -75,6 +79,7 @@ const initialState = {
   isDrawerOpen: false,
   isSearchOpen: false,
   optimisticVotes: {},
+  unreadNotificationCount: 0,
 }
 
 export const useArkoraStore = create<ArkoraState>()(
@@ -120,6 +125,8 @@ export const useArkoraStore = create<ArkoraState>()(
           delete next[postId]
           return { optimisticVotes: next }
         }),
+
+      setUnreadNotificationCount: (count) => set({ unreadNotificationCount: count }),
 
       reset: () => set(initialState),
     }),

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { toggleFollow, isFollowing, getFollowerCount, getFollowingCount } from '@/lib/db/follows'
 import { isVerifiedHuman } from '@/lib/db/users'
+import { createNotification } from '@/lib/db/notifications'
+import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,10 +36,17 @@ export async function POST(req: NextRequest) {
     if (followerId === followedId) {
       return NextResponse.json({ success: false, error: 'Cannot follow yourself' }, { status: 400 })
     }
+    if (!rateLimit(`follow:${followerId}`, 30, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many actions. Slow down.' }, { status: 429 })
+    }
     if (!(await isVerifiedHuman(followerId))) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
     const isNowFollowing = await toggleFollow(followerId, followedId)
+    // Notify when following (not unfollowing)
+    if (isNowFollowing) {
+      void createNotification(followedId, 'follow', undefined, followerId)
+    }
     return NextResponse.json({ success: true, data: { isFollowing: isNowFollowing } })
   } catch (err) {
     console.error('[follow POST]', err)

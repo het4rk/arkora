@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { upsertVote, getPostNullifier } from '@/lib/db/posts'
 import { isVerifiedHuman } from '@/lib/db/users'
+import { rateLimit } from '@/lib/rateLimit'
 import type { VoteInput } from '@/lib/types'
 
 export async function POST(req: NextRequest) {
@@ -13,6 +14,11 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Missing or invalid fields' },
         { status: 400 }
       )
+    }
+
+    // Rate limit: 60 votes per minute
+    if (!rateLimit(`vote:${nullifierHash}`, 60, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many votes. Slow down.' }, { status: 429 })
     }
 
     // Both checks are independent — run in parallel to save a round-trip

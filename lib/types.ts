@@ -87,6 +87,16 @@ export interface VoteInput {
   nullifierHash: string
 }
 
+export interface Notification {
+  id: string
+  recipientHash: string
+  type: 'reply' | 'follow' | 'dm'
+  referenceId: string | null
+  actorHash: string | null
+  read: boolean
+  createdAt: Date
+}
+
 export interface CreateNoteInput {
   postId: string
   body: string

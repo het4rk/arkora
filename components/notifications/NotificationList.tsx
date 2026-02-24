@@ -1,0 +1,116 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useArkoraStore } from '@/store/useArkoraStore'
+import { TimeAgo } from '@/components/ui/TimeAgo'
+import type { Notification } from '@/lib/types'
+
+const TYPE_LABELS: Record<Notification['type'], string> = {
+  reply: 'replied to your post',
+  follow: 'started following you',
+  dm: 'sent you a message',
+}
+
+const TYPE_ICONS: Record<Notification['type'], string> = {
+  reply: '💬',
+  follow: '👤',
+  dm: '✉️',
+}
+
+export function NotificationList() {
+  const router = useRouter()
+  const { nullifierHash, isVerified, setUnreadNotificationCount } = useArkoraStore()
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!nullifierHash || !isVerified) return
+    void load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nullifierHash, isVerified])
+
+  async function load() {
+    if (!nullifierHash) return
+    try {
+      const res = await fetch(`/api/notifications?nullifierHash=${encodeURIComponent(nullifierHash)}`)
+      const json = (await res.json()) as { success: boolean; data?: Notification[] }
+      if (json.success && json.data) setNotifications(json.data)
+      // Mark all as read after viewing
+      void fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nullifierHash }),
+      }).then(() => setUnreadNotificationCount(0))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function handleTap(n: Notification) {
+    if (n.type === 'reply' && n.referenceId) {
+      router.push(`/post/${n.referenceId}`)
+    } else if (n.type === 'dm' && n.actorHash) {
+      router.push(`/dm/${n.actorHash}`)
+    } else if (n.type === 'follow' && n.actorHash) {
+      router.push(`/u/${n.actorHash}`)
+    }
+  }
+
+  if (!isVerified || !nullifierHash) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-text-muted text-sm">
+        Verify with World ID to see notifications.
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 p-5 space-y-3 animate-pulse">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="glass rounded-[var(--r-lg)] h-16" />
+        ))}
+      </div>
+    )
+  }
+
+  if (notifications.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-center px-8 py-16">
+        <p className="text-4xl mb-4">🔔</p>
+        <p className="font-semibold text-text mb-1">All caught up</p>
+        <p className="text-text-muted text-sm">New replies, follows and DMs will appear here.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto px-[5vw] py-4 pb-[max(env(safe-area-inset-bottom),80px)] space-y-2">
+      {notifications.map((n) => (
+        <button
+          key={n.id}
+          onClick={() => handleTap(n)}
+          className={`w-full text-left glass rounded-[var(--r-lg)] px-4 py-3.5 flex items-start gap-3 active:opacity-70 transition-opacity ${
+            !n.read ? 'border border-accent/20' : ''
+          }`}
+        >
+          <span className="text-xl shrink-0 mt-0.5">{TYPE_ICONS[n.type]}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-text text-sm leading-snug">
+              {n.actorHash
+                ? <span className="font-semibold">Someone</span>
+                : <span className="font-semibold">A human</span>
+              }
+              {' '}{TYPE_LABELS[n.type]}
+            </p>
+            <TimeAgo date={n.createdAt} className="mt-1" />
+          </div>
+          {!n.read && (
+            <span className="w-2 h-2 rounded-full bg-accent shrink-0 mt-1.5" />
+          )}
+        </button>
+      ))}
+    </div>
+  )
+}

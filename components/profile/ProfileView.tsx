@@ -19,7 +19,7 @@ interface ReplyWithTitle extends Reply { postTitle: string | null }
 
 export function ProfileView() {
   const router = useRouter()
-  const { nullifierHash, isVerified, identityMode, persistentAlias, user, setVerified } = useArkoraStore()
+  const { nullifierHash, isVerified, identityMode, persistentAlias, user, setVerified, unreadNotificationCount } = useArkoraStore()
   const [tab, setTab] = useState<Tab>('posts')
   const [posts, setPosts] = useState<Post[]>([])
   const [replies, setReplies] = useState<ReplyWithTitle[]>([])
@@ -146,6 +146,21 @@ export function ProfileView() {
             Back
           </button>
           <div className="flex items-center gap-4">
+            {/* Notifications bell */}
+            <Link
+              href="/notifications"
+              aria-label="Notifications"
+              className="relative text-text-muted active:opacity-60 transition-opacity"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {unreadNotificationCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />
+              )}
+            </Link>
             {/* Messages */}
             <Link
               href="/dm"

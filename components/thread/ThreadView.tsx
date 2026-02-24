@@ -27,11 +27,36 @@ interface Props {
 
 export function ThreadView({ postId }: Props) {
   const router = useRouter()
-  const { setComposerOpen, setComposerQuotedPost } = useArkoraStore()
+  const { setComposerOpen, setComposerQuotedPost, nullifierHash, isVerified } = useArkoraStore()
   const [data, setData] = useState<ThreadData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [replyingTo, setReplyingTo] = useState<Reply | null>(null)
+  const [noteOpen, setNoteOpen] = useState(false)
+  const [noteDraft, setNoteDraft] = useState('')
+  const [noteSubmitting, setNoteSubmitting] = useState(false)
+  const [noteError, setNoteError] = useState<string | null>(null)
+
+  async function submitNote() {
+    if (!nullifierHash || !noteDraft.trim()) return
+    setNoteSubmitting(true)
+    setNoteError(null)
+    try {
+      const res = await fetch('/api/community-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, nullifierHash, body: noteDraft.trim() }),
+      })
+      const json = (await res.json()) as { success: boolean; error?: string }
+      if (!json.success) throw new Error(json.error ?? 'Failed to submit note')
+      setNoteOpen(false)
+      setNoteDraft('')
+    } catch (err) {
+      setNoteError(err instanceof Error ? err.message : 'Failed to submit note')
+    } finally {
+      setNoteSubmitting(false)
+    }
+  }
 
   const fetchThread = useCallback(async () => {
     try {
@@ -163,12 +188,59 @@ export function ThreadView({ postId }: Props) {
                 </svg>
                 <span>Quote</span>
               </button>
+              {/* Community Note button — only for verified users */}
+              {isVerified && (
+                <button
+                  onClick={() => { haptic('light'); setNoteOpen((o) => !o) }}
+                  aria-label="Submit community note"
+                  className={`flex items-center gap-1 text-xs active:scale-90 transition-all ${noteOpen ? 'text-amber-400' : 'text-text-muted'}`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  <span>Note</span>
+                </button>
+              )}
               <BookmarkButton postId={post.id} />
               <span className="text-text-muted text-xs">
                 {post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}
               </span>
             </div>
           </div>
+
+          {/* Inline community note composer */}
+          {noteOpen && (
+            <div className="mt-3 space-y-2">
+              <textarea
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value.slice(0, 500))}
+                placeholder="Add context or corrections that readers should know…"
+                rows={3}
+                className="glass-input w-full rounded-[var(--r-md)] px-3 py-2.5 text-sm resize-none leading-relaxed"
+                autoFocus
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-text-muted/60 flex-1">{noteDraft.length}/500</span>
+                {noteError && <span className="text-downvote text-[10px]">{noteError}</span>}
+                <button
+                  onClick={() => { setNoteOpen(false); setNoteDraft(''); setNoteError(null) }}
+                  className="px-3 py-1.5 text-xs text-text-muted glass rounded-[var(--r-md)] active:opacity-70"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => void submitNote()}
+                  disabled={noteSubmitting || !noteDraft.trim()}
+                  className="px-3 py-1.5 text-xs font-semibold bg-amber-500 text-white rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
+                >
+                  {noteSubmitting ? 'Submitting…' : 'Submit'}
+                </button>
+              </div>
+            </div>
+          )}
         </article>
 
         {/* Replies */}
