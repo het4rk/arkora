@@ -41,6 +41,7 @@ export function SettingsView() {
     user,
     locationEnabled, setLocationEnabled,
     locationRadius, setLocationRadius,
+    signOut,
   } = useArkoraStore()
 
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
@@ -254,6 +255,24 @@ export function SettingsView() {
                 </span>
               </div>
             </div>
+            {isVerified && (
+              <button
+                onClick={async () => {
+                  await fetch('/api/signout', { method: 'POST' })
+                  signOut()
+                  router.push('/')
+                }}
+                className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-downvote/80 text-sm active:opacity-70 transition-opacity"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span>Sign out</span>
+              </button>
+            )}
           </section>
 
           {/* ── Privacy ──────────────────────────────────────────── */}
@@ -332,7 +351,7 @@ export function SettingsView() {
                     <div key={sub.creatorHash} className="px-4 py-3.5 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-text text-sm font-medium truncate">
-                          Human #{sub.creatorHash.slice(-6)}
+                          {sub.creatorName ?? `Human #${sub.creatorHash.slice(-6)}`}
                         </p>
                         <p className="text-text-muted text-xs mt-0.5">
                           {sub.daysLeft}d remaining · {sub.amountWld} WLD/mo

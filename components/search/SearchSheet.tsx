@@ -7,6 +7,7 @@ import { useSearch } from '@/hooks/useSearch'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { BoardTag } from '@/components/ui/BoardTag'
 import { TimeAgo } from '@/components/ui/TimeAgo'
+import { BOARDS } from '@/lib/types'
 
 export function SearchSheet() {
   const { isSearchOpen, setSearchOpen } = useArkoraStore()
@@ -123,13 +124,13 @@ export function SearchSheet() {
                     Boards
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {['arkora', 'technology', 'markets', 'politics', 'worldchain'].map((b) => (
+                    {BOARDS.map((b) => (
                       <button
-                        key={b}
-                        onClick={() => setQuery(b)}
+                        key={b.id}
+                        onClick={() => setQuery(b.id)}
                         className="glass px-3 py-2 rounded-[var(--r-full)] text-sm text-text-secondary font-medium active:scale-95 transition-all"
                       >
-                        #{b}
+                        #{b.id}
                       </button>
                     ))}
                   </div>

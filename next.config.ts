@@ -4,7 +4,11 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   reactStrictMode: true,
   images: {
-    remotePatterns: [],
+    remotePatterns: [
+      { protocol: 'https', hostname: 's3.hippius.com' },
+      { protocol: 'https', hostname: 'worldcoin.org' },
+      { protocol: 'https', hostname: '*.worldcoin.org' },
+    ],
   },
   turbopack: {
     root: __dirname,

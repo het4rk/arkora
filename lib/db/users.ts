@@ -1,6 +1,6 @@
 import { db } from './index'
 import { humanUsers } from './schema'
-import { eq, sql } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import type { HumanUser } from '@/lib/types'
 
 function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
@@ -102,6 +102,19 @@ export async function updateIdentityMode(
   identityMode: 'anonymous' | 'alias' | 'named'
 ): Promise<void> {
   await db.update(humanUsers).set({ identityMode }).where(eq(humanUsers.nullifierHash, nullifierHash))
+}
+
+export async function getUsersByNullifiers(
+  hashes: string[]
+): Promise<Map<string, HumanUser>> {
+  if (hashes.length === 0) return new Map()
+  const rows = await db
+    .select()
+    .from(humanUsers)
+    .where(inArray(humanUsers.nullifierHash, hashes))
+  const map = new Map<string, HumanUser>()
+  for (const row of rows) map.set(row.nullifierHash, toUser(row))
+  return map
 }
 
 export async function isVerifiedHuman(nullifierHash: string): Promise<boolean> {

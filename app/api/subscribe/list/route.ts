@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getActiveSubscriptions } from '@/lib/db/subscriptions'
-import { getUserByNullifier } from '@/lib/db/users'
+import { getUsersByNullifiers } from '@/lib/db/users'
 import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function GET() {
@@ -12,20 +12,17 @@ export async function GET() {
 
     const rows = await getActiveSubscriptions(subscriberHash)
 
-    // Enrich with creator profile info (name for display in Settings)
-    const data = await Promise.all(
-      rows.map(async (r) => {
-        const creator = await getUserByNullifier(r.creatorHash)
-        return {
-          creatorHash: r.creatorHash,
-          creatorWallet: r.creatorWallet,
-          amountWld: r.amountWld,
-          expiresAt: r.expiresAt instanceof Date ? r.expiresAt.toISOString() : String(r.expiresAt),
-          daysLeft: Math.max(0, Math.ceil((new Date(r.expiresAt).getTime() - Date.now()) / 86_400_000)),
-          creatorName: creator?.pseudoHandle ?? null,
-        }
-      })
-    )
+    // Batch-fetch all creator profiles in a single query
+    const creatorMap = await getUsersByNullifiers(rows.map((r) => r.creatorHash))
+
+    const data = rows.map((r) => ({
+      creatorHash: r.creatorHash,
+      creatorWallet: r.creatorWallet,
+      amountWld: r.amountWld,
+      expiresAt: r.expiresAt instanceof Date ? r.expiresAt.toISOString() : String(r.expiresAt),
+      daysLeft: Math.max(0, Math.ceil((new Date(r.expiresAt).getTime() - Date.now()) / 86_400_000)),
+      creatorName: creatorMap.get(r.creatorHash)?.pseudoHandle ?? null,
+    }))
 
     return NextResponse.json({ success: true, data })
   } catch (err) {

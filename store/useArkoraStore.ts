@@ -66,6 +66,7 @@ interface ArkoraState {
   clearOptimisticVote: (postId: string) => void
   setUnreadNotificationCount: (count: number) => void
   reset: () => void
+  signOut: () => void
 }
 
 const initialState = {
@@ -141,6 +142,23 @@ export const useArkoraStore = create<ArkoraState>()(
       setUnreadNotificationCount: (count) => set({ unreadNotificationCount: count }),
 
       reset: () => set(initialState),
+
+      // Clears auth state only — preserves theme, identity prefs, location settings, and onboarding flag
+      signOut: () =>
+        set({
+          walletAddress: null,
+          nullifierHash: null,
+          isVerified: false,
+          user: null,
+          dmPrivateKey: null,
+          optimisticVotes: {},
+          unreadNotificationCount: 0,
+          isComposerOpen: false,
+          composerQuotedPost: null,
+          isVerifySheetOpen: false,
+          isDrawerOpen: false,
+          isSearchOpen: false,
+        }),
     }),
     {
       name: 'arkora-store',

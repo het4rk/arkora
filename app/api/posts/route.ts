@@ -22,6 +22,12 @@ const VALID_BOARD_IDS = new Set(BOARDS.map((b) => b.id))
 
 export async function GET(req: NextRequest) {
   try {
+    // Rate limit: 60 requests/min per IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? 'unknown'
+    if (!rateLimit(`feed:${ip}`, 60, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429 })
+    }
+
     const { searchParams } = new URL(req.url)
     const feed = searchParams.get('feed')
     const cursor = searchParams.get('cursor') ?? undefined

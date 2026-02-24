@@ -1,59 +1,223 @@
 # Arkora
 
-A provably human anonymous message board built as a World App Mini App. Every post is from a World ID Orb-verified unique human. TikTok scroll feed, 4chan anonymity, Reddit structure — every voice cryptographically guaranteed real.
+A provably human anonymous message board. Every voice is verified.
 
-## Stack
+Arkora is a World App miniapp where users post, vote, and converse anonymously — but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities. TikTok-style scroll feed, 4chan anonymity, Reddit boards structure — every voice cryptographically guaranteed real.
 
-- **Frontend:** Next.js 15 App Router, TypeScript strict, Tailwind CSS, Framer Motion, Zustand
-- **Auth:** MiniKit walletAuth (SIWE) + World ID Orb verification
-- **DB:** Neon Postgres + Drizzle ORM (repository pattern, Hippius-ready)
-- **Chain:** World Chain Sepolia — ArkVotes.sol (one vote per nullifier per post)
-- **Hosting:** Vercel
+---
 
-## Quick Start
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 15 (App Router, Turbopack) |
+| Database | Neon Postgres + Drizzle ORM |
+| Auth | SIWE (Sign-In with Ethereum) + NextAuth + World MiniKit |
+| Real-time | Pusher Channels |
+| File storage | Hippius S3 (decentralized, S3-compatible) |
+| State | Zustand (with localStorage persistence) |
+| Animations | Framer Motion |
+| Blockchain | World Chain (viem) |
+| Identity | Worldcoin World ID (MiniKit) |
+
+---
+
+## Prerequisites
+
+- Node.js 20+
+- pnpm (`npm i -g pnpm`)
+- A [Worldcoin Developer Portal](https://developer.worldcoin.org) app (for World ID)
+- A [Neon](https://neon.tech) Postgres database
+- A [Pusher](https://pusher.com) Channels app (Sandbox tier works)
+- A [Hippius](https://hippius.com) S3 bucket (or any S3-compatible storage)
+
+---
+
+## Local Setup
+
+### 1. Install dependencies
 
 ```bash
 pnpm install
+```
 
-# Fill in .env.local (copy from .env.example)
-cp .env.example .env.local
+### 2. Configure environment variables
 
-# Push schema to DB
+Create `.env.local` in the project root:
+
+```env
+# World ID / MiniKit
+NEXT_PUBLIC_APP_ID=app_xxxxxxxxxxxxxxxxxxxxxxxx
+NEXT_PUBLIC_ACTION_ID=verifyhuman
+APP_ID=app_xxxxxxxxxxxxxxxxxxxxxxxx
+
+# World Chain RPC
+NEXT_PUBLIC_CHAIN_ID=480
+NEXT_PUBLIC_WC_RPC=https://worldchain-mainnet.g.alchemy.com/public
+
+# Database (Neon Postgres)
+DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
+
+# NextAuth
+NEXTAUTH_SECRET=your-32-char-random-secret
+NEXTAUTH_URL=http://localhost:3000
+
+# Pusher
+PUSHER_APP_ID=your-pusher-app-id
+PUSHER_KEY=your-pusher-key
+PUSHER_SECRET=your-pusher-secret
+PUSHER_CLUSTER=us2
+NEXT_PUBLIC_PUSHER_KEY=your-pusher-key
+NEXT_PUBLIC_PUSHER_CLUSTER=us2
+
+# Hippius S3 (decentralized file storage)
+HIPPIUS_ACCESS_KEY_ID=your-access-key
+HIPPIUS_SECRET_ACCESS_KEY=your-secret-key
+HIPPIUS_BUCKET=arkora-uploads
+HIPPIUS_S3_ENDPOINT=https://s3.hippius.com
+HIPPIUS_PUBLIC_URL=https://s3.hippius.com
+```
+
+### 3. Push the database schema
+
+```bash
 pnpm db:push
+```
 
-# Seed test data
-DATABASE_URL="your_url" pnpm exec tsx scripts/seed.ts
+### 4. (Optional) Seed sample data
 
-# Dev server
+```bash
+pnpm db:seed
+```
+
+### 5. Start the dev server
+
+```bash
 pnpm dev
 ```
 
-## Required env vars
+Open [http://localhost:3000](http://localhost:3000).
 
-| Variable | Source |
+> **World App testing**: To test the full World ID flow you need World App on your phone. Use ngrok or Vercel Preview to expose a public URL, then update your Developer Portal redirect URL to match.
+
+---
+
+## Deployment (Vercel)
+
+1. Push to GitHub and import the repo in the Vercel dashboard.
+2. Add all environment variables from the table above.
+3. Set `NEXTAUTH_URL` to your production domain, e.g. `https://arkora.vercel.app`.
+4. Deploy.
+
+**Developer Portal**: After deploying, update the **Redirect URL** in your Worldcoin Developer Portal to `https://your-domain.vercel.app`.
+
+---
+
+## Architecture
+
+### Auth Flow
+
+```
+World App opens miniapp
+  → WalletConnect auto-triggers walletAuth (MiniKit.commands.walletAuth)
+  → User signs SIWE message in World App
+  → POST /api/auth/wallet → verifies signature, issues httpOnly cookies:
+      arkora-nh      (nullifierHash — the user's unique World ID identifier)
+      wallet-address (EVM address)
+  → Zustand store hydrates: isVerified=true, nullifierHash, user
+```
+
+World ID proof (Orb verification) is a separate step triggered by the user
+tapping "Verify & join" on the onboarding screen or "Verify with World ID" in the drawer.
+
+### Identity Modes
+
+Users choose how to appear:
+
+| Mode | Description |
 |---|---|
-| `DATABASE_URL` | Neon dashboard |
-| `NEXTAUTH_SECRET` | `openssl rand -base64 32` |
-| `NEXT_PUBLIC_ARK_VOTES_ADDRESS` | After contract deploy |
+| **Random** | Fresh `Human #XXXX` tag each post (default, most anonymous) |
+| **Alias** | Consistent user-chosen handle, persisted locally |
+| **Named** | World ID username shown publicly |
 
-## World App Testing (ngrok)
+### Feed Modes
 
-```bash
-ngrok http --url=bluecoated-patriarchical-jeffie.ngrok-free.dev 3000
+| Mode | Description |
+|---|---|
+| **Curated** | Global feed, highest-ranked posts (server-cached, 30s TTL) |
+| **Following** | Posts from followed users (requires auth) |
+| **Local** | Posts near the viewer's GPS coordinates, filtered by radius |
+
+### DMs
+
+End-to-end encrypted. Key exchange uses ECDH (Curve25519); messages encrypted with AES-256-GCM. Public keys stored server-side. Private keys live only in Zustand / localStorage — the server never sees them.
+
+### Rate Limiting
+
+In-memory sliding-window rate limiter (`lib/rateLimit.ts`). Per-Vercel-instance (sufficient for early scale). Key limits:
+- Feed (`GET /posts`): 60 req/min per IP
+- Post creation: 5 posts/min per user
+- Replies, votes, search: similar per-user limits
+
+---
+
+## Boards
+
+| ID | Label | Emoji |
+|---|---|---|
+| `arkora` | Arkora | 🏛️ |
+| `technology` | Technology | ⚡ |
+| `markets` | Markets | 📈 |
+| `politics` | Politics | 🗳️ |
+| `worldchain` | World Chain | 🌐 |
+
+---
+
+## Key Directories
+
+```
+app/
+  api/                API routes (auth, posts, replies, votes, dm, search, …)
+  boards/             Boards list page
+  post/[id]/          Thread / post detail
+  settings/           Settings page
+  dm/                 DM inbox + conversation pages
+  notifications/      Notifications page
+  profile/            User profile page
+
+components/
+  auth/               VerifyHuman verification sheet, WalletConnect
+  compose/            PostComposer, ReplyComposer
+  dm/                 ConversationView, ConversationList
+  feed/               Feed, ThreadCard, FeedSkeleton
+  onboarding/         OnboardingScreen (first-run slides)
+  settings/           SettingsView
+  ui/                 BottomNav, LeftDrawer, Avatar, HumanBadge, …
+
+lib/
+  db/                 Drizzle schema + per-entity query modules
+  crypto/             DM encryption (Curve25519 + AES-256-GCM)
+  storage/            Hippius S3 adapter
+  rateLimit.ts        In-memory sliding-window rate limiter
+  cache.ts            In-memory feed cache (30s TTL)
+  serverAuth.ts       Read caller nullifierHash from session cookie
+
+store/
+  useArkoraStore.ts   Global Zustand store (auth, UI, preferences)
 ```
 
-Then open `https://bluecoated-patriarchical-jeffie.ngrok-free.dev` in World App simulator.
+---
 
-## Contract Deploy (World Chain Sepolia)
+## Infrastructure (20 users day one)
 
-```bash
-forge create contracts/ArkVotes.sol:ArkVotes \
-  --rpc-url https://worldchain-sepolia.g.alchemy.com/public \
-  --private-key YOUR_PRIVATE_KEY \
-  --broadcast
-```
+| Service | Free limit | Status |
+|---|---|---|
+| Vercel Hobby | 100 GB-hours/month | Comfortable |
+| Neon Free | 20 connections, 3 GB | OK — batch queries in hot paths |
+| Pusher Sandbox | 100 connections, 200k msg/day | Fine |
+| Hippius S3 | Pay-per-use | Minimal cost at launch |
 
-Set the deployed address as `NEXT_PUBLIC_ARK_VOTES_ADDRESS`.
+---
 
 ## License
 

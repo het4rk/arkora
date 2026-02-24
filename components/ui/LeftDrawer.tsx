@@ -29,7 +29,7 @@ export function LeftDrawer() {
     identityMode, setIdentityMode,
     theme, setTheme,
     isVerified, nullifierHash, persistentAlias, setPersistentAlias,
-    user,
+    user, signOut,
   } = useArkoraStore()
 
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
@@ -238,6 +238,27 @@ export function LeftDrawer() {
                 </svg>
                 <span>Settings</span>
               </button>
+
+              {isVerified && (
+                <button
+                  onClick={async () => {
+                    setDrawerOpen(false)
+                    await fetch('/api/signout', { method: 'POST' })
+                    signOut()
+                    router.push('/')
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-downvote/80 text-sm active:opacity-70 transition-opacity"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  <span>Sign out</span>
+                </button>
+              )}
+
               <p className="text-text-muted/70 text-[11px] text-center leading-relaxed">
                 Every voice is verified human.
               </p>
