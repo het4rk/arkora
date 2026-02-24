@@ -29,7 +29,7 @@ const SLIDES = [
         <circle cx="32" cy="39" r="2" fill="currentColor" fillOpacity="0.6" />
       </svg>
     ),
-    heading: 'Your rules, your voice',
+    heading: 'Your voice, your rules.',
     sub: 'Post anonymously or with your identity.',
     body: 'Choose how you show up: fully anonymous, a consistent alias, or your World ID handle.',
   },
