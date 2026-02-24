@@ -23,6 +23,7 @@ export function PostComposer() {
     nullifierHash,
     walletAddress,
     user,
+    locationEnabled,
   } = useArkoraStore()
   const { submit, isSubmitting, error } = usePost()
 
@@ -67,6 +68,22 @@ export function PostComposer() {
 
   async function handleSubmit() {
     if (!title.trim() || !body.trim()) return
+
+    // Attach GPS coords when location sharing is enabled
+    let lat: number | undefined
+    let lng: number | undefined
+    if (locationEnabled && typeof navigator !== 'undefined' && navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5_000, enableHighAccuracy: false })
+        )
+        lat = pos.coords.latitude
+        lng = pos.coords.longitude
+      } catch {
+        // Silent fail — post still goes through without location
+      }
+    }
+
     const post = await submit({
       title,
       body,
@@ -74,6 +91,8 @@ export function PostComposer() {
       pseudoHandle: getPseudoHandle(),
       imageUrl: imageUrl ?? undefined,
       quotedPostId: composerQuotedPost?.id ?? undefined,
+      lat,
+      lng,
     })
     if (post) {
       setTitle('')

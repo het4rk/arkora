@@ -33,6 +33,10 @@ interface ArkoraState {
   isDrawerOpen: boolean
   isSearchOpen: boolean
 
+  // Location — locationEnabled tags posts with GPS; locationRadius controls local feed view radius
+  locationEnabled: boolean
+  locationRadius: number   // miles; -1 = entire country
+
   // DM — private key stored client-side only, never sent to server
   dmPrivateKey: string | null
 
@@ -56,6 +60,8 @@ interface ArkoraState {
   setVerifySheetOpen: (open: boolean) => void
   setDrawerOpen: (open: boolean) => void
   setSearchOpen: (open: boolean) => void
+  setLocationEnabled: (v: boolean) => void
+  setLocationRadius: (miles: number) => void
   setOptimisticVote: (postId: string, direction: 1 | -1) => void
   clearOptimisticVote: (postId: string) => void
   setUnreadNotificationCount: (count: number) => void
@@ -74,6 +80,8 @@ const initialState = {
   activeBoard: null,
   isComposerOpen: false,
   composerQuotedPost: null,
+  locationEnabled: false,
+  locationRadius: 50,
   dmPrivateKey: null,
   isVerifySheetOpen: false,
   isDrawerOpen: false,
@@ -110,6 +118,10 @@ export const useArkoraStore = create<ArkoraState>()(
 
       setVerifySheetOpen: (open) => set({ isVerifySheetOpen: open }),
 
+      setLocationEnabled: (v) => set({ locationEnabled: v }),
+
+      setLocationRadius: (miles) => set({ locationRadius: miles }),
+
       setDrawerOpen: (open) => set({ isDrawerOpen: open }),
 
       setSearchOpen: (open) => set({ isSearchOpen: open }),
@@ -141,6 +153,8 @@ export const useArkoraStore = create<ArkoraState>()(
         persistentAlias: state.persistentAlias,
         theme: state.theme,
         hasOnboarded: state.hasOnboarded,
+        locationEnabled: state.locationEnabled,
+        locationRadius: state.locationRadius,
         dmPrivateKey: state.dmPrivateKey,
       }),
     }

@@ -2,6 +2,7 @@ import {
   pgTable,
   text,
   integer,
+  real,
   boolean,
   timestamp,
   uuid,
@@ -27,12 +28,19 @@ export const posts = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
     quotedPostId: uuid('quoted_post_id'),
+    // Location — optional; set when poster has location sharing enabled
+    lat: real('lat'),
+    lng: real('lng'),
+    // Country inferred from poster's IP at creation time (for local feed country filter)
+    countryCode: text('country_code'),
   },
   (table) => ({
     boardIdx: index('posts_board_id_idx').on(table.boardId),
     createdAtIdx: index('posts_created_at_idx').on(table.createdAt),
     // Composite covers getPostsByNullifier (filter + order) in a single index scan
     nullifierCreatedIdx: index('posts_nullifier_created_idx').on(table.nullifierHash, table.createdAt),
+    // Local feed: filter by country then sort by time
+    countryCreatedIdx: index('posts_country_created_idx').on(table.countryCode, table.createdAt),
   })
 )
 

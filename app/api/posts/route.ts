@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFeed, getHotFeed, createPost } from '@/lib/db/posts'
+import { getFeed, createPost, getLocalFeed } from '@/lib/db/posts'
 import { getFeedFollowing } from '@/lib/db/follows'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { BOARDS } from '@/lib/types'
-import type { BoardId, CreatePostInput, FeedParams } from '@/lib/types'
+import type { BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
+
+/** Extract the viewer's country code from standard edge/CDN headers. Falls back to 'US' in dev. */
+function getCountryCode(req: NextRequest): string | null {
+  return (
+    req.headers.get('x-vercel-ip-country') ??
+    req.headers.get('cf-ipcountry') ??
+    req.headers.get('x-country-code') ??
+    (process.env.NODE_ENV === 'development' ? 'US' : null)
+  )
+}
 
 const VALID_BOARD_IDS = new Set(BOARDS.map((b) => b.id))
 
@@ -22,12 +32,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: posts })
     }
 
-    // Hot/trending feed
-    if (feed === 'hot') {
+    // Local feed — country-scoped, optionally radius-filtered
+    if (feed === 'local') {
+      const countryCode = getCountryCode(req)
+      if (!countryCode) {
+        return NextResponse.json({ success: true, data: [] })
+      }
       const rawBoardId = searchParams.get('boardId')
-      const boardId = rawBoardId && VALID_BOARD_IDS.has(rawBoardId as BoardId) ? (rawBoardId as BoardId) : undefined
-      const hotPosts = await getHotFeed(boardId, limit)
-      return NextResponse.json({ success: true, data: hotPosts })
+      const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : undefined
+      const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : undefined
+      const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : undefined
+      const localParams: LocalFeedParams = {
+        countryCode,
+        lat: lat !== undefined && !isNaN(lat) ? lat : undefined,
+        lng: lng !== undefined && !isNaN(lng) ? lng : undefined,
+        radiusMiles,
+        boardId: rawBoardId && VALID_BOARD_IDS.has(rawBoardId as BoardId) ? (rawBoardId as BoardId) : undefined,
+        cursor,
+        limit,
+      }
+      const localPosts = await getLocalFeed(localParams)
+      return NextResponse.json({ success: true, data: localPosts })
     }
 
     const rawBoardId = searchParams.get('boardId')
@@ -109,7 +134,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const post = await createPost({ title, body: postBody, boardId, nullifierHash, pseudoHandle, imageUrl: rawImageUrl, quotedPostId })
+    // Country inferred from poster's IP — used for local feed filtering
+    const countryCode = getCountryCode(req) ?? undefined
+    // GPS coords — only present when poster has location sharing enabled
+    const lat = typeof body.lat === 'number' && isFinite(body.lat) ? body.lat : undefined
+    const lng = typeof body.lng === 'number' && isFinite(body.lng) ? body.lng : undefined
+
+    const post = await createPost({ title, body: postBody, boardId, nullifierHash, pseudoHandle, imageUrl: rawImageUrl, quotedPostId, lat, lng, countryCode })
     return NextResponse.json({ success: true, data: post }, { status: 201 })
   } catch (err) {
     console.error('[posts POST]', err)

@@ -3,9 +3,15 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Post, BoardId } from '@/lib/types'
 
-export type FeedMode = 'forYou' | 'following' | 'hot'
+export type FeedMode = 'forYou' | 'following' | 'local'
 
 const FEED_LIMIT = 10
+
+interface LocalCoords {
+  lat: number
+  lng: number
+  radiusMiles: number  // -1 = entire country
+}
 
 interface UseFeedReturn {
   posts: Post[]
@@ -18,7 +24,12 @@ interface UseFeedReturn {
   removePost: (postId: string) => void
 }
 
-export function useFeed(boardId?: BoardId, feedMode: FeedMode = 'forYou', nullifierHash?: string): UseFeedReturn {
+export function useFeed(
+  boardId?: BoardId,
+  feedMode: FeedMode = 'forYou',
+  nullifierHash?: string,
+  localCoords?: LocalCoords | null
+): UseFeedReturn {
   const [posts, setPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -29,10 +40,10 @@ export function useFeed(boardId?: BoardId, feedMode: FeedMode = 'forYou', nullif
   // eliminating the stale-closure problem and unnecessary re-creations.
   const cursorRef = useRef<string | undefined>(undefined)
 
-  const applyPage = useCallback((fetched: Post[], reset: boolean, disablePagination = false) => {
+  const applyPage = useCallback((fetched: Post[], reset: boolean) => {
     setPosts((prev) => (reset ? fetched : [...prev, ...fetched]))
-    setHasMore(!disablePagination && fetched.length === FEED_LIMIT)
-    if (!disablePagination && fetched.length > 0) {
+    setHasMore(fetched.length === FEED_LIMIT)
+    if (fetched.length > 0) {
       const last = fetched[fetched.length - 1]
       if (last) cursorRef.current = new Date(last.createdAt).toISOString()
     }
@@ -42,11 +53,23 @@ export function useFeed(boardId?: BoardId, feedMode: FeedMode = 'forYou', nullif
     async (reset: boolean) => {
       const params = new URLSearchParams({ limit: String(FEED_LIMIT) })
       if (boardId) params.set('boardId', boardId)
+
       if (feedMode === 'following' && nullifierHash) {
         params.set('feed', 'following')
         params.set('nullifierHash', nullifierHash)
-      } else if (feedMode === 'hot') {
-        params.set('feed', 'hot')
+        if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
+      } else if (feedMode === 'local') {
+        params.set('feed', 'local')
+        if (localCoords) {
+          params.set('radiusMiles', String(localCoords.radiusMiles))
+          if (localCoords.radiusMiles > 0) {
+            params.set('lat', String(localCoords.lat))
+            params.set('lng', String(localCoords.lng))
+          }
+        } else {
+          params.set('radiusMiles', '-1')
+        }
+        if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
       } else {
         if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
       }
@@ -55,9 +78,10 @@ export function useFeed(boardId?: BoardId, feedMode: FeedMode = 'forYou', nullif
       if (!res.ok) throw new Error('Failed to fetch feed')
 
       const json = (await res.json()) as { data: Post[] }
-      applyPage(json.data, reset, feedMode === 'hot')
+      applyPage(json.data, reset)
     },
-    [boardId, feedMode, nullifierHash, applyPage]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [boardId, feedMode, nullifierHash, localCoords?.lat, localCoords?.lng, localCoords?.radiusMiles, applyPage]
   )
 
   const refresh = useCallback(async () => {

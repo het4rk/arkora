@@ -21,6 +21,9 @@ function toPost(row: typeof posts.$inferSelect): Post {
     deletedAt: row.deletedAt ?? null,
     quotedPostId: row.quotedPostId ?? null,
     quotedPost: null,
+    lat: row.lat ?? null,
+    lng: row.lng ?? null,
+    countryCode: row.countryCode ?? null,
   }
 }
 

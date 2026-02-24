@@ -7,6 +7,19 @@ import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkora
 import { generateAlias } from '@/lib/session'
 import { cn } from '@/lib/utils'
 
+// Discrete radius options in miles; -1 means "entire country"
+const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
+type RadiusOption = typeof RADIUS_OPTIONS[number]
+
+function radiusLabel(r: RadiusOption): string {
+  return r === -1 ? 'Country' : `${r} mi`
+}
+
+function radiusIndexOf(miles: number): number {
+  const idx = RADIUS_OPTIONS.indexOf(miles as RadiusOption)
+  return idx >= 0 ? idx : 4  // default 50mi
+}
+
 const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: string }[] = [
   { mode: 'anonymous', label: 'Random',  sub: 'New Human # each post',    icon: '🎲' },
   { mode: 'alias',     label: 'Alias',   sub: 'Consistent handle',        icon: '👤' },
@@ -26,6 +39,8 @@ export function SettingsView() {
     isVerified, nullifierHash, walletAddress,
     persistentAlias, setPersistentAlias,
     user,
+    locationEnabled, setLocationEnabled,
+    locationRadius, setLocationRadius,
   } = useArkoraStore()
 
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
@@ -248,6 +263,58 @@ export function SettingsView() {
               <p className="text-text-secondary text-sm leading-relaxed">
                 Your identity is never stored. Only a cryptographic proof of humanity is used to verify your account — your personal data stays on your device.
               </p>
+            </div>
+          </section>
+
+          {/* ── Location ──────────────────────────────────────────── */}
+          <section className="space-y-3">
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">Location</p>
+            <div className="glass rounded-[var(--r-lg)] px-4 py-4 space-y-4">
+              {/* Toggle */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-text text-sm font-semibold leading-tight">Tag posts with location</p>
+                  <p className="text-text-muted text-xs mt-0.5 leading-tight">Your posts will appear in nearby Local feeds</p>
+                </div>
+                <button
+                  onClick={() => setLocationEnabled(!locationEnabled)}
+                  className={cn(
+                    'relative w-11 h-6 rounded-full transition-colors shrink-0',
+                    locationEnabled ? 'bg-accent' : 'bg-white/10'
+                  )}
+                  aria-label="Toggle location sharing"
+                >
+                  <span className={cn(
+                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                    locationEnabled ? 'translate-x-5' : 'translate-x-0'
+                  )} />
+                </button>
+              </div>
+
+              {/* Radius slider — shown whether or not tagging is on (users still pick their feed radius) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-text-muted text-xs">Local feed radius</p>
+                  <p className="text-accent text-xs font-semibold tabular-nums">
+                    {radiusLabel(locationRadius as RadiusOption)}
+                  </p>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={RADIUS_OPTIONS.length - 1}
+                  value={radiusIndexOf(locationRadius)}
+                  onChange={(e) => {
+                    const opt = RADIUS_OPTIONS[parseInt(e.target.value)]
+                    if (opt !== undefined) setLocationRadius(opt)
+                  }}
+                  className="w-full accent-[var(--accent)] cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-text-muted/60 px-0.5">
+                  <span>1 mi</span>
+                  <span>Country</span>
+                </div>
+              </div>
             </div>
           </section>
 

@@ -7,14 +7,58 @@ import { ThreadCard } from './ThreadCard'
 import { FeedSkeleton } from './FeedSkeleton'
 import { VerifyHuman } from '@/components/auth/VerifyHuman'
 import { haptic } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+
+// Discrete radius options in miles; -1 means "entire country"
+const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
+type RadiusOption = typeof RADIUS_OPTIONS[number]
+
+function radiusLabel(r: RadiusOption): string {
+  return r === -1 ? 'Country' : `${r} mi`
+}
+
+function radiusIndexOf(miles: number): number {
+  const idx = RADIUS_OPTIONS.indexOf(miles as RadiusOption)
+  return idx >= 0 ? idx : 4  // default to 50mi (index 4)
+}
 
 export function Feed() {
-  const { activeBoard, nullifierHash, isVerified } = useArkoraStore()
+  const { activeBoard, nullifierHash, isVerified, locationRadius, setLocationRadius } = useArkoraStore()
   const [feedMode, setFeedMode] = useState<FeedMode>('forYou')
-  const { posts, isLoading, isLoadingMore, hasMore, error, loadMore, removePost } = useFeed(
+
+  // Local feed — viewer GPS coords (requested on demand)
+  const [viewerCoords, setViewerCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationDenied, setLocationDenied] = useState(false)
+  const [locationRequesting, setLocationRequesting] = useState(false)
+
+  // When switching to local tab, request geolocation
+  useEffect(() => {
+    if (feedMode !== 'local') return
+    if (viewerCoords || locationDenied) return
+    setLocationRequesting(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setViewerCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setLocationRequesting(false)
+      },
+      () => {
+        setLocationDenied(true)
+        setLocationRequesting(false)
+      },
+      { timeout: 10_000, enableHighAccuracy: false }
+    )
+  }, [feedMode, viewerCoords, locationDenied])
+
+  const localCoords =
+    feedMode === 'local' && viewerCoords
+      ? { ...viewerCoords, radiusMiles: locationRadius }
+      : null
+
+  const { posts, isLoading, isLoadingMore, hasMore, error, loadMore, removePost, refresh } = useFeed(
     activeBoard ?? undefined,
     feedMode,
-    nullifierHash ?? undefined
+    nullifierHash ?? undefined,
+    localCoords
   )
   const sentinelRef = useRef<HTMLDivElement>(null)
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
@@ -61,6 +105,15 @@ export function Feed() {
     return () => observer.disconnect()
   }, [hasMore, isLoadingMore, loadMore])
 
+  // Refresh local feed when radius changes
+  const prevRadius = useRef(locationRadius)
+  useEffect(() => {
+    if (feedMode === 'local' && prevRadius.current !== locationRadius && viewerCoords) {
+      prevRadius.current = locationRadius
+      void refresh()
+    }
+  }, [feedMode, locationRadius, viewerCoords, refresh])
+
   if (isLoading) {
     return (
       <div className="h-screen">
@@ -81,40 +134,77 @@ export function Feed() {
     )
   }
 
-  if (posts.length === 0) {
-    return (
-      <div className="h-screen flex items-center justify-center text-text-secondary px-6 text-center">
-        <div>
-          <p className="text-4xl mb-4">🌐</p>
-          <p className="font-bold text-text text-xl mb-2">No posts yet</p>
-          <p className="text-sm">Be the first verified human to post.</p>
-        </div>
-      </div>
-    )
-  }
+  const showLocalPrompt = feedMode === 'local' && !locationRequesting && locationDenied
+  const showLocalLoading = feedMode === 'local' && locationRequesting
+
+  const hasLocalCoords = feedMode === 'local' && !!viewerCoords
 
   return (
     <>
       {/* Feed mode toggle — floats over the snap feed */}
       {isVerified && (
         <div className="fixed top-[max(env(safe-area-inset-top),12px)] left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg">
-          {(['forYou', 'following', 'hot'] as FeedMode[]).map((mode) => (
+          {(['forYou', 'following', 'local'] as FeedMode[]).map((mode) => (
             <button
               key={mode}
               onClick={() => { haptic('light'); setFeedMode(mode) }}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                feedMode === mode
-                  ? 'bg-accent text-white shadow-sm'
-                  : 'text-text-muted'
-              }`}
+              className={cn(
+                'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all',
+                feedMode === mode ? 'bg-accent text-white shadow-sm' : 'text-text-muted'
+              )}
             >
-              {mode === 'forYou' ? 'For You' : mode === 'following' ? 'Following' : '🔥 Hot'}
+              {mode === 'forYou' ? 'Curated' : mode === 'following' ? 'Following' : '📍 Local'}
             </button>
           ))}
         </div>
       )}
 
-      <div className="overflow-y-scroll snap-y snap-mandatory h-[calc(100dvh-56px)] scroll-smooth">
+      {/* Radius slider — shown below tab bar when Local is active and location granted */}
+      {hasLocalCoords && (
+        <div className="fixed top-[calc(max(env(safe-area-inset-top),12px)+44px)] left-1/2 -translate-x-1/2 z-20 glass rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
+          <input
+            type="range"
+            min={0}
+            max={RADIUS_OPTIONS.length - 1}
+            value={radiusIndexOf(locationRadius)}
+            onChange={(e) => {
+              const opt = RADIUS_OPTIONS[parseInt(e.target.value)]
+              if (opt !== undefined) setLocationRadius(opt)
+            }}
+            className="w-28 accent-[var(--accent)] cursor-pointer"
+          />
+          <span className="text-xs font-semibold text-accent min-w-[4.5rem] text-right tabular-nums">
+            {radiusLabel(locationRadius as RadiusOption)}
+          </span>
+        </div>
+      )}
+
+      <div className={cn(
+        'overflow-y-scroll snap-y snap-mandatory h-[calc(100dvh-56px)] scroll-smooth',
+        hasLocalCoords ? 'pt-8' : ''
+      )}>
+        {/* Local feed: requesting location */}
+        {showLocalLoading && (
+          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+            <div>
+              <p className="text-3xl mb-4 animate-pulse">📍</p>
+              <p className="font-semibold text-text text-lg mb-1">Finding your location…</p>
+            </div>
+          </div>
+        )}
+
+        {/* Local feed: denied */}
+        {showLocalPrompt && (
+          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+            <div>
+              <p className="text-3xl mb-4">🚫</p>
+              <p className="font-bold text-text text-lg mb-2">Location access denied</p>
+              <p className="text-sm">Allow location access in your browser settings to see nearby posts.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Following: empty state */}
         {feedMode === 'following' && !isLoading && posts.length === 0 && (
           <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
             <div>
@@ -124,6 +214,33 @@ export function Feed() {
             </div>
           </div>
         )}
+
+        {/* Local: empty state (got coords, but no nearby posts) */}
+        {feedMode === 'local' && viewerCoords && !isLoading && posts.length === 0 && (
+          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+            <div>
+              <p className="text-3xl mb-4">🗺️</p>
+              <p className="font-bold text-text text-lg mb-2">Nothing nearby yet</p>
+              <p className="text-sm">
+                {locationRadius === -1
+                  ? 'No posts from your country yet.'
+                  : `No posts within ${locationRadius} miles. Try expanding the radius.`}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Default: no posts */}
+        {feedMode !== 'following' && feedMode !== 'local' && posts.length === 0 && (
+          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+            <div>
+              <p className="text-4xl mb-4">🌐</p>
+              <p className="font-bold text-text text-xl mb-2">No posts yet</p>
+              <p className="text-sm">Be the first verified human to post.</p>
+            </div>
+          </div>
+        )}
+
         {posts.map((post) => (
           <ThreadCard key={post.id} post={post} onDeleted={removePost} isBookmarked={bookmarkedIds.has(post.id)} />
         ))}

@@ -1,7 +1,7 @@
 import { db } from './index'
 import { posts, postVotes } from './schema'
 import { eq, desc, lt, and, isNull, sql, aliasedTable } from 'drizzle-orm'
-import type { Post, BoardId, CreatePostInput, FeedParams } from '@/lib/types'
+import type { Post, BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
 
 // Alias for self-join on quotedPost
@@ -28,6 +28,9 @@ function toPost(
     deletedAt: row.deletedAt ?? null,
     quotedPostId: row.quotedPostId ?? null,
     quotedPost: quoted ? toPost(quoted) : null,
+    lat: row.lat ?? null,
+    lng: row.lng ?? null,
+    countryCode: row.countryCode ?? null,
   }
 }
 
@@ -44,6 +47,9 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       sessionTag,
       imageUrl: input.imageUrl ?? null,
       quotedPostId: input.quotedPostId ?? null,
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
+      countryCode: input.countryCode ?? null,
     })
     .returning()
 
@@ -141,6 +147,9 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
       deletedAt: r['deleted_at'] ? new Date(r['deleted_at'] as string) : null,
       quotedPostId: (r['quoted_post_id'] as string | null) ?? null,
       quotedPost: null as Post | null,
+      lat: (r['lat'] as number | null) ?? null,
+      lng: (r['lng'] as number | null) ?? null,
+      countryCode: (r['country_code'] as string | null) ?? null,
     } satisfies Post
 
     if (r['quoted_id']) {
@@ -156,6 +165,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         deletedAt: r['q_deleted_at'] ? new Date(r['q_deleted_at'] as string) : null,
         quotedPostId: (r['q_quoted_post_id'] as string | null) ?? null,
         quotedPost: null,
+        lat: null, lng: null, countryCode: null,
       }
     }
 
@@ -274,4 +284,90 @@ export async function getVotedPostsByNullifier(
     ...toPost(post, quoted),
     voteDirection: direction as 1 | -1,
   }))
+}
+
+/**
+ * Local feed — filtered by country first, then optionally by GPS radius.
+ *
+ * Country filtering: posts where country_code matches the viewer's country.
+ * Radius filtering: when lat/lng + radiusMiles are provided and radiusMiles > 0,
+ * further restricts to posts within that distance (Haversine, miles).
+ * Posts without a country_code are excluded entirely.
+ */
+export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
+  const limit = Math.min(params.limit ?? 20, 50)
+  const useRadius =
+    params.radiusMiles !== undefined &&
+    params.radiusMiles > 0 &&
+    params.lat !== undefined &&
+    params.lng !== undefined
+
+  const rows = await db.execute<typeof posts.$inferSelect & { quoted_id: string | null }>(
+    sql`SELECT p.*, qp.id as quoted_id,
+          qp.title as q_title, qp.body as q_body, qp.board_id as q_board_id,
+          qp.nullifier_hash as q_nullifier_hash, qp.pseudo_handle as q_pseudo_handle,
+          qp.session_tag as q_session_tag, qp.image_url as q_image_url,
+          qp.upvotes as q_upvotes, qp.downvotes as q_downvotes,
+          qp.reply_count as q_reply_count, qp.quote_count as q_quote_count,
+          qp.created_at as q_created_at, qp.deleted_at as q_deleted_at,
+          qp.quoted_post_id as q_quoted_post_id,
+          qp.lat as q_lat, qp.lng as q_lng, qp.country_code as q_country_code
+        FROM posts p
+        LEFT JOIN posts qp ON p.quoted_post_id = qp.id AND qp.deleted_at IS NULL
+        WHERE p.deleted_at IS NULL
+          AND p.country_code = ${params.countryCode}
+          ${params.boardId ? sql`AND p.board_id = ${params.boardId}` : sql``}
+          ${params.cursor ? sql`AND p.created_at < ${new Date(params.cursor)}` : sql``}
+          ${useRadius
+            ? sql`AND p.lat IS NOT NULL AND p.lng IS NOT NULL
+                  AND 3959 * acos(
+                    LEAST(1.0,
+                      cos(radians(${params.lat!})) * cos(radians(p.lat)) * cos(radians(p.lng) - radians(${params.lng!}))
+                      + sin(radians(${params.lat!})) * sin(radians(p.lat))
+                    )
+                  ) <= ${params.radiusMiles!}`
+            : sql``}
+        ORDER BY p.created_at DESC
+        LIMIT ${limit}`
+  )
+
+  return (rows as unknown as Array<Record<string, unknown>>).map((r) => {
+    const post: Post = {
+      id: r['id'] as string, title: r['title'] as string, body: r['body'] as string,
+      boardId: r['board_id'] as BoardId, nullifierHash: r['nullifier_hash'] as string,
+      pseudoHandle: (r['pseudo_handle'] as string | null) ?? null,
+      sessionTag: r['session_tag'] as string,
+      imageUrl: (r['image_url'] as string | null) ?? null,
+      upvotes: r['upvotes'] as number, downvotes: r['downvotes'] as number,
+      replyCount: r['reply_count'] as number, quoteCount: r['quote_count'] as number,
+      createdAt: new Date(r['created_at'] as string),
+      deletedAt: r['deleted_at'] ? new Date(r['deleted_at'] as string) : null,
+      quotedPostId: (r['quoted_post_id'] as string | null) ?? null,
+      quotedPost: null,
+      lat: (r['lat'] as number | null) ?? null,
+      lng: (r['lng'] as number | null) ?? null,
+      countryCode: (r['country_code'] as string | null) ?? null,
+    }
+
+    if (r['quoted_id']) {
+      post.quotedPost = {
+        id: r['quoted_id'] as string, title: r['q_title'] as string, body: r['q_body'] as string,
+        boardId: r['q_board_id'] as BoardId, nullifierHash: r['q_nullifier_hash'] as string,
+        pseudoHandle: (r['q_pseudo_handle'] as string | null) ?? null,
+        sessionTag: r['q_session_tag'] as string,
+        imageUrl: (r['q_image_url'] as string | null) ?? null,
+        upvotes: r['q_upvotes'] as number, downvotes: r['q_downvotes'] as number,
+        replyCount: r['q_reply_count'] as number, quoteCount: r['q_quote_count'] as number,
+        createdAt: new Date(r['q_created_at'] as string),
+        deletedAt: r['q_deleted_at'] ? new Date(r['q_deleted_at'] as string) : null,
+        quotedPostId: (r['q_quoted_post_id'] as string | null) ?? null,
+        quotedPost: null,
+        lat: (r['q_lat'] as number | null) ?? null,
+        lng: (r['q_lng'] as number | null) ?? null,
+        countryCode: (r['q_country_code'] as string | null) ?? null,
+      }
+    }
+
+    return post
+  })
 }

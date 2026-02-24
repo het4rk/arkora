@@ -25,6 +25,9 @@ export interface Post {
   deletedAt: Date | null
   quotedPostId: string | null
   quotedPost: Post | null
+  lat: number | null
+  lng: number | null
+  countryCode: string | null
 }
 
 export interface Reply {
@@ -72,6 +75,9 @@ export interface CreatePostInput {
   pseudoHandle?: string | undefined
   imageUrl?: string | undefined
   quotedPostId?: string | undefined
+  lat?: number | undefined
+  lng?: number | undefined
+  countryCode?: string | undefined
 }
 
 export interface CreateReplyInput {
@@ -106,6 +112,16 @@ export interface CreateNoteInput {
 }
 
 export interface FeedParams {
+  boardId?: BoardId | undefined
+  cursor?: string | undefined
+  limit?: number | undefined
+}
+
+export interface LocalFeedParams {
+  countryCode: string
+  lat?: number | undefined
+  lng?: number | undefined
+  radiusMiles?: number | undefined  // -1 or undefined = country-only
   boardId?: BoardId | undefined
   cursor?: string | undefined
   limit?: number | undefined
