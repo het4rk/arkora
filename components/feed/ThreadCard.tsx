@@ -8,6 +8,8 @@ import { HumanBadge } from '@/components/ui/HumanBadge'
 import { BoardTag } from '@/components/ui/BoardTag'
 import { VoteButtons } from '@/components/ui/VoteButtons'
 import { TimeAgo } from '@/components/ui/TimeAgo'
+import { BookmarkButton } from '@/components/ui/BookmarkButton'
+import { QuotedPost } from '@/components/ui/QuotedPost'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
 
@@ -79,7 +81,18 @@ export function ThreadCard({ post, topReply, onDeleted }: Props) {
           {post.title}
         </h2>
 
-        <HumanBadge label={displayName} size="md" />
+        {/* Only pass nullifierHash when the user posted non-anonymously.
+            Anonymous posts (pseudoHandle null) must never link to a profile. */}
+        <HumanBadge
+          label={displayName}
+          nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
+          size="md"
+        />
+
+        {/* Quoted post preview */}
+        {post.quotedPost && (
+          <QuotedPost post={post.quotedPost} className="mt-4" />
+        )}
 
         {/* Post image */}
         {post.imageUrl && (
@@ -114,12 +127,15 @@ export function ThreadCard({ post, topReply, onDeleted }: Props) {
       >
         <VoteButtons post={post} />
 
-        <div className="flex items-center gap-1.5 text-text-muted text-xs">
-          <span className="opacity-40 text-[10px]">›</span>
-          <span>
-            {post.replyCount}{' '}
-            {post.replyCount === 1 ? 'reply' : 'replies'}
-          </span>
+        <div className="flex items-center gap-3">
+          <BookmarkButton postId={post.id} />
+          <div className="flex items-center gap-1.5 text-text-muted text-xs">
+            <span className="opacity-40 text-[10px]">›</span>
+            <span>
+              {post.replyCount}{' '}
+              {post.replyCount === 1 ? 'reply' : 'replies'}
+            </span>
+          </div>
         </div>
       </div>
     </motion.article>

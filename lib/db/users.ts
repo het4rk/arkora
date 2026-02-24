@@ -8,6 +8,8 @@ function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
     nullifierHash: row.nullifierHash,
     walletAddress: row.walletAddress,
     pseudoHandle: row.pseudoHandle ?? null,
+    avatarUrl: row.avatarUrl ?? null,
+    bio: row.bio ?? null,
     createdAt: row.createdAt,
   }
 }
@@ -19,7 +21,6 @@ export async function getOrCreateUser(
 ): Promise<HumanUser> {
   const existing = await getUserByNullifier(nullifierHash)
   if (existing) {
-    // Backfill pseudoHandle if we now have a username and it wasn't set before
     if (username && !existing.pseudoHandle) {
       return updatePseudoHandle(nullifierHash, username)
     }
@@ -32,7 +33,6 @@ export async function getOrCreateUser(
     .onConflictDoNothing()
     .returning()
 
-  // Race condition: another request created it first
   if (!row) {
     const refetch = await getUserByNullifier(nullifierHash)
     if (!refetch) throw new Error('Failed to create user')
@@ -61,6 +61,34 @@ export async function updatePseudoHandle(
   const [row] = await db
     .update(humanUsers)
     .set({ pseudoHandle })
+    .where(eq(humanUsers.nullifierHash, nullifierHash))
+    .returning()
+
+  if (!row) throw new Error('User not found')
+  return toUser(row)
+}
+
+export async function updateAvatarUrl(
+  nullifierHash: string,
+  avatarUrl: string | null
+): Promise<HumanUser> {
+  const [row] = await db
+    .update(humanUsers)
+    .set({ avatarUrl })
+    .where(eq(humanUsers.nullifierHash, nullifierHash))
+    .returning()
+
+  if (!row) throw new Error('User not found')
+  return toUser(row)
+}
+
+export async function updateBio(
+  nullifierHash: string,
+  bio: string | null
+): Promise<HumanUser> {
+  const [row] = await db
+    .update(humanUsers)
+    .set({ bio: bio ? bio.slice(0, 160) : null })
     .where(eq(humanUsers.nullifierHash, nullifierHash))
     .returning()
 

@@ -10,11 +10,13 @@ import { generateAlias } from '@/lib/session'
 import { BOARDS, type BoardId } from '@/lib/types'
 import { cn, haptic } from '@/lib/utils'
 import { ImagePicker } from '@/components/ui/ImagePicker'
+import { QuotedPost } from '@/components/ui/QuotedPost'
 
 export function PostComposer() {
   const router = useRouter()
   const {
     isComposerOpen, setComposerOpen,
+    composerQuotedPost, setComposerQuotedPost,
     setDrawerOpen,
     identityMode,
     persistentAlias, setPersistentAlias,
@@ -65,11 +67,19 @@ export function PostComposer() {
 
   async function handleSubmit() {
     if (!title.trim() || !body.trim()) return
-    const post = await submit({ title, body, boardId, pseudoHandle: getPseudoHandle(), imageUrl: imageUrl ?? undefined })
+    const post = await submit({
+      title,
+      body,
+      boardId,
+      pseudoHandle: getPseudoHandle(),
+      imageUrl: imageUrl ?? undefined,
+      quotedPostId: composerQuotedPost?.id ?? undefined,
+    })
     if (post) {
       setTitle('')
       setBody('')
       setImageUrl(null)
+      setComposerQuotedPost(null)
       setComposerOpen(false)
       router.push(`/post/${post.id}`)
     }
@@ -80,8 +90,8 @@ export function PostComposer() {
   return (
     <BottomSheet
       isOpen={isComposerOpen}
-      onClose={() => setComposerOpen(false)}
-      title="New post"
+      onClose={() => { setComposerOpen(false); setComposerQuotedPost(null) }}
+      title={composerQuotedPost ? 'Quote post' : 'New post'}
     >
       <div className="space-y-5">
 
@@ -106,6 +116,11 @@ export function PostComposer() {
             ))}
           </div>
         </div>
+
+        {/* Quoted post preview */}
+        {composerQuotedPost && (
+          <QuotedPost post={composerQuotedPost} interactive={false} />
+        )}
 
         {/* Title */}
         <div>

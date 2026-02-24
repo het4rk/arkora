@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { upsertVote, getPostById } from '@/lib/db/posts'
+import { upsertVote, getPostNullifier } from '@/lib/db/posts'
 import { isVerifiedHuman } from '@/lib/db/users'
 import type { VoteInput } from '@/lib/types'
 
@@ -23,18 +23,25 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const post = await getPostById(postId)
-    if (!post) {
+    // Fetch only the nullifierHash — no need to load the full post twice
+    const postOwner = await getPostNullifier(postId)
+    if (!postOwner) {
       return NextResponse.json(
         { success: false, error: 'Post not found' },
         { status: 404 }
       )
     }
 
-    await upsertVote(postId, nullifierHash, direction)
+    if (postOwner === nullifierHash) {
+      return NextResponse.json(
+        { success: false, error: 'Cannot vote on your own post' },
+        { status: 403 }
+      )
+    }
 
-    const updated = await getPostById(postId)
-    return NextResponse.json({ success: true, data: updated })
+    await upsertVote(postId, nullifierHash, direction)
+    // Client uses optimistic updates — no need to re-fetch the post
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[vote POST]', err)
     return NextResponse.json(

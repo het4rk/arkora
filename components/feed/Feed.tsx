@@ -1,17 +1,21 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { useFeed } from '@/hooks/useFeed'
+import { useEffect, useRef, useState } from 'react'
+import { useFeed, type FeedMode } from '@/hooks/useFeed'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { ThreadCard } from './ThreadCard'
 import { FeedSkeleton } from './FeedSkeleton'
 import { PostComposer } from '@/components/compose/PostComposer'
 import { VerifyHuman } from '@/components/auth/VerifyHuman'
+import { haptic } from '@/lib/utils'
 
 export function Feed() {
-  const { activeBoard } = useArkoraStore()
+  const { activeBoard, nullifierHash, isVerified } = useArkoraStore()
+  const [feedMode, setFeedMode] = useState<FeedMode>('forYou')
   const { posts, isLoading, isLoadingMore, hasMore, error, loadMore, removePost } = useFeed(
-    activeBoard ?? undefined
+    activeBoard ?? undefined,
+    feedMode,
+    nullifierHash ?? undefined
   )
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -68,7 +72,35 @@ export function Feed() {
 
   return (
     <>
+      {/* Feed mode toggle — floats over the snap feed */}
+      {isVerified && (
+        <div className="fixed top-[max(env(safe-area-inset-top),12px)] left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg">
+          {(['forYou', 'following'] as FeedMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => { haptic('light'); setFeedMode(mode) }}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                feedMode === mode
+                  ? 'bg-accent text-white shadow-sm'
+                  : 'text-text-muted'
+              }`}
+            >
+              {mode === 'forYou' ? 'For You' : 'Following'}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="overflow-y-scroll snap-y snap-mandatory h-[calc(100dvh-56px)] scroll-smooth">
+        {feedMode === 'following' && !isLoading && posts.length === 0 && (
+          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+            <div>
+              <p className="text-3xl mb-4">👥</p>
+              <p className="font-bold text-text text-lg mb-2">No posts yet</p>
+              <p className="text-sm">Follow people to see their posts here.</p>
+            </div>
+          </div>
+        )}
         {posts.map((post) => (
           <ThreadCard key={post.id} post={post} onDeleted={removePost} />
         ))}

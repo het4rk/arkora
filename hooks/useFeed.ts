@@ -3,6 +3,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Post, BoardId } from '@/lib/types'
 
+export type FeedMode = 'forYou' | 'following'
+
+const FEED_LIMIT = 10
+
 interface UseFeedReturn {
   posts: Post[]
   isLoading: boolean
@@ -14,7 +18,7 @@ interface UseFeedReturn {
   removePost: (postId: string) => void
 }
 
-export function useFeed(boardId?: BoardId): UseFeedReturn {
+export function useFeed(boardId?: BoardId, feedMode: FeedMode = 'forYou', nullifierHash?: string): UseFeedReturn {
   const [posts, setPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -27,7 +31,7 @@ export function useFeed(boardId?: BoardId): UseFeedReturn {
 
   const applyPage = useCallback((fetched: Post[], reset: boolean) => {
     setPosts((prev) => (reset ? fetched : [...prev, ...fetched]))
-    setHasMore(fetched.length === 10)
+    setHasMore(fetched.length === FEED_LIMIT)
     if (fetched.length > 0) {
       const last = fetched[fetched.length - 1]
       if (last) cursorRef.current = new Date(last.createdAt).toISOString()
@@ -36,9 +40,13 @@ export function useFeed(boardId?: BoardId): UseFeedReturn {
 
   const fetchPosts = useCallback(
     async (reset: boolean) => {
-      const params = new URLSearchParams({ limit: '10' })
+      const params = new URLSearchParams({ limit: String(FEED_LIMIT) })
       if (boardId) params.set('boardId', boardId)
       if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
+      if (feedMode === 'following' && nullifierHash) {
+        params.set('feed', 'following')
+        params.set('nullifierHash', nullifierHash)
+      }
 
       const res = await fetch(`/api/posts?${params.toString()}`)
       if (!res.ok) throw new Error('Failed to fetch feed')
@@ -46,7 +54,7 @@ export function useFeed(boardId?: BoardId): UseFeedReturn {
       const json = (await res.json()) as { data: Post[] }
       applyPage(json.data, reset)
     },
-    [boardId, applyPage]
+    [boardId, feedMode, nullifierHash, applyPage]
   )
 
   const refresh = useCallback(async () => {
@@ -81,7 +89,7 @@ export function useFeed(boardId?: BoardId): UseFeedReturn {
     setIsLoading(true)
     setError(null)
     void fetchPosts(true).finally(() => setIsLoading(false))
-  }, [boardId, fetchPosts])
+  }, [boardId, feedMode, fetchPosts])
 
   const removePost = useCallback((postId: string) => {
     setPosts((prev) => prev.filter((p) => p.id !== postId))

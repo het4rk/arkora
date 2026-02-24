@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getFeed, createPost } from '@/lib/db/posts'
+import { getFeedFollowing } from '@/lib/db/follows'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { BOARDS } from '@/lib/types'
 import type { BoardId, CreatePostInput, FeedParams } from '@/lib/types'
@@ -9,11 +10,22 @@ const VALID_BOARD_IDS = new Set(BOARDS.map((b) => b.id))
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
+    const feed = searchParams.get('feed')
+    const nullifierHash = searchParams.get('nullifierHash')
+    const cursor = searchParams.get('cursor') ?? undefined
+    const limit = parseInt(searchParams.get('limit') ?? '10', 10)
+
+    // Following feed
+    if (feed === 'following' && nullifierHash) {
+      const posts = await getFeedFollowing(nullifierHash, cursor, limit)
+      return NextResponse.json({ success: true, data: posts })
+    }
+
     const rawBoardId = searchParams.get('boardId')
     const params: FeedParams = {
       boardId: rawBoardId && VALID_BOARD_IDS.has(rawBoardId as BoardId) ? (rawBoardId as BoardId) : undefined,
-      cursor: searchParams.get('cursor') ?? undefined,
-      limit: parseInt(searchParams.get('limit') ?? '10', 10),
+      cursor,
+      limit,
     }
 
     const posts = await getFeed(params)
@@ -70,7 +82,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const post = await createPost({ title, body: postBody, boardId, nullifierHash, pseudoHandle })
+    const quotedPostId = typeof body.quotedPostId === 'string' ? body.quotedPostId : undefined
+    const post = await createPost({ title, body: postBody, boardId, nullifierHash, pseudoHandle, imageUrl: body.imageUrl, quotedPostId })
     return NextResponse.json({ success: true, data: post }, { status: 201 })
   } catch (err) {
     console.error('[posts POST]', err)

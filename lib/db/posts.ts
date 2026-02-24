@@ -1,11 +1,16 @@
 import { db } from './index'
 import { posts, postVotes } from './schema'
-import { eq, desc, lt, and, isNull, sql } from 'drizzle-orm'
+import { eq, desc, lt, and, isNull, sql, aliasedTable } from 'drizzle-orm'
 import type { Post, BoardId, CreatePostInput, FeedParams } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
 
-// Map DB row → domain type
-function toPost(row: typeof posts.$inferSelect): Post {
+// Alias for self-join on quotedPost
+const quotedPosts = aliasedTable(posts, 'quoted_posts')
+
+function toPost(
+  row: typeof posts.$inferSelect,
+  quoted?: typeof posts.$inferSelect | null
+): Post {
   return {
     id: row.id,
     title: row.title,
@@ -20,6 +25,8 @@ function toPost(row: typeof posts.$inferSelect): Post {
     replyCount: row.replyCount,
     createdAt: row.createdAt,
     deletedAt: row.deletedAt ?? null,
+    quotedPostId: row.quotedPostId ?? null,
+    quotedPost: quoted ? toPost(quoted) : null,
   }
 }
 
@@ -35,6 +42,7 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       pseudoHandle: input.pseudoHandle ?? null,
       sessionTag,
       imageUrl: input.imageUrl ?? null,
+      quotedPostId: input.quotedPostId ?? null,
     })
     .returning()
 
@@ -42,9 +50,28 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
   return toPost(row)
 }
 
+type PostWithQuoted = { post: typeof posts.$inferSelect; quoted: typeof posts.$inferSelect | null }
+
 export async function getPostById(id: string): Promise<Post | null> {
-  const [row] = await db.select().from(posts).where(eq(posts.id, id)).limit(1)
-  return row ? toPost(row) : null
+  const rows = await db
+    .select({ post: posts, quoted: quotedPosts })
+    .from(posts)
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
+    .where(eq(posts.id, id))
+    .limit(1) as PostWithQuoted[]
+
+  const row = rows[0]
+  return row ? toPost(row.post, row.quoted) : null
+}
+
+/** Lightweight check — returns only the post owner's nullifierHash (no joins). */
+export async function getPostNullifier(id: string): Promise<string | null> {
+  const [row] = await db
+    .select({ nullifierHash: posts.nullifierHash })
+    .from(posts)
+    .where(eq(posts.id, id))
+    .limit(1)
+  return row?.nullifierHash ?? null
 }
 
 export async function getFeed(params: FeedParams): Promise<Post[]> {
@@ -59,13 +86,14 @@ export async function getFeed(params: FeedParams): Promise<Post[]> {
   }
 
   const rows = await db
-    .select()
+    .select({ post: posts, quoted: quotedPosts })
     .from(posts)
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
-    .limit(limit)
+    .limit(limit) as PostWithQuoted[]
 
-  return rows.map(toPost)
+  return rows.map((r) => toPost(r.post, r.quoted))
 }
 
 export async function incrementReplyCount(postId: string): Promise<void> {
@@ -106,7 +134,6 @@ export async function upsertVote(
   nullifierHash: string,
   direction: 1 | -1
 ): Promise<void> {
-  // Upsert: insert or update if already voted
   await db.execute(
     sql`INSERT INTO post_votes (post_id, nullifier_hash, direction)
         VALUES (${postId}, ${nullifierHash}, ${direction})
@@ -114,7 +141,6 @@ export async function upsertVote(
         DO UPDATE SET direction = ${direction}, created_at = now()`
   )
 
-  // Recompute tallies from source of truth
   const tallies = await db.execute<{ up: string | null; down: string | null }>(
     sql`SELECT
           SUM(CASE WHEN direction = 1 THEN 1 ELSE 0 END)::text AS up,
@@ -153,13 +179,14 @@ export async function getPostsByNullifier(
   }
 
   const rows = await db
-    .select()
+    .select({ post: posts, quoted: quotedPosts })
     .from(posts)
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
-    .limit(Math.min(limit, 50))
+    .limit(Math.min(limit, 50)) as PostWithQuoted[]
 
-  return rows.map(toPost)
+  return rows.map((r) => toPost(r.post, r.quoted))
 }
 
 export async function getVotedPostsByNullifier(
@@ -169,16 +196,18 @@ export async function getVotedPostsByNullifier(
   const rows = await db
     .select({
       post: posts,
+      quoted: quotedPosts,
       direction: postVotes.direction,
     })
     .from(postVotes)
     .innerJoin(posts, and(eq(postVotes.postId, posts.id), isNull(posts.deletedAt)))
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
     .where(eq(postVotes.nullifierHash, nullifierHash))
     .orderBy(desc(postVotes.createdAt))
-    .limit(Math.min(limit, 50))
+    .limit(Math.min(limit, 50)) as Array<PostWithQuoted & { direction: number }>
 
-  return rows.map(({ post, direction }) => ({
-    ...toPost(post),
+  return rows.map(({ post, quoted, direction }) => ({
+    ...toPost(post, quoted),
     voteDirection: direction as 1 | -1,
   }))
 }

@@ -22,25 +22,10 @@ export function BottomNav() {
         <div className="glass-nav">
           <div className="flex items-center justify-around h-14 px-2">
 
-            {/* Menu */}
-            <button
-              onClick={() => { haptic('light'); setDrawerOpen(true) }}
-              aria-label="Open settings"
-              className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all active:scale-90"
-            >
-              <svg width="20" height="14" viewBox="0 0 20 14" fill="none"
-                stroke="currentColor" className="text-text-muted"
-                strokeWidth="1.8" strokeLinecap="round">
-                <line x1="0" y1="1"  x2="20" y2="1"  />
-                <line x1="0" y1="7"  x2="20" y2="7"  />
-                <line x1="0" y1="13" x2="20" y2="13" />
-              </svg>
-              <span className="text-[10px] font-medium text-text-muted">Menu</span>
-            </button>
-
             {/* Feed */}
             <Link
               href="/"
+              onClick={() => haptic('light')}
               className={cn(
                 'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
                 pathname === '/' ? 'text-white' : 'text-text-muted'
@@ -57,18 +42,6 @@ export function BottomNav() {
               </span>
             </Link>
 
-            {/* Compose FAB */}
-            <button
-              onClick={() => { haptic('medium'); setComposerOpen(true) }}
-              className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center shadow-lg shadow-accent/30 active:scale-95 transition-all active:bg-accent-hover"
-              aria-label="Create post"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </button>
-
             {/* Search */}
             <button
               onClick={() => { haptic('light'); setSearchOpen(true) }}
@@ -84,9 +57,38 @@ export function BottomNav() {
               <span className="text-[10px] font-medium text-text-muted">Search</span>
             </button>
 
+            {/* Compose FAB */}
+            <button
+              onClick={() => { haptic('medium'); setComposerOpen(true) }}
+              className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center shadow-lg shadow-accent/30 active:scale-95 transition-all active:bg-accent-hover"
+              aria-label="Create post"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+
+            {/* Menu (identity, theme, settings) */}
+            <button
+              onClick={() => { haptic('light'); setDrawerOpen(true) }}
+              aria-label="Menu"
+              className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all active:scale-90"
+            >
+              <svg width="20" height="14" viewBox="0 0 20 14" fill="none"
+                stroke="currentColor" className="text-text-muted"
+                strokeWidth="1.8" strokeLinecap="round">
+                <line x1="0" y1="1"  x2="20" y2="1"  />
+                <line x1="0" y1="7"  x2="20" y2="7"  />
+                <line x1="0" y1="13" x2="20" y2="13" />
+              </svg>
+              <span className="text-[10px] font-medium text-text-muted">Menu</span>
+            </button>
+
             {/* Profile */}
             <Link
               href="/profile"
+              onClick={() => haptic('light')}
               className={cn(
                 'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
                 pathname === '/profile' ? 'text-white' : 'text-text-muted'

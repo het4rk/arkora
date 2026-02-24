@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { getOrCreateUser } from '@/lib/db/users'
+import { getOrCreateUser, updateAvatarUrl, updateBio } from '@/lib/db/users'
 
 /**
  * Derives a stable pseudonymous identity from the wallet address
@@ -39,5 +39,27 @@ export async function POST(req: NextRequest) {
       { success: false, error: 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = (await req.json()) as { nullifierHash?: string; avatarUrl?: string | null; bio?: string | null }
+    const { nullifierHash, avatarUrl, bio } = body
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'nullifierHash required' }, { status: 400 })
+    }
+    let user
+    if (avatarUrl !== undefined) {
+      user = await updateAvatarUrl(nullifierHash, avatarUrl ?? null)
+    } else if (bio !== undefined) {
+      user = await updateBio(nullifierHash, bio ?? null)
+    } else {
+      return NextResponse.json({ success: false, error: 'Nothing to update' }, { status: 400 })
+    }
+    return NextResponse.json({ success: true, user })
+  } catch (err) {
+    console.error('[auth/user PATCH]', err)
+    return NextResponse.json({ success: false, error: 'Failed to update user' }, { status: 500 })
   }
 }

@@ -72,6 +72,13 @@ export function OnboardingScreen() {
   const slide = SLIDES[step]!
   const isLast = step === SLIDES.length - 1
 
+  // "Browse as guest" — dismiss onboarding, user views feed without verifying.
+  // Any action requiring identity will trigger the verify sheet naturally.
+  function browseAsGuest() {
+    haptic('light')
+    setHasOnboarded(true)
+  }
+
   return (
     <motion.div
       className="fixed inset-0 z-[100] flex flex-col bg-background"
@@ -150,13 +157,23 @@ export function OnboardingScreen() {
           ))}
         </div>
 
-        {/* CTA button */}
+        {/* Primary CTA */}
         <button
           onClick={advance}
           className="w-full bg-accent text-white font-semibold py-4 rounded-[var(--r-lg)] text-base tracking-[-0.01em] shadow-lg shadow-accent/25 active:scale-[0.98] active:bg-accent-hover transition-all"
         >
-          {isLast ? 'Get started' : 'Continue'}
+          {isLast ? 'Verify & join' : 'Continue'}
         </button>
+
+        {/* Guest option — only on last slide */}
+        {isLast && (
+          <button
+            onClick={browseAsGuest}
+            className="w-full mt-3 py-3.5 rounded-[var(--r-lg)] text-text-muted text-[15px] font-medium active:opacity-60 transition-opacity"
+          >
+            Browse without account →
+          </button>
+        )}
       </div>
     </motion.div>
   )

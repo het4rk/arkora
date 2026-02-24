@@ -37,7 +37,9 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const url = await storage.upload(buffer, file.name, file.type)
+    // Strip path separators and control characters to prevent path traversal
+    const safeName = file.name.replace(/[/\\?%*:|"<>\x00-\x1f]/g, '_')
+    const url = await storage.upload(buffer, safeName, file.type)
 
     return NextResponse.json({ success: true, url })
   } catch (err) {

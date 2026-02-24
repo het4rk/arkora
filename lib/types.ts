@@ -22,6 +22,8 @@ export interface Post {
   replyCount: number
   createdAt: Date
   deletedAt: Date | null
+  quotedPostId: string | null
+  quotedPost: Post | null
 }
 
 export interface Reply {
@@ -43,6 +45,8 @@ export interface HumanUser {
   nullifierHash: string
   walletAddress: string
   pseudoHandle: string | null
+  avatarUrl: string | null
+  bio: string | null
   createdAt: Date
 }
 
@@ -65,6 +69,7 @@ export interface CreatePostInput {
   nullifierHash: string
   pseudoHandle?: string | undefined
   imageUrl?: string | undefined
+  quotedPostId?: string | undefined
 }
 
 export interface CreateReplyInput {

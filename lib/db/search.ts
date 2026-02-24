@@ -18,6 +18,8 @@ function toPost(row: typeof posts.$inferSelect): Post {
     replyCount: row.replyCount,
     createdAt: row.createdAt,
     deletedAt: row.deletedAt ?? null,
+    quotedPostId: row.quotedPostId ?? null,
+    quotedPost: null,
   }
 }
 

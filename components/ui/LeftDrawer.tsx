@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkoraStore'
@@ -22,6 +23,7 @@ const THEMES: { value: Theme; label: string; icon: string }[] = [
 ]
 
 export function LeftDrawer() {
+  const router = useRouter()
   const {
     isDrawerOpen, setDrawerOpen,
     identityMode, setIdentityMode,
@@ -201,11 +203,22 @@ export function LeftDrawer() {
             </div>
 
             {/* ── Footer ───────────────────────────────────────────── */}
-            <div className="px-6 pb-[max(env(safe-area-inset-bottom),24px)] pt-4 border-t border-white/[0.07]">
+            <div className="px-6 pb-[max(env(safe-area-inset-bottom),24px)] pt-4 border-t border-white/[0.07] space-y-3">
+              <button
+                onClick={() => { setDrawerOpen(false); router.push('/settings') }}
+                className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-text-muted text-sm active:opacity-70 transition-opacity"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                <span>Settings</span>
+              </button>
               <p className="text-text-muted/70 text-[11px] text-center leading-relaxed">
                 Every voice is verified human.
               </p>
-              <p className="text-text-muted/40 text-[10px] text-center mt-1">
+              <p className="text-text-muted/40 text-[10px] text-center">
                 Powered by World ID
               </p>
             </div>

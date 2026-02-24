@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { HumanUser, BoardId } from '@/lib/types'
+import type { HumanUser, BoardId, Post } from '@/lib/types'
 
 export type IdentityMode = 'anonymous' | 'alias' | 'named'
 export type Theme = 'dark' | 'light'
@@ -28,9 +28,13 @@ interface ArkoraState {
   // UI State
   activeBoard: BoardId | null
   isComposerOpen: boolean
+  composerQuotedPost: Post | null
   isVerifySheetOpen: boolean
   isDrawerOpen: boolean
   isSearchOpen: boolean
+
+  // DM — private key stored client-side only, never sent to server
+  dmPrivateKey: string | null
 
   // Optimistic vote cache: postId → direction
   optimisticVotes: Record<string, 1 | -1>
@@ -44,6 +48,8 @@ interface ArkoraState {
   setHasOnboarded: (v: boolean) => void
   setActiveBoard: (boardId: BoardId | null) => void
   setComposerOpen: (open: boolean) => void
+  setComposerQuotedPost: (post: Post | null) => void
+  setDmPrivateKey: (key: string | null) => void
   setVerifySheetOpen: (open: boolean) => void
   setDrawerOpen: (open: boolean) => void
   setSearchOpen: (open: boolean) => void
@@ -63,6 +69,8 @@ const initialState = {
   hasOnboarded: false,
   activeBoard: null,
   isComposerOpen: false,
+  composerQuotedPost: null,
+  dmPrivateKey: null,
   isVerifySheetOpen: false,
   isDrawerOpen: false,
   isSearchOpen: false,
@@ -90,6 +98,10 @@ export const useArkoraStore = create<ArkoraState>()(
       setActiveBoard: (boardId) => set({ activeBoard: boardId }),
 
       setComposerOpen: (open) => set({ isComposerOpen: open }),
+
+      setComposerQuotedPost: (post) => set({ composerQuotedPost: post }),
+
+      setDmPrivateKey: (key) => set({ dmPrivateKey: key }),
 
       setVerifySheetOpen: (open) => set({ isVerifySheetOpen: open }),
 
@@ -122,6 +134,7 @@ export const useArkoraStore = create<ArkoraState>()(
         persistentAlias: state.persistentAlias,
         theme: state.theme,
         hasOnboarded: state.hasOnboarded,
+        dmPrivateKey: state.dmPrivateKey,
       }),
     }
   )

@@ -7,8 +7,12 @@ import { HumanBadge } from '@/components/ui/HumanBadge'
 import { BoardTag } from '@/components/ui/BoardTag'
 import { VoteButtons } from '@/components/ui/VoteButtons'
 import { TimeAgo } from '@/components/ui/TimeAgo'
+import { BookmarkButton } from '@/components/ui/BookmarkButton'
+import { QuotedPost } from '@/components/ui/QuotedPost'
 import { ReplyTree } from './ReplyTree'
 import { ReplyComposer } from './ReplyComposer'
+import { useArkoraStore } from '@/store/useArkoraStore'
+import { haptic } from '@/lib/utils'
 import type { Reply } from '@/lib/types'
 
 interface ThreadData {
@@ -23,6 +27,7 @@ interface Props {
 
 export function ThreadView({ postId }: Props) {
   const router = useRouter()
+  const { setComposerOpen, setComposerQuotedPost } = useArkoraStore()
   const [data, setData] = useState<ThreadData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -99,7 +104,17 @@ export function ThreadView({ postId }: Props) {
             {post.title}
           </h1>
 
-          <HumanBadge label={displayName} size="md" />
+          {/* Only navigate to profile from non-anonymous posts */}
+          <HumanBadge
+            label={displayName}
+            nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
+            size="md"
+          />
+
+          {/* Quoted post */}
+          {post.quotedPost && (
+            <QuotedPost post={post.quotedPost} />
+          )}
 
           {/* Post image */}
           {post.imageUrl && (
@@ -132,9 +147,27 @@ export function ThreadView({ postId }: Props) {
 
           <div className="flex items-center justify-between pt-1">
             <VoteButtons post={post} />
-            <span className="text-text-muted text-xs">
-              {post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}
-            </span>
+            <div className="flex items-center gap-3">
+              {/* Quote button */}
+              <button
+                onClick={() => { haptic('light'); setComposerQuotedPost(post); setComposerOpen(true) }}
+                aria-label="Quote post"
+                className="flex items-center gap-1 text-text-muted text-xs active:scale-90 transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="17 1 21 5 17 9" />
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                  <polyline points="7 23 3 19 7 15" />
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+                <span>Quote</span>
+              </button>
+              <BookmarkButton postId={post.id} />
+              <span className="text-text-muted text-xs">
+                {post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}
+              </span>
+            </div>
           </div>
         </article>
 

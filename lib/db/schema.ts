@@ -25,6 +25,7 @@ export const posts = pgTable(
     replyCount: integer('reply_count').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
+    quotedPostId: uuid('quoted_post_id'),
   },
   (table) => ({
     boardIdx: index('posts_board_id_idx').on(table.boardId),
@@ -61,6 +62,8 @@ export const humanUsers = pgTable('human_users', {
   nullifierHash: text('nullifier_hash').primaryKey(),
   walletAddress: text('wallet_address').notNull(),
   pseudoHandle: text('pseudo_handle'),
+  avatarUrl: text('avatar_url'),
+  bio: text('bio'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -99,8 +102,67 @@ export const postVotes = pgTable(
   })
 )
 
+export const bookmarks = pgTable(
+  'bookmarks',
+  {
+    nullifierHash: text('nullifier_hash').notNull(),
+    postId: uuid('post_id')
+      .references(() => posts.id, { onDelete: 'cascade' })
+      .notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.nullifierHash, table.postId] }),
+    nullifierIdx: index('bookmarks_nullifier_idx').on(table.nullifierHash),
+  })
+)
+
+export const follows = pgTable(
+  'follows',
+  {
+    followerId: text('follower_id').notNull(),
+    followedId: text('followed_id').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.followerId, table.followedId] }),
+    followerIdx: index('follows_follower_idx').on(table.followerId),
+    followedIdx: index('follows_followed_idx').on(table.followedId),
+  })
+)
+
+// ── Direct Messages ──────────────────────────────────────────────────────────
+// Public key registry — one row per user, updated when they register a new key
+export const dmKeys = pgTable('dm_keys', {
+  nullifierHash: text('nullifier_hash').primaryKey(),
+  publicKey: text('public_key').notNull(),   // base64url Curve25519 public key
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// Encrypted message blobs — server stores ciphertext only
+export const dmMessages = pgTable(
+  'dm_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    senderHash: text('sender_hash').notNull(),
+    recipientHash: text('recipient_hash').notNull(),
+    ciphertext: text('ciphertext').notNull(),   // base64 AES-256-GCM ciphertext
+    nonce: text('nonce').notNull(),             // base64 12-byte GCM nonce
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    convIdx: index('dm_messages_conv_idx').on(table.senderHash, table.recipientHash),
+    recipientIdx: index('dm_messages_recipient_idx').on(table.recipientHash, table.createdAt),
+  })
+)
+
 export type DbPost = typeof posts.$inferSelect
 export type DbReply = typeof replies.$inferSelect
 export type DbHumanUser = typeof humanUsers.$inferSelect
 export type DbCommunityNote = typeof communityNotes.$inferSelect
 export type DbPostVote = typeof postVotes.$inferSelect
+export type DbBookmark = typeof bookmarks.$inferSelect
+export type DbFollow = typeof follows.$inferSelect
+export type DbDmKey = typeof dmKeys.$inferSelect
+export type DbDmMessage = typeof dmMessages.$inferSelect

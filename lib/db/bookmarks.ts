@@ -1,0 +1,65 @@
+import { db } from './index'
+import { bookmarks, posts } from './schema'
+import { eq, and, desc, isNull } from 'drizzle-orm'
+import type { Post, BoardId } from '@/lib/types'
+
+function toPost(row: typeof posts.$inferSelect): Post {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    boardId: row.boardId as BoardId,
+    nullifierHash: row.nullifierHash,
+    pseudoHandle: row.pseudoHandle ?? null,
+    sessionTag: row.sessionTag,
+    imageUrl: row.imageUrl ?? null,
+    upvotes: row.upvotes,
+    downvotes: row.downvotes,
+    replyCount: row.replyCount,
+    createdAt: row.createdAt,
+    deletedAt: row.deletedAt ?? null,
+    quotedPostId: row.quotedPostId ?? null,
+    quotedPost: null,
+  }
+}
+
+export async function toggleBookmark(
+  nullifierHash: string,
+  postId: string
+): Promise<boolean> {
+  // Atomic: DELETE first. If deleted → was bookmarked → return false.
+  // Nothing deleted → not bookmarked → INSERT with conflict guard → return true.
+  const deleted = await db
+    .delete(bookmarks)
+    .where(and(eq(bookmarks.nullifierHash, nullifierHash), eq(bookmarks.postId, postId)))
+    .returning({ postId: bookmarks.postId })
+
+  if (deleted.length > 0) return false
+
+  await db.insert(bookmarks).values({ nullifierHash, postId }).onConflictDoNothing()
+  return true
+}
+
+export async function isBookmarked(nullifierHash: string, postId: string): Promise<boolean> {
+  const [row] = await db
+    .select()
+    .from(bookmarks)
+    .where(and(eq(bookmarks.nullifierHash, nullifierHash), eq(bookmarks.postId, postId)))
+    .limit(1)
+  return !!row
+}
+
+export async function getBookmarksByNullifier(
+  nullifierHash: string,
+  limit = 30
+): Promise<Post[]> {
+  const rows = await db
+    .select({ post: posts })
+    .from(bookmarks)
+    .innerJoin(posts, and(eq(bookmarks.postId, posts.id), isNull(posts.deletedAt)))
+    .where(eq(bookmarks.nullifierHash, nullifierHash))
+    .orderBy(desc(bookmarks.createdAt))
+    .limit(Math.min(limit, 50))
+
+  return rows.map(({ post }) => toPost(post))
+}
