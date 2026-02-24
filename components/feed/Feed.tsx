@@ -239,6 +239,24 @@ export function Feed() {
           </div>
         )}
 
+        {/* Guest join CTA — shown once per session to unverified users */}
+        {!isVerified && posts.length > 0 && (
+          <div className="px-4 pt-4 pb-2">
+            <div className="glass rounded-[var(--r-lg)] px-4 py-3.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-text text-sm font-semibold leading-tight">Join the conversation</p>
+                <p className="text-text-muted text-xs mt-0.5">Post, reply, and vote as a verified human.</p>
+              </div>
+              <button
+                onClick={() => useArkoraStore.getState().setVerifySheetOpen(true)}
+                className="bg-accent text-white text-xs font-semibold px-3.5 py-2.5 rounded-[var(--r-md)] active:scale-95 active:bg-accent-hover transition-all shrink-0"
+              >
+                Verify →
+              </button>
+            </div>
+          </div>
+        )}
+
         {posts.map((post) => (
           <ThreadCard key={post.id} post={post} onDeleted={removePost} isBookmarked={bookmarkedIds.has(post.id)} />
         ))}

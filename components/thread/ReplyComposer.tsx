@@ -43,6 +43,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
     if (!body.trim()) return
 
     if (!isVerified || !nullifierHash) {
+      setError('Only verified humans can reply on Arkora. Verify with World ID to join the conversation.')
       setVerifySheetOpen(true)
       return
     }

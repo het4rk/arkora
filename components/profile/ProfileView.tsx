@@ -128,9 +128,15 @@ export function ProfileView() {
   if (!isVerified || !nullifierHash) {
     return (
       <div className="min-h-dvh bg-background flex flex-col items-center justify-center px-8 text-center">
-        <div className="text-4xl mb-4">🔒</div>
-        <p className="font-bold text-text text-xl mb-2">Profile locked</p>
-        <p className="text-text-secondary text-sm">Verify with World ID to see your profile.</p>
+        <div className="text-4xl mb-5">👤</div>
+        <p className="font-bold text-text text-xl mb-2">Your profile</p>
+        <p className="text-text-secondary text-sm mb-6 max-w-[260px]">Verify with World ID to see your posts, bookmarks, and activity.</p>
+        <button
+          onClick={() => useArkoraStore.getState().setVerifySheetOpen(true)}
+          className="bg-accent text-white font-semibold py-3.5 px-6 rounded-[var(--r-lg)] text-sm active:scale-[0.98] active:bg-accent-hover transition-all shadow-lg shadow-accent/25"
+        >
+          Verify with World ID
+        </button>
       </div>
     )
   }
