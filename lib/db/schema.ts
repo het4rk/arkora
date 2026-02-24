@@ -220,3 +220,44 @@ export type DbDmKey = typeof dmKeys.$inferSelect
 export type DbDmMessage = typeof dmMessages.$inferSelect
 export type DbReplyVote = typeof replyVotes.$inferSelect
 export type DbCommunityNoteVote = typeof communityNoteVotes.$inferSelect
+
+// ── Tips ──────────────────────────────────────────────────────────────────────
+export const tips = pgTable(
+  'tips',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    senderHash: text('sender_hash').notNull(),
+    recipientHash: text('recipient_hash').notNull(),
+    recipientWallet: text('recipient_wallet').notNull(),
+    amountWld: text('amount_wld').notNull(),
+    txId: text('tx_id'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    recipientIdx: index('tips_recipient_idx').on(t.recipientHash),
+  })
+)
+
+// ── Subscriptions ─────────────────────────────────────────────────────────────
+export const subscriptions = pgTable(
+  'subscriptions',
+  {
+    subscriberHash: text('subscriber_hash').notNull(),
+    creatorHash: text('creator_hash').notNull(),
+    creatorWallet: text('creator_wallet').notNull(),
+    amountWld: text('amount_wld').notNull().default('1'),
+    txId: text('tx_id'),
+    startedAt: timestamp('started_at').defaultNow().notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    cancelledAt: timestamp('cancelled_at'),
+    isActive: boolean('is_active').default(true).notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.subscriberHash, t.creatorHash] }),
+    creatorIdx: index('subscriptions_creator_idx').on(t.creatorHash),
+    subscriberIdx: index('subscriptions_subscriber_idx').on(t.subscriberHash),
+  })
+)
+
+export type DbTip = typeof tips.$inferSelect
+export type DbSubscription = typeof subscriptions.$inferSelect

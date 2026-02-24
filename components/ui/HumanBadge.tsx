@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
+import { WorldHumanIcon } from '@/components/ui/WorldHumanIcon'
 
 type BadgeSize = 'sm' | 'md' | 'lg'
 
@@ -20,10 +21,10 @@ const sizeStyles: Record<BadgeSize, string> = {
   lg: 'text-base gap-1.5 px-3 py-1.5',
 }
 
-const checkSizes: Record<BadgeSize, string> = {
-  sm: 'text-[10px]',
-  md: 'text-xs',
-  lg: 'text-sm',
+const iconSizes: Record<BadgeSize, number> = {
+  sm: 10,
+  md: 12,
+  lg: 15,
 }
 
 const avatarSizes: Record<BadgeSize, 'sm' | 'sm' | 'md'> = {
@@ -51,12 +52,7 @@ export function HumanBadge({ label, avatarUrl, nullifierHash, size = 'md', class
         <Avatar avatarUrl={avatarUrl} label={label ?? null} size={avatarSizes[size]} className="-ml-0.5 mr-1" />
       )}
       {label && <span>{label}</span>}
-      <span
-        className={cn('font-bold leading-none', checkSizes[size])}
-        aria-label="Verified human"
-      >
-        ✓
-      </span>
+      <WorldHumanIcon size={iconSizes[size]} className="shrink-0" />
     </span>
   )
 

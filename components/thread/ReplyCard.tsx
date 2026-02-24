@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Reply } from '@/lib/types'
 import { HumanBadge } from '@/components/ui/HumanBadge'
+import { InlineFollowButton } from '@/components/ui/InlineFollowButton'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
@@ -105,7 +106,10 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
     <div className="glass rounded-[var(--r-lg)] p-4 space-y-3">
       {/* Top row */}
       <div className="flex items-center justify-between">
-        <HumanBadge label={displayName} size="sm" />
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <HumanBadge label={displayName} size="sm" />
+          <InlineFollowButton targetHash={reply.nullifierHash} />
+        </div>
         <div className="flex items-center gap-2.5">
           {isTopReply && (
             <span className="text-[10px] text-accent font-bold uppercase tracking-[0.10em]">

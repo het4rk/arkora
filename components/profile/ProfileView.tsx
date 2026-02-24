@@ -27,6 +27,7 @@ export function ProfileView() {
   const [saved, setSaved] = useState<Post[]>([])
   const [followerCount, setFollowerCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
+  const [subscriberCount, setSubscriberCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [bioEditMode, setBioEditMode] = useState(false)
@@ -59,11 +60,18 @@ export function ProfileView() {
   async function fetchFollowCounts() {
     if (!nullifierHash) return
     try {
-      const res = await fetch(`/api/follow?nullifierHash=${encodeURIComponent(nullifierHash)}`)
-      const json = (await res.json()) as { success: boolean; data?: { followerCount: number; followingCount: number } }
-      if (json.success && json.data) {
-        setFollowerCount(json.data.followerCount)
-        setFollowingCount(json.data.followingCount)
+      const [followRes, subRes] = await Promise.all([
+        fetch(`/api/follow?nullifierHash=${encodeURIComponent(nullifierHash)}`),
+        fetch(`/api/u/${encodeURIComponent(nullifierHash)}`),
+      ])
+      const followJson = (await followRes.json()) as { success: boolean; data?: { followerCount: number; followingCount: number } }
+      if (followJson.success && followJson.data) {
+        setFollowerCount(followJson.data.followerCount)
+        setFollowingCount(followJson.data.followingCount)
+      }
+      const subJson = (await subRes.json()) as { success: boolean; data?: { subscriberCount: number } }
+      if (subJson.success && subJson.data) {
+        setSubscriberCount(subJson.data.subscriberCount)
       }
     } catch { /* ignore */ }
   }
@@ -193,9 +201,12 @@ export function ProfileView() {
             <Avatar avatarUrl={user?.avatarUrl ?? null} label={displayName()} size="md" />
             <HumanBadge label={displayName()} size="lg" />
           </div>
-          <div className="flex items-center gap-4 text-xs text-text-muted">
+          <div className="flex items-center gap-4 text-xs text-text-muted flex-wrap">
             <span><span className="text-text font-semibold">{followerCount}</span> followers</span>
             <span><span className="text-text font-semibold">{followingCount}</span> following</span>
+            {subscriberCount > 0 && (
+              <span><span className="text-amber-400 font-semibold">{subscriberCount}</span> subscribers</span>
+            )}
           </div>
 
           {/* Bio */}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkoraStore'
@@ -29,6 +29,46 @@ export function SettingsView() {
   } = useArkoraStore()
 
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
+
+  // ── Subscriptions state ───────────────────────────────────────────────────
+  interface SubRow {
+    creatorHash: string
+    creatorWallet: string
+    amountWld: string
+    expiresAt: string
+    daysLeft: number
+    creatorName?: string
+  }
+  const [subs, setSubs] = useState<SubRow[]>([])
+  const [subsLoading, setSubsLoading] = useState(false)
+  const [cancellingHash, setCancellingHash] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!nullifierHash || !isVerified) return
+    setSubsLoading(true)
+    void fetch(`/api/subscribe/list?subscriberHash=${encodeURIComponent(nullifierHash)}`)
+      .then((r) => r.json())
+      .then((j: { success: boolean; data?: SubRow[] }) => {
+        if (j.success && j.data) setSubs(j.data)
+      })
+      .finally(() => setSubsLoading(false))
+  }, [nullifierHash, isVerified])
+
+  async function cancelSub(creatorHash: string) {
+    if (!nullifierHash) return
+    setCancellingHash(creatorHash)
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriberHash: nullifierHash, creatorHash }),
+      })
+      const json = (await res.json()) as { success: boolean }
+      if (json.success) setSubs((prev) => prev.filter((s) => s.creatorHash !== creatorHash))
+    } finally {
+      setCancellingHash(null)
+    }
+  }
 
   function commitAlias() {
     const trimmed = aliasDraft.trim().slice(0, 32)
@@ -202,6 +242,40 @@ export function SettingsView() {
               </p>
             </div>
           </section>
+
+          {/* ── Subscriptions ──────────────────────────────────── */}
+          {isVerified && (
+            <section className="space-y-3">
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">My Subscriptions</p>
+              {subsLoading ? (
+                <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm animate-pulse">Loading…</div>
+              ) : subs.length === 0 ? (
+                <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm">No active subscriptions.</div>
+              ) : (
+                <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
+                  {subs.map((sub) => (
+                    <div key={sub.creatorHash} className="px-4 py-3.5 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-text text-sm font-medium truncate">
+                          Human #{sub.creatorHash.slice(-6)}
+                        </p>
+                        <p className="text-text-muted text-xs mt-0.5">
+                          {sub.daysLeft}d remaining · {sub.amountWld} WLD/mo
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => void cancelSub(sub.creatorHash)}
+                        disabled={cancellingHash === sub.creatorHash}
+                        className="shrink-0 px-3 py-1.5 glass rounded-[var(--r-full)] text-xs text-downvote font-semibold active:scale-95 transition-all disabled:opacity-40"
+                      >
+                        {cancellingHash === sub.creatorHash ? '…' : 'Cancel'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* ── About ──────────────────────────────────────────── */}
           <section className="space-y-3">

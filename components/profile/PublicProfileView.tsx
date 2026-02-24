@@ -6,6 +6,8 @@ import { useArkoraStore } from '@/store/useArkoraStore'
 import { Avatar } from '@/components/ui/Avatar'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { ProfilePostCard } from './ProfilePostCard'
+import { TipModal } from '@/components/ui/TipModal'
+import { sendWld } from '@/hooks/useTip'
 import { haptic } from '@/lib/utils'
 import type { Post, HumanUser } from '@/lib/types'
 import Link from 'next/link'
@@ -17,6 +19,9 @@ interface ProfileData {
   followingCount: number
   postCount: number
   isFollowing: boolean
+  subscriberCount: number
+  isSubscribed: boolean
+  subscriptionDaysLeft: number | null
 }
 
 interface Props {
@@ -29,6 +34,8 @@ export function PublicProfileView({ nullifierHash }: Props) {
   const [data, setData] = useState<ProfileData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [followLoading, setFollowLoading] = useState(false)
+  const [tipOpen, setTipOpen] = useState(false)
+  const [subLoading, setSubLoading] = useState(false)
   const isOwnProfile = viewerHash === nullifierHash
 
   const fetchProfile = useCallback(async () => {
@@ -65,6 +72,43 @@ export function PublicProfileView({ nullifierHash }: Props) {
       }
     } finally {
       setFollowLoading(false)
+    }
+  }
+
+  async function handleSubscribe() {
+    if (!isVerified || !viewerHash) { setVerifySheetOpen(true); return }
+    if (!data) return
+    haptic('medium')
+    setSubLoading(true)
+    try {
+      const wallet = data.user?.walletAddress
+      if (!wallet) throw new Error('No wallet')
+      if (data.isSubscribed) {
+        // Cancel flow — ask confirmation via simple logic (toggle)
+        const res = await fetch('/api/subscribe', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriberHash: viewerHash, creatorHash: nullifierHash }),
+        })
+        const json = (await res.json()) as { success: boolean }
+        if (json.success) {
+          setData({ ...data, isSubscribed: false, subscriptionDaysLeft: null, subscriberCount: Math.max(0, data.subscriberCount - 1) })
+        }
+      } else {
+        // New subscription — trigger WLD payment first
+        const txId = await sendWld(wallet, 1)
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriberHash: viewerHash, creatorHash: nullifierHash, amountWld: '1', txId }),
+        })
+        const json = (await res.json()) as { success: boolean; data?: { isSubscribed: boolean; daysLeft: number } }
+        if (json.success && json.data) {
+          setData({ ...data, isSubscribed: true, subscriptionDaysLeft: json.data.daysLeft, subscriberCount: data.subscriberCount + 1 })
+        }
+      }
+    } finally {
+      setSubLoading(false)
     }
   }
 
@@ -114,7 +158,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
                 </div>
               </div>
 
-              {/* Follow + Message buttons — hidden on own profile */}
+              {/* Follow + Message + Tip + Subscribe — hidden on own profile */}
               {!isOwnProfile && (
                 <div className="shrink-0 flex flex-col gap-2">
                   <button
@@ -135,15 +179,39 @@ export function PublicProfileView({ nullifierHash }: Props) {
                   >
                     Message
                   </Link>
+                  {/* Tip button */}
+                  <button
+                    onClick={() => { haptic('light'); setTipOpen(true) }}
+                    className="px-4 py-2 glass rounded-[var(--r-full)] text-sm font-semibold text-text-muted text-center transition-all active:scale-95"
+                  >
+                    ⚡ Tip WLD
+                  </button>
+                  {/* Subscribe button */}
+                  <button
+                    onClick={() => void handleSubscribe()}
+                    disabled={subLoading}
+                    className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 disabled:opacity-40 ${
+                      data?.isSubscribed
+                        ? 'glass border border-amber-400/40 text-amber-400'
+                        : 'glass border border-border text-text-muted'
+                    }`}
+                  >
+                    {data?.isSubscribed
+                      ? `⭐ Subscribed · ${data.subscriptionDaysLeft ?? '?'}d`
+                      : '⭐ Subscribe · 1 WLD/mo'}
+                  </button>
                 </div>
               )}
             </div>
 
             {/* Stats */}
-            <div className="flex items-center gap-4 mt-4 text-xs text-text-muted">
+            <div className="flex items-center gap-4 mt-4 text-xs text-text-muted flex-wrap">
               <span><span className="text-text font-semibold">{data?.followerCount ?? 0}</span> followers</span>
               <span><span className="text-text font-semibold">{data?.followingCount ?? 0}</span> following</span>
               <span><span className="text-text font-semibold">{data?.postCount ?? 0}</span> posts</span>
+              {(data?.subscriberCount ?? 0) > 0 && (
+                <span><span className="text-amber-400 font-semibold">{data?.subscriberCount}</span> subscribers</span>
+              )}
             </div>
 
             {/* Bio */}
@@ -163,6 +231,15 @@ export function PublicProfileView({ nullifierHash }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Tip modal */}
+      {tipOpen && (
+        <TipModal
+          recipientHash={nullifierHash}
+          recipientName={displayName}
+          onClose={() => setTipOpen(false)}
+        />
+      )}
     </div>
   )
 }

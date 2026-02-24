@@ -1,0 +1,43 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { recordTip } from '@/lib/db/tips'
+import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
+import { rateLimit } from '@/lib/rateLimit'
+
+export async function POST(req: NextRequest) {
+  try {
+    const { senderHash, recipientHash, amountWld, txId } = (await req.json()) as {
+      senderHash?: string
+      recipientHash?: string
+      amountWld?: string
+      txId?: string
+    }
+
+    if (!senderHash || !recipientHash || !amountWld) {
+      return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
+    }
+
+    const amount = parseFloat(amountWld)
+    if (isNaN(amount) || amount <= 0 || amount > 1000) {
+      return NextResponse.json({ success: false, error: 'Invalid amount' }, { status: 400 })
+    }
+
+    if (!rateLimit(`tip:${senderHash}`, 10, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many tips. Slow down.' }, { status: 429 })
+    }
+
+    if (!(await isVerifiedHuman(senderHash))) {
+      return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
+    }
+
+    const recipient = await getUserByNullifier(recipientHash)
+    if (!recipient) {
+      return NextResponse.json({ success: false, error: 'Recipient not found' }, { status: 404 })
+    }
+
+    await recordTip(senderHash, recipientHash, recipient.walletAddress, amountWld, txId)
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('[tip POST]', err)
+    return NextResponse.json({ success: false, error: 'Failed to record tip' }, { status: 500 })
+  }
+}

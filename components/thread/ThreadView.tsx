@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Post, CommunityNote } from '@/lib/types'
 import { HumanBadge } from '@/components/ui/HumanBadge'
+import { InlineFollowButton } from '@/components/ui/InlineFollowButton'
 import { BoardTag } from '@/components/ui/BoardTag'
 import { VoteButtons } from '@/components/ui/VoteButtons'
 import { TimeAgo } from '@/components/ui/TimeAgo'
@@ -208,11 +209,14 @@ export function ThreadView({ postId }: Props) {
           </h1>
 
           {/* Only navigate to profile from non-anonymous posts */}
-          <HumanBadge
-            label={displayName}
-            nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
-            size="md"
-          />
+          <div className="flex items-center gap-2 flex-wrap">
+            <HumanBadge
+              label={displayName}
+              nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
+              size="md"
+            />
+            <InlineFollowButton targetHash={post.nullifierHash} />
+          </div>
 
           {/* Quoted post */}
           {post.quotedPost && (
