@@ -27,19 +27,29 @@ export function BottomNav() {
       .catch(() => { /* ignore */ })
 
     // Real-time bump via Pusher
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-    })
-    const channel = pusher.subscribe(`user-${nullifierHash}`)
-    channel.bind('notif-count', (data: { delta: number }) => {
-      const current = useArkoraStore.getState().unreadNotificationCount
-      setUnreadNotificationCount(Math.max(0, current + data.delta))
-    })
+    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY
+    const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER
+    if (!pusherKey || !pusherCluster) return
+
+    let pusher: InstanceType<typeof Pusher> | null = null
+    try {
+      pusher = new Pusher(pusherKey, { cluster: pusherCluster })
+      const channel = pusher.subscribe(`user-${nullifierHash}`)
+      channel.bind('notif-count', (data: { delta: number }) => {
+        const current = useArkoraStore.getState().unreadNotificationCount
+        setUnreadNotificationCount(Math.max(0, current + data.delta))
+      })
+    } catch {
+      // Pusher unavailable — notification badge won't update in real-time
+      pusher?.disconnect()
+      pusher = null
+    }
 
     return () => {
-      channel.unbind_all()
-      pusher.unsubscribe(`user-${nullifierHash}`)
-      pusher.disconnect()
+      if (pusher) {
+        pusher.unsubscribe(`user-${nullifierHash}`)
+        pusher.disconnect()
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nullifierHash, isVerified])
