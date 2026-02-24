@@ -23,6 +23,7 @@ export const posts = pgTable(
     upvotes: integer('upvotes').default(0).notNull(),
     downvotes: integer('downvotes').default(0).notNull(),
     replyCount: integer('reply_count').default(0).notNull(),
+    quoteCount: integer('quote_count').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
     quotedPostId: uuid('quoted_post_id'),

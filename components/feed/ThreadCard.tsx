@@ -22,7 +22,7 @@ interface Props {
 
 export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, isBookmarked }: Props) {
   const router = useRouter()
-  const { nullifierHash } = useArkoraStore()
+  const { nullifierHash, setComposerQuotedPost, setComposerOpen } = useArkoraStore()
   const [isDeleting, setIsDeleting] = useState(false)
   const isOwner = !!nullifierHash && post.nullifierHash === nullifierHash
   const displayName = post.pseudoHandle ?? post.sessionTag
@@ -129,6 +129,21 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
         <VoteButtons post={post} />
 
         <div className="flex items-center gap-3">
+          {/* Quote / repost button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); haptic('light'); setComposerQuotedPost(post); setComposerOpen(true) }}
+            aria-label="Quote post"
+            className="flex items-center gap-1 text-text-muted text-xs active:scale-90 transition-all"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="17 1 21 5 17 9" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <polyline points="7 23 3 19 7 15" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            </svg>
+            {post.quoteCount > 0 && <span>{post.quoteCount}</span>}
+          </button>
           <BookmarkButton postId={post.id} {...(isBookmarked !== undefined && { initialBookmarked: isBookmarked })} />
           <div className="flex items-center gap-1.5 text-text-muted text-xs">
             <span className="opacity-40 text-[10px]">›</span>

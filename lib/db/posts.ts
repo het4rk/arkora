@@ -23,6 +23,7 @@ function toPost(
     upvotes: row.upvotes,
     downvotes: row.downvotes,
     replyCount: row.replyCount,
+    quoteCount: row.quoteCount,
     createdAt: row.createdAt,
     deletedAt: row.deletedAt ?? null,
     quotedPostId: row.quotedPostId ?? null,
@@ -47,6 +48,15 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
     .returning()
 
   if (!row) throw new Error('Failed to create post')
+
+  // Increment quote count on the original post (fire-and-forget)
+  if (input.quotedPostId) {
+    void db
+      .update(posts)
+      .set({ quoteCount: sql`${posts.quoteCount} + 1` })
+      .where(eq(posts.id, input.quotedPostId))
+  }
+
   return toPost(row)
 }
 

@@ -20,6 +20,7 @@ export interface Post {
   upvotes: number
   downvotes: number
   replyCount: number
+  quoteCount: number
   createdAt: Date
   deletedAt: Date | null
   quotedPostId: string | null

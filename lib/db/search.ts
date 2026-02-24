@@ -16,6 +16,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
     upvotes: row.upvotes,
     downvotes: row.downvotes,
     replyCount: row.replyCount,
+    quoteCount: row.quoteCount,
     createdAt: row.createdAt,
     deletedAt: row.deletedAt ?? null,
     quotedPostId: row.quotedPostId ?? null,

@@ -186,7 +186,7 @@ export function ThreadView({ postId }: Props) {
                   <polyline points="7 23 3 19 7 15" />
                   <path d="M21 13v2a4 4 0 0 1-4 4H3" />
                 </svg>
-                <span>Quote</span>
+                <span>{post.quoteCount > 0 ? post.quoteCount : 'Quote'}</span>
               </button>
               {/* Community Note button — only for verified users */}
               {isVerified && (

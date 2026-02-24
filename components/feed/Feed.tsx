@@ -5,7 +5,6 @@ import { useFeed, type FeedMode } from '@/hooks/useFeed'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { ThreadCard } from './ThreadCard'
 import { FeedSkeleton } from './FeedSkeleton'
-import { PostComposer } from '@/components/compose/PostComposer'
 import { VerifyHuman } from '@/components/auth/VerifyHuman'
 import { haptic } from '@/lib/utils'
 
@@ -143,7 +142,6 @@ export function Feed() {
         )}
       </div>
 
-      <PostComposer />
       <VerifyHuman />
     </>
   )

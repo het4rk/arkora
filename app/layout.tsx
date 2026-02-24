@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { WalletConnect } from '@/components/auth/WalletConnect'
 import { BottomNav } from '@/components/ui/BottomNav'
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen'
+import { PostComposer } from '@/components/compose/PostComposer'
 
 export const metadata: Metadata = {
   title: 'Arkora',
@@ -33,6 +34,7 @@ export default function RootLayout({
           {/* Auto-triggers walletAuth on mount */}
           <WalletConnect />
           <OnboardingScreen />
+          <PostComposer />
           <main className="pb-20 safe-top">{children}</main>
           <BottomNav />
         </MiniKitProvider>
