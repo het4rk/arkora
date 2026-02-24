@@ -1,5 +1,5 @@
 import { db } from './index'
-import { replies, posts } from './schema'
+import { replies, replyVotes, posts } from './schema'
 import { eq, desc, and, isNull, sql } from 'drizzle-orm'
 import type { Reply, CreateReplyInput } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
@@ -62,6 +62,27 @@ export async function softDeleteReply(replyId: string, nullifierHash: string): P
     .returning({ id: replies.id })
 
   return result.length > 0
+}
+
+/** Atomic upsert vote + recount, same CTE pattern as post votes. */
+export async function upsertReplyVote(
+  replyId: string,
+  nullifierHash: string,
+  direction: 1 | -1
+): Promise<void> {
+  await db.execute(
+    sql`WITH upsert AS (
+          INSERT INTO reply_votes (reply_id, nullifier_hash, direction)
+          VALUES (${replyId}, ${nullifierHash}, ${direction})
+          ON CONFLICT (reply_id, nullifier_hash)
+          DO UPDATE SET direction = ${direction}, created_at = now()
+        )
+        UPDATE replies
+        SET
+          upvotes   = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction =  1),
+          downvotes = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction = -1)
+        WHERE id = ${replyId}`
+  )
 }
 
 export async function getRepliesByNullifier(

@@ -98,17 +98,17 @@ export function Feed() {
       {/* Feed mode toggle — floats over the snap feed */}
       {isVerified && (
         <div className="fixed top-[max(env(safe-area-inset-top),12px)] left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg">
-          {(['forYou', 'following'] as FeedMode[]).map((mode) => (
+          {(['forYou', 'following', 'hot'] as FeedMode[]).map((mode) => (
             <button
               key={mode}
               onClick={() => { haptic('light'); setFeedMode(mode) }}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 feedMode === mode
                   ? 'bg-accent text-white shadow-sm'
                   : 'text-text-muted'
               }`}
             >
-              {mode === 'forYou' ? 'For You' : 'Following'}
+              {mode === 'forYou' ? 'For You' : mode === 'following' ? 'Following' : '🔥 Hot'}
             </button>
           ))}
         </div>

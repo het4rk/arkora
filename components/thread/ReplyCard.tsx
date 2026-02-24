@@ -7,6 +7,8 @@ import { TimeAgo } from '@/components/ui/TimeAgo'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
 
+type VoteDir = 1 | -1 | null
+
 interface Props {
   reply: Reply
   isTopReply?: boolean | undefined
@@ -15,10 +17,58 @@ interface Props {
 }
 
 export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
-  const { nullifierHash } = useArkoraStore()
+  const { nullifierHash, isVerified } = useArkoraStore()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [myVote, setMyVote] = useState<VoteDir>(null)
+  const [upvotes, setUpvotes] = useState(reply.upvotes)
+  const [downvotes, setDownvotes] = useState(reply.downvotes)
+  const [isVoting, setIsVoting] = useState(false)
   const isOwner = !!nullifierHash && reply.nullifierHash === nullifierHash
   const isDeleted = !!reply.deletedAt
+
+  async function handleVote(dir: 1 | -1) {
+    if (!nullifierHash || !isVerified || isVoting) return
+    haptic('light')
+    const prev = myVote
+    const prevUp = upvotes
+    const prevDown = downvotes
+
+    // Optimistic update
+    const next: VoteDir = myVote === dir ? null : dir
+    setMyVote(next)
+    if (dir === 1) {
+      setUpvotes((u) => u + (next === 1 ? 1 : -1))
+      if (prev === -1) setDownvotes((d) => d - 1)
+    } else {
+      setDownvotes((d) => d + (next === -1 ? 1 : -1))
+      if (prev === 1) setUpvotes((u) => u - 1)
+    }
+
+    setIsVoting(true)
+    try {
+      const res = await fetch('/api/replies/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ replyId: reply.id, nullifierHash, direction: next ?? dir }),
+      })
+      const json = (await res.json()) as { success: boolean; data?: { upvotes: number; downvotes: number } }
+      if (json.success && json.data) {
+        setUpvotes(json.data.upvotes)
+        setDownvotes(json.data.downvotes)
+      } else {
+        // Revert on failure
+        setMyVote(prev)
+        setUpvotes(prevUp)
+        setDownvotes(prevDown)
+      }
+    } catch {
+      setMyVote(prev)
+      setUpvotes(prevUp)
+      setDownvotes(prevDown)
+    } finally {
+      setIsVoting(false)
+    }
+  }
 
   const displayName = isDeleted ? 'deleted' : (reply.pseudoHandle ?? reply.sessionTag)
 
@@ -101,18 +151,26 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
       {/* Actions row */}
       <div className="flex items-center justify-between pt-0.5">
         <div className="flex items-center gap-3">
-        <span className="flex items-center gap-1 text-text-muted text-xs">
-          <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor" className="text-upvote/70">
-            <path d="M6 1L11.196 9.5H0.804L6 1Z" />
-          </svg>
-          {reply.upvotes}
-        </span>
-        <span className="flex items-center gap-1 text-text-muted text-xs">
-          <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor" className="text-downvote/70">
-            <path d="M6 11L0.804 2.5H11.196L6 11Z" />
-          </svg>
-          {reply.downvotes}
-        </span>
+          <button
+            onClick={() => void handleVote(1)}
+            disabled={isVoting || !isVerified}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${myVote === 1 ? 'text-upvote font-semibold' : 'text-text-muted'}`}
+          >
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
+              <path d="M6 1L11.196 9.5H0.804L6 1Z" />
+            </svg>
+            {upvotes}
+          </button>
+          <button
+            onClick={() => void handleVote(-1)}
+            disabled={isVoting || !isVerified}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${myVote === -1 ? 'text-downvote font-semibold' : 'text-text-muted'}`}
+          >
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
+              <path d="M6 11L0.804 2.5H11.196L6 11Z" />
+            </svg>
+            {downvotes}
+          </button>
         </div>
 
         {onReplyTo && (

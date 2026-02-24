@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFeed, createPost } from '@/lib/db/posts'
+import { getFeed, getHotFeed, createPost } from '@/lib/db/posts'
 import { getFeedFollowing } from '@/lib/db/follows'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
@@ -20,6 +20,14 @@ export async function GET(req: NextRequest) {
     if (feed === 'following' && nullifierHash) {
       const posts = await getFeedFollowing(nullifierHash, cursor, limit)
       return NextResponse.json({ success: true, data: posts })
+    }
+
+    // Hot/trending feed
+    if (feed === 'hot') {
+      const rawBoardId = searchParams.get('boardId')
+      const boardId = rawBoardId && VALID_BOARD_IDS.has(rawBoardId as BoardId) ? (rawBoardId as BoardId) : undefined
+      const hotPosts = await getHotFeed(boardId, limit)
+      return NextResponse.json({ success: true, data: hotPosts })
     }
 
     const rawBoardId = searchParams.get('boardId')

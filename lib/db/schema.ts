@@ -162,6 +162,37 @@ export const dmMessages = pgTable(
   })
 )
 
+export const replyVotes = pgTable(
+  'reply_votes',
+  {
+    replyId: uuid('reply_id')
+      .references(() => replies.id, { onDelete: 'cascade' })
+      .notNull(),
+    nullifierHash: text('nullifier_hash').notNull(),
+    direction: integer('direction').notNull(), // 1 | -1
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.replyId, table.nullifierHash] }),
+    nullifierIdx: index('reply_votes_nullifier_idx').on(table.nullifierHash),
+  })
+)
+
+export const communityNoteVotes = pgTable(
+  'community_note_votes',
+  {
+    noteId: uuid('note_id')
+      .references(() => communityNotes.id, { onDelete: 'cascade' })
+      .notNull(),
+    nullifierHash: text('nullifier_hash').notNull(),
+    helpful: boolean('helpful').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.noteId, table.nullifierHash] }),
+  })
+)
+
 export const notifications = pgTable(
   'notifications',
   {
@@ -187,3 +218,5 @@ export type DbBookmark = typeof bookmarks.$inferSelect
 export type DbFollow = typeof follows.$inferSelect
 export type DbDmKey = typeof dmKeys.$inferSelect
 export type DbDmMessage = typeof dmMessages.$inferSelect
+export type DbReplyVote = typeof replyVotes.$inferSelect
+export type DbCommunityNoteVote = typeof communityNoteVotes.$inferSelect

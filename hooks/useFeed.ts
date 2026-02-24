@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Post, BoardId } from '@/lib/types'
 
-export type FeedMode = 'forYou' | 'following'
+export type FeedMode = 'forYou' | 'following' | 'hot'
 
 const FEED_LIMIT = 10
 
@@ -29,10 +29,10 @@ export function useFeed(boardId?: BoardId, feedMode: FeedMode = 'forYou', nullif
   // eliminating the stale-closure problem and unnecessary re-creations.
   const cursorRef = useRef<string | undefined>(undefined)
 
-  const applyPage = useCallback((fetched: Post[], reset: boolean) => {
+  const applyPage = useCallback((fetched: Post[], reset: boolean, disablePagination = false) => {
     setPosts((prev) => (reset ? fetched : [...prev, ...fetched]))
-    setHasMore(fetched.length === FEED_LIMIT)
-    if (fetched.length > 0) {
+    setHasMore(!disablePagination && fetched.length === FEED_LIMIT)
+    if (!disablePagination && fetched.length > 0) {
       const last = fetched[fetched.length - 1]
       if (last) cursorRef.current = new Date(last.createdAt).toISOString()
     }
@@ -42,17 +42,20 @@ export function useFeed(boardId?: BoardId, feedMode: FeedMode = 'forYou', nullif
     async (reset: boolean) => {
       const params = new URLSearchParams({ limit: String(FEED_LIMIT) })
       if (boardId) params.set('boardId', boardId)
-      if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
       if (feedMode === 'following' && nullifierHash) {
         params.set('feed', 'following')
         params.set('nullifierHash', nullifierHash)
+      } else if (feedMode === 'hot') {
+        params.set('feed', 'hot')
+      } else {
+        if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
       }
 
       const res = await fetch(`/api/posts?${params.toString()}`)
       if (!res.ok) throw new Error('Failed to fetch feed')
 
       const json = (await res.json()) as { data: Post[] }
-      applyPage(json.data, reset)
+      applyPage(json.data, reset, feedMode === 'hot')
     },
     [boardId, feedMode, nullifierHash, applyPage]
   )

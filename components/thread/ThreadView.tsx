@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Post, CommunityNote } from '@/lib/types'
 import { HumanBadge } from '@/components/ui/HumanBadge'
@@ -21,6 +21,67 @@ interface ThreadData {
   notes: CommunityNote[]
 }
 
+function NoteCard({
+  note,
+  isVerified,
+  onVote,
+}: {
+  note: CommunityNote
+  isVerified: boolean
+  onVote: (helpful: boolean) => void
+}) {
+  const [myVote, setMyVote] = useState<boolean | null>(null)
+  const [helpfulVotes, setHelpfulVotes] = useState(note.helpfulVotes)
+  const [notHelpfulVotes, setNotHelpfulVotes] = useState(note.notHelpfulVotes)
+
+  function handleVote(helpful: boolean) {
+    const next = myVote === helpful ? null : helpful
+    const delta = next !== null ? 1 : -1
+    if (helpful) setHelpfulVotes((v) => v + delta)
+    else setNotHelpfulVotes((v) => v + delta)
+    if (myVote !== null && myVote !== helpful) {
+      // switching side — undo previous
+      if (myVote) setHelpfulVotes((v) => v - 1)
+      else setNotHelpfulVotes((v) => v - 1)
+    }
+    setMyVote(next)
+    onVote(helpful)
+  }
+
+  return (
+    <div className={`glass rounded-[var(--r-lg)] p-4 border-l-2 ${note.isPromoted ? 'border-amber-400/60' : 'border-border/40'}`}>
+      <p className={`text-[10px] font-bold uppercase tracking-[0.12em] mb-2 ${note.isPromoted ? 'text-amber-400' : 'text-text-muted'}`}>
+        {note.isPromoted ? '📝 Community Note' : '📝 Proposed Note'}
+      </p>
+      <p className="text-text-secondary text-sm leading-relaxed">{note.body}</p>
+      {isVerified && (
+        <div className="flex items-center gap-3 mt-3">
+          <button
+            onClick={() => handleVote(true)}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 ${myVote === true ? 'text-upvote font-semibold' : 'text-text-muted'}`}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
+              <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+            </svg>
+            Helpful {helpfulVotes > 0 && <span className="ml-0.5">{helpfulVotes}</span>}
+          </button>
+          <button
+            onClick={() => handleVote(false)}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 ${myVote === false ? 'text-downvote font-semibold' : 'text-text-muted'}`}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z" />
+              <path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
+            </svg>
+            Not helpful {notHelpfulVotes > 0 && <span className="ml-0.5">{notHelpfulVotes}</span>}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface Props {
   postId: string
 }
@@ -36,6 +97,8 @@ export function ThreadView({ postId }: Props) {
   const [noteDraft, setNoteDraft] = useState('')
   const [noteSubmitting, setNoteSubmitting] = useState(false)
   const [noteError, setNoteError] = useState<string | null>(null)
+  // Track votes per note: noteId -> 'helpful' | 'notHelpful' | null
+  const noteVotesRef = useRef<Map<string, boolean | null>>(new Map())
 
   async function submitNote() {
     if (!nullifierHash || !noteDraft.trim()) return
@@ -55,6 +118,22 @@ export function ThreadView({ postId }: Props) {
       setNoteError(err instanceof Error ? err.message : 'Failed to submit note')
     } finally {
       setNoteSubmitting(false)
+    }
+  }
+
+  async function voteNote(noteId: string, helpful: boolean) {
+    if (!nullifierHash || !isVerified) return
+    haptic('light')
+    const prev = noteVotesRef.current.get(noteId) ?? null
+    noteVotesRef.current.set(noteId, prev === helpful ? null : helpful)
+    try {
+      await fetch('/api/community-notes/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noteId, nullifierHash, helpful: prev === helpful ? !helpful : helpful }),
+      })
+    } catch {
+      noteVotesRef.current.set(noteId, prev)
     }
   }
 
@@ -96,7 +175,6 @@ export function ThreadView({ postId }: Props) {
   }
 
   const { post, replies, notes } = data
-  const promotedNote = notes.find((n) => n.isPromoted)
   const displayName = post.pseudoHandle ?? post.sessionTag
 
   return (
@@ -158,15 +236,17 @@ export function ThreadView({ postId }: Props) {
             {post.body}
           </p>
 
-          {/* Community Note */}
-          {promotedNote && (
-            <div className="glass rounded-[var(--r-lg)] p-4 border-l-2 border-amber-400/60">
-              <p className="text-amber-400 text-[10px] font-bold uppercase tracking-[0.12em] mb-2">
-                📝 Community Note
-              </p>
-              <p className="text-text-secondary text-sm leading-relaxed">
-                {promotedNote.body}
-              </p>
+          {/* Community Notes */}
+          {notes.length > 0 && (
+            <div className="space-y-2">
+              {notes.map((note) => (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  isVerified={isVerified}
+                  onVote={(helpful) => void voteNote(note.id, helpful)}
+                />
+              ))}
             </div>
           )}
 
