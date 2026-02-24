@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { toggleBookmark, getBookmarksByNullifier, isBookmarked } from '@/lib/db/bookmarks'
+import { toggleBookmark, getBookmarksByNullifier, isBookmarked, getBulkBookmarkStatus } from '@/lib/db/bookmarks'
 import { isVerifiedHuman } from '@/lib/db/users'
 
 export async function GET(req: NextRequest) {
@@ -10,10 +10,17 @@ export async function GET(req: NextRequest) {
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'nullifierHash required' }, { status: 400 })
     }
-    // ?postId= → single O(1) lookup instead of fetching the whole list
+    // ?postId= → single O(1) lookup
     if (postId) {
       const bookmarked = await isBookmarked(nullifierHash, postId)
       return NextResponse.json({ success: true, data: { isBookmarked: bookmarked } })
+    }
+    // ?postIds=id1,id2,… → bulk status check for feed (returns bookmarked subset)
+    const postIdsParam = searchParams.get('postIds')
+    if (postIdsParam) {
+      const ids = postIdsParam.split(',').filter(Boolean).slice(0, 50)
+      const bookmarkedIds = await getBulkBookmarkStatus(nullifierHash, ids)
+      return NextResponse.json({ success: true, data: { bookmarkedIds } })
     }
     const posts = await getBookmarksByNullifier(nullifierHash)
     return NextResponse.json({ success: true, data: posts })

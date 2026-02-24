@@ -83,20 +83,22 @@ export function ConversationView({ otherHash }: Props) {
 
     const myPrivateKey = await ensureOwnKey()
 
-    // Decrypt all messages
-    const decrypted: DecryptedMessage[] = []
-    for (const msg of msgsJson.data ?? []) {
-      // ECDH is symmetric: both sides derive the same shared secret using
-      // their own private key + the other party's public key.
-      try {
-        if (myPrivateKey) {
-          const text = await decryptDm(myPrivateKey, theirPublicKey, { ciphertext: msg.ciphertext, nonce: msg.nonce })
-          decrypted.push({ id: msg.id, senderHash: msg.senderHash, text, createdAt: new Date(msg.createdAt) })
-        }
-      } catch {
-        decrypted.push({ id: msg.id, senderHash: msg.senderHash, text: '[encrypted]', createdAt: new Date(msg.createdAt), failed: true })
-      }
-    }
+    // Decrypt all messages in parallel — ECDH is symmetric so both sides
+    // derive the same shared secret (own private key + other's public key).
+    const rawMsgs = msgsJson.data ?? []
+    const results = await Promise.allSettled(
+      rawMsgs.map((msg) =>
+        myPrivateKey
+          ? decryptDm(myPrivateKey, theirPublicKey, { ciphertext: msg.ciphertext, nonce: msg.nonce })
+          : Promise.reject(new Error('no key'))
+      )
+    )
+    const decrypted: DecryptedMessage[] = rawMsgs.map((msg, i) => {
+      const result = results[i]
+      return result?.status === 'fulfilled'
+        ? { id: msg.id, senderHash: msg.senderHash, text: result.value, createdAt: new Date(msg.createdAt) }
+        : { id: msg.id, senderHash: msg.senderHash, text: '[encrypted]', createdAt: new Date(msg.createdAt), failed: true }
+    })
 
     // Reverse to show oldest first
     setMessages(decrypted.reverse())

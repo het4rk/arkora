@@ -30,7 +30,8 @@ export const posts = pgTable(
   (table) => ({
     boardIdx: index('posts_board_id_idx').on(table.boardId),
     createdAtIdx: index('posts_created_at_idx').on(table.createdAt),
-    nullifierIdx: index('posts_nullifier_idx').on(table.nullifierHash),
+    // Composite covers getPostsByNullifier (filter + order) in a single index scan
+    nullifierCreatedIdx: index('posts_nullifier_created_idx').on(table.nullifierHash, table.createdAt),
   })
 )
 
@@ -55,6 +56,7 @@ export const replies = pgTable(
   (table) => ({
     postIdIdx: index('replies_post_id_idx').on(table.postId),
     createdAtIdx: index('replies_created_at_idx').on(table.createdAt),
+    nullifierIdx: index('replies_nullifier_hash_idx').on(table.nullifierHash),
   })
 )
 
@@ -99,6 +101,8 @@ export const postVotes = pgTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.postId, table.nullifierHash] }),
+    // Separate index so "get all posts voted by user" doesn't scan from postId
+    nullifierIdx: index('post_votes_nullifier_hash_idx').on(table.nullifierHash),
   })
 )
 

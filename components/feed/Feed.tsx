@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useFeed, type FeedMode } from '@/hooks/useFeed'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { ThreadCard } from './ThreadCard'
@@ -18,6 +18,30 @@ export function Feed() {
     nullifierHash ?? undefined
   )
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
+
+  // Batch-fetch bookmark state for all visible posts in a single request
+  const fetchBookmarks = useCallback((postIds: string[], userHash: string) => {
+    if (postIds.length === 0 || !userHash) return
+    const ids = postIds.join(',')
+    void fetch(`/api/bookmarks?nullifierHash=${encodeURIComponent(userHash)}&postIds=${encodeURIComponent(ids)}`)
+      .then((r) => r.json())
+      .then((j: { success: boolean; data?: { bookmarkedIds: string[] } }) => {
+        if (j.success && j.data) {
+          setBookmarkedIds((prev) => {
+            const next = new Set(prev)
+            j.data!.bookmarkedIds.forEach((id) => next.add(id))
+            return next
+          })
+        }
+      })
+      .catch(() => null)
+  }, [])
+
+  useEffect(() => {
+    if (!nullifierHash || posts.length === 0) return
+    fetchBookmarks(posts.map((p) => p.id), nullifierHash)
+  }, [posts, nullifierHash, fetchBookmarks])
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -102,7 +126,7 @@ export function Feed() {
           </div>
         )}
         {posts.map((post) => (
-          <ThreadCard key={post.id} post={post} onDeleted={removePost} />
+          <ThreadCard key={post.id} post={post} onDeleted={removePost} isBookmarked={bookmarkedIds.has(post.id)} />
         ))}
 
         {/* Infinite scroll sentinel */}

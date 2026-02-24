@@ -1,6 +1,6 @@
 import { db } from './index'
 import { bookmarks, posts } from './schema'
-import { eq, and, desc, isNull } from 'drizzle-orm'
+import { eq, and, desc, isNull, inArray } from 'drizzle-orm'
 import type { Post, BoardId } from '@/lib/types'
 
 function toPost(row: typeof posts.$inferSelect): Post {
@@ -47,6 +47,19 @@ export async function isBookmarked(nullifierHash: string, postId: string): Promi
     .where(and(eq(bookmarks.nullifierHash, nullifierHash), eq(bookmarks.postId, postId)))
     .limit(1)
   return !!row
+}
+
+/** Returns the subset of postIds that are bookmarked by this user. */
+export async function getBulkBookmarkStatus(
+  nullifierHash: string,
+  postIds: string[]
+): Promise<string[]> {
+  if (postIds.length === 0) return []
+  const rows = await db
+    .select({ postId: bookmarks.postId })
+    .from(bookmarks)
+    .where(and(eq(bookmarks.nullifierHash, nullifierHash), inArray(bookmarks.postId, postIds)))
+  return rows.map((r) => r.postId)
 }
 
 export async function getBookmarksByNullifier(

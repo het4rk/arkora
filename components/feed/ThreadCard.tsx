@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import type { Post } from '@/lib/types'
@@ -17,9 +17,10 @@ interface Props {
   post: Post
   topReply?: string | null
   onDeleted?: (postId: string) => void
+  isBookmarked?: boolean
 }
 
-export function ThreadCard({ post, topReply, onDeleted }: Props) {
+export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, isBookmarked }: Props) {
   const router = useRouter()
   const { nullifierHash } = useArkoraStore()
   const [isDeleting, setIsDeleting] = useState(false)
@@ -128,7 +129,7 @@ export function ThreadCard({ post, topReply, onDeleted }: Props) {
         <VoteButtons post={post} />
 
         <div className="flex items-center gap-3">
-          <BookmarkButton postId={post.id} />
+          <BookmarkButton postId={post.id} {...(isBookmarked !== undefined && { initialBookmarked: isBookmarked })} />
           <div className="flex items-center gap-1.5 text-text-muted text-xs">
             <span className="opacity-40 text-[10px]">›</span>
             <span>
@@ -140,4 +141,4 @@ export function ThreadCard({ post, topReply, onDeleted }: Props) {
       </div>
     </motion.article>
   )
-}
+})

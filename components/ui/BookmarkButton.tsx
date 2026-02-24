@@ -6,17 +6,18 @@ import { haptic } from '@/lib/utils'
 
 interface Props {
   postId: string
+  initialBookmarked?: boolean
   className?: string | undefined
 }
 
-export function BookmarkButton({ postId, className }: Props) {
+export function BookmarkButton({ postId, initialBookmarked, className }: Props) {
   const { nullifierHash, isVerified, setVerifySheetOpen } = useArkoraStore()
-  const [bookmarked, setBookmarked] = useState(false)
+  const [bookmarked, setBookmarked] = useState(initialBookmarked ?? false)
   const [loading, setLoading] = useState(false)
 
-  // Hydrate state on mount — single O(1) lookup for this specific post
+  // Only fetch on mount when the parent hasn't pre-fetched the state
   useEffect(() => {
-    if (!nullifierHash) return
+    if (initialBookmarked !== undefined || !nullifierHash) return
     const url = `/api/bookmarks?nullifierHash=${encodeURIComponent(nullifierHash)}&postId=${encodeURIComponent(postId)}`
     void fetch(url)
       .then((r) => r.json())
@@ -24,7 +25,7 @@ export function BookmarkButton({ postId, className }: Props) {
         if (j.success && j.data) setBookmarked(j.data.isBookmarked)
       })
       .catch(() => null)
-  }, [nullifierHash, postId])
+  }, [nullifierHash, postId, initialBookmarked])
 
   async function toggle() {
     if (!isVerified || !nullifierHash) {

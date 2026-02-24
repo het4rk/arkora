@@ -15,16 +15,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const verified = await isVerifiedHuman(nullifierHash)
+    // Both checks are independent — run in parallel to save a round-trip
+    const [verified, postOwner] = await Promise.all([
+      isVerifiedHuman(nullifierHash),
+      getPostNullifier(postId),
+    ])
+
     if (!verified) {
       return NextResponse.json(
         { success: false, error: 'World ID verification required' },
         { status: 403 }
       )
     }
-
-    // Fetch only the nullifierHash — no need to load the full post twice
-    const postOwner = await getPostNullifier(postId)
     if (!postOwner) {
       return NextResponse.json(
         { success: false, error: 'Post not found' },
