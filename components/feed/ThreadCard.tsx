@@ -3,7 +3,8 @@
 import { useState, useRef, useCallback, memo } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import type { Post } from '@/lib/types'
+import type { Post, PollResult } from '@/lib/types'
+import { PollCard } from '@/components/feed/PollCard'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { BoardTag } from '@/components/ui/BoardTag'
 import { VoteButtons } from '@/components/ui/VoteButtons'
@@ -20,9 +21,11 @@ interface Props {
   topReply?: string | null
   onDeleted?: (postId: string) => void
   isBookmarked?: boolean
+  pollResults?: PollResult[] | null
+  userVote?: number | null
 }
 
-export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, isBookmarked }: Props) {
+export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, isBookmarked, pollResults, userVote }: Props) {
   const router = useRouter()
   const { nullifierHash, setComposerQuotedPost, setComposerOpen } = useArkoraStore()
   const [isDeleting, setIsDeleting] = useState(false)
@@ -120,6 +123,15 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
           size="md"
         />
+
+        {/* Poll — rendered in feed with results if available, otherwise options as preview */}
+        {post.type === 'poll' && post.pollOptions && (
+          <PollCard
+            post={post}
+            initialResults={pollResults ?? []}
+            initialUserVote={userVote ?? null}
+          />
+        )}
 
         {/* Quoted post preview */}
         {post.quotedPost && (

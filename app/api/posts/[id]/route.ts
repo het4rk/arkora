@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPostById, softDeletePost } from '@/lib/db/posts'
 import { getRepliesByPostId } from '@/lib/db/replies'
 import { getNotesByPostId } from '@/lib/db/notes'
+import { getPollResults, getUserVote } from '@/lib/db/polls'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { invalidatePosts } from '@/lib/cache'
 
@@ -25,7 +26,20 @@ export async function GET(_req: NextRequest, { params }: Params) {
       )
     }
 
-    return NextResponse.json({ success: true, data: { post, replies, notes } })
+    // For polls, fetch aggregated results + caller's vote in parallel
+    let pollResults: { optionIndex: number; count: number }[] | null = null
+    let userVote: number | null = null
+    if (post.type === 'poll') {
+      const nullifierHash = await getCallerNullifier()
+      const [results, vote] = await Promise.all([
+        getPollResults(id),
+        nullifierHash ? getUserVote(id, nullifierHash) : Promise.resolve(null),
+      ])
+      pollResults = results
+      userVote = vote
+    }
+
+    return NextResponse.json({ success: true, data: { post, replies, notes, pollResults, userVote } })
   } catch (err) {
     console.error('[posts/[id] GET]', err)
     return NextResponse.json(

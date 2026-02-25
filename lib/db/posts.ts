@@ -31,6 +31,9 @@ function toPost(
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     countryCode: row.countryCode ?? null,
+    type: (row.type as 'text' | 'poll') ?? 'text',
+    pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
+    pollEndsAt: row.pollEndsAt ?? null,
   }
 }
 
@@ -47,6 +50,9 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       sessionTag,
       imageUrl: input.imageUrl ?? null,
       quotedPostId: input.quotedPostId ?? null,
+      type: input.type ?? 'text',
+      pollOptions: input.pollOptions ?? null,
+      pollEndsAt: input.pollEndsAt ?? null,
       lat: input.lat ?? null,
       lng: input.lng ?? null,
       countryCode: input.countryCode ?? null,
@@ -138,7 +144,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
   )
 
   return (rows as unknown as Array<Record<string, unknown>>).map((r) => {
-    const post = {
+    const post: Post = {
       id: r['id'] as string, title: r['title'] as string, body: r['body'] as string,
       boardId: r['board_id'] as BoardId, nullifierHash: r['nullifier_hash'] as string,
       pseudoHandle: (r['pseudo_handle'] as string | null) ?? null,
@@ -149,11 +155,14 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
       createdAt: new Date(r['created_at'] as string),
       deletedAt: r['deleted_at'] ? new Date(r['deleted_at'] as string) : null,
       quotedPostId: (r['quoted_post_id'] as string | null) ?? null,
-      quotedPost: null as Post | null,
+      quotedPost: null,
       lat: (r['lat'] as number | null) ?? null,
       lng: (r['lng'] as number | null) ?? null,
       countryCode: (r['country_code'] as string | null) ?? null,
-    } satisfies Post
+      type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll',
+      pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
+      pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
+    }
 
     if (r['quoted_id']) {
       post.quotedPost = {
@@ -169,6 +178,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         quotedPostId: (r['q_quoted_post_id'] as string | null) ?? null,
         quotedPost: null,
         lat: null, lng: null, countryCode: null,
+        type: 'text', pollOptions: null, pollEndsAt: null,
       }
     }
 
@@ -364,6 +374,9 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
       lat: (r['lat'] as number | null) ?? null,
       lng: (r['lng'] as number | null) ?? null,
       countryCode: (r['country_code'] as string | null) ?? null,
+      type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll',
+      pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
+      pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
     }
 
     if (r['quoted_id']) {
@@ -382,6 +395,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
         lat: (r['q_lat'] as number | null) ?? null,
         lng: (r['q_lng'] as number | null) ?? null,
         countryCode: (r['q_country_code'] as string | null) ?? null,
+        type: 'text', pollOptions: null, pollEndsAt: null,
       }
     }
 

@@ -4,7 +4,10 @@ import { useState, useCallback } from 'react'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import type { Post, CreatePostInput } from '@/lib/types'
 
-type PostBody = Omit<CreatePostInput, 'nullifierHash' | 'countryCode'>
+// Client-side submit type: pollOptions is string[] (API route converts to { index, text }[])
+type PostBody = Omit<CreatePostInput, 'nullifierHash' | 'countryCode' | 'pollOptions'> & {
+  pollOptions?: string[]
+}
 
 interface UsePostReturn {
   submit: (input: PostBody) => Promise<Post | null>

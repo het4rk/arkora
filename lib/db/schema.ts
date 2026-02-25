@@ -8,6 +8,8 @@ import {
   uuid,
   index,
   primaryKey,
+  jsonb,
+  unique,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
@@ -34,6 +36,10 @@ export const posts = pgTable(
     lng: real('lng'),
     // Country inferred from poster's IP at creation time (for local feed country filter)
     countryCode: text('country_code'),
+    // Poll fields — only set when type = 'poll'
+    type: text('type').notNull().default('text'), // 'text' | 'poll'
+    pollOptions: jsonb('poll_options').$type<{ index: number; text: string }[]>(),
+    pollEndsAt: timestamp('poll_ends_at', { withTimezone: true }),
   },
   (table) => ({
     boardIdx: index('posts_board_id_idx').on(table.boardId),
@@ -211,6 +217,24 @@ export const communityNoteVotes = pgTable(
     pk: primaryKey({ columns: [table.noteId, table.nullifierHash] }),
   })
 )
+
+// Sybil-resistant poll votes — one row per (postId, nullifierHash) enforced by unique constraint
+export const pollVotes = pgTable(
+  'poll_votes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    postId: uuid('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+    nullifierHash: text('nullifier_hash').notNull(),
+    optionIndex: integer('option_index').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqueVote: unique().on(t.postId, t.nullifierHash),
+    postIdx: index('poll_votes_post_idx').on(t.postId),
+  })
+)
+
+export type DbPollVote = typeof pollVotes.$inferSelect
 
 export const notifications = pgTable(
   'notifications',

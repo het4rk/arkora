@@ -13,6 +13,7 @@ import { ImagePicker } from '@/components/ui/ImagePicker'
 import { QuotedPost } from '@/components/ui/QuotedPost'
 import { MentionSuggestions } from '@/components/ui/MentionSuggestions'
 import { useMentionAutocomplete } from '@/hooks/useMentionAutocomplete'
+import { PollOptionInputs } from '@/components/compose/PollOptionInputs'
 
 export function PostComposer() {
   const router = useRouter()
@@ -30,10 +31,13 @@ export function PostComposer() {
   } = useArkoraStore()
   const { submit, isSubmitting, error } = usePost()
 
+  const [mode, setMode] = useState<'post' | 'poll'>('post')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [boardId, setBoardId] = useState<BoardId>('arkora')
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [pollOptions, setPollOptions] = useState<string[]>(['', ''])
+  const [pollDuration, setPollDuration] = useState<24 | 72 | 168>(72)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
 
   const mention = useMentionAutocomplete(body)
@@ -73,7 +77,9 @@ export function PostComposer() {
   }
 
   async function handleSubmit() {
-    if (!title.trim() || !body.trim()) return
+    if (!title.trim()) return
+    if (mode === 'post' && !body.trim()) return
+    if (mode === 'poll' && pollOptions.filter((o) => o.trim()).length < 2) return
 
     // Attach GPS coords when location sharing is enabled
     let lat: number | undefined
@@ -92,18 +98,26 @@ export function PostComposer() {
 
     const post = await submit({
       title,
-      body,
+      body: mode === 'poll' ? '' : body,
       boardId,
       pseudoHandle: getPseudoHandle(),
-      imageUrl: imageUrl ?? undefined,
+      imageUrl: mode === 'poll' ? undefined : (imageUrl ?? undefined),
       quotedPostId: composerQuotedPost?.id ?? undefined,
       lat,
       lng,
+      ...(mode === 'poll' && {
+        type: 'poll',
+        pollOptions: pollOptions.filter((o) => o.trim()),
+        pollDuration,
+      }),
     })
     if (post) {
       setTitle('')
       setBody('')
       setImageUrl(null)
+      setPollOptions(['', ''])
+      setPollDuration(72)
+      setMode('post')
       setComposerQuotedPost(null)
       setComposerOpen(false)
       router.push(`/post/${post.id}`)
@@ -112,6 +126,8 @@ export function PostComposer() {
 
   if (!isComposerOpen) return null
 
+  const isPoll = mode === 'poll'
+
   return (
     <BottomSheet
       isOpen={isComposerOpen}
@@ -119,6 +135,24 @@ export function PostComposer() {
       title={composerQuotedPost ? 'Quote post' : 'New post'}
     >
       <div className="space-y-5">
+
+        {/* Post / Poll mode toggle — hidden when quoting */}
+        {!composerQuotedPost && (
+          <div className="flex items-center gap-1 p-1 glass rounded-[var(--r-full)]">
+            {(['post', 'poll'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => { haptic('light'); setMode(m) }}
+                className={cn(
+                  'flex-1 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all',
+                  mode === m ? 'bg-accent text-white shadow-sm' : 'text-text-muted'
+                )}
+              >
+                {m === 'post' ? 'Post' : 'Poll'}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Board selector */}
         <div>
@@ -164,43 +198,67 @@ export function PostComposer() {
           />
         </div>
 
-        {/* Body */}
-        <div>
-          <label htmlFor="post-body" className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2 block">Body</label>
-          <div className="relative">
-            <textarea
-              id="post-body"
-              ref={bodyRef}
-              value={body}
-              onChange={(e) => {
-                const val = e.target.value.slice(0, 10000)
-                setBody(val)
-                mention.onTextChange(val, e.target.selectionStart ?? val.length)
-              }}
-              onKeyDown={(e) => {
-                if (!mention.isOpen) return
-                if (e.key === 'ArrowDown') { e.preventDefault(); mention.setActiveIndex(Math.min(mention.activeIndex + 1, mention.suggestions.length - 1)) }
-                if (e.key === 'ArrowUp') { e.preventDefault(); mention.setActiveIndex(Math.max(mention.activeIndex - 1, 0)) }
-                if (e.key === 'Enter' || e.key === 'Tab') {
-                  const s = mention.suggestions[mention.activeIndex]
-                  if (s?.pseudoHandle) { e.preventDefault(); setBody(mention.selectSuggestion(s.pseudoHandle)) }
-                }
-                if (e.key === 'Escape') mention.close()
-              }}
-              placeholder="Say more… (type @handle to mention)"
-              rows={4}
-              className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed"
-            />
-            {mention.isOpen && (
-              <MentionSuggestions
-                suggestions={mention.suggestions}
-                activeIndex={mention.activeIndex}
-                onSelect={(handle) => { setBody(mention.selectSuggestion(handle)); bodyRef.current?.focus() }}
-                onHover={mention.setActiveIndex}
+        {/* Body (post mode) or Poll options */}
+        {!isPoll ? (
+          <div>
+            <label htmlFor="post-body" className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2 block">Body</label>
+            <div className="relative">
+              <textarea
+                id="post-body"
+                ref={bodyRef}
+                value={body}
+                onChange={(e) => {
+                  const val = e.target.value.slice(0, 10000)
+                  setBody(val)
+                  mention.onTextChange(val, e.target.selectionStart ?? val.length)
+                }}
+                onKeyDown={(e) => {
+                  if (!mention.isOpen) return
+                  if (e.key === 'ArrowDown') { e.preventDefault(); mention.setActiveIndex(Math.min(mention.activeIndex + 1, mention.suggestions.length - 1)) }
+                  if (e.key === 'ArrowUp') { e.preventDefault(); mention.setActiveIndex(Math.max(mention.activeIndex - 1, 0)) }
+                  if (e.key === 'Enter' || e.key === 'Tab') {
+                    const s = mention.suggestions[mention.activeIndex]
+                    if (s?.pseudoHandle) { e.preventDefault(); setBody(mention.selectSuggestion(s.pseudoHandle)) }
+                  }
+                  if (e.key === 'Escape') mention.close()
+                }}
+                placeholder="Say more… (type @handle to mention)"
+                rows={4}
+                className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed"
               />
-            )}
+              {mention.isOpen && (
+                <MentionSuggestions
+                  suggestions={mention.suggestions}
+                  activeIndex={mention.activeIndex}
+                  onSelect={(handle) => { setBody(mention.selectSuggestion(handle)); bodyRef.current?.focus() }}
+                  onHover={mention.setActiveIndex}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Options</p>
+            <PollOptionInputs options={pollOptions} onChange={setPollOptions} />
+            <div>
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">Duration</p>
+              <div className="flex gap-2">
+                {([24, 72, 168] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setPollDuration(d)}
+                    className={cn(
+                      'flex-1 py-2 rounded-[var(--r-full)] text-sm font-medium transition-all active:scale-95',
+                      pollDuration === d ? 'bg-accent text-white shadow-sm shadow-accent/30' : 'glass text-text-secondary'
+                    )}
+                  >
+                    {d === 24 ? '24h' : d === 72 ? '3 days' : '7 days'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Identity row — tappable for verified; lock notice for guests */}
         {isVerified ? (
@@ -227,12 +285,14 @@ export function PostComposer() {
           </div>
         )}
 
-        {/* Image attachment */}
-        <ImagePicker
-          previewUrl={imageUrl}
-          onUpload={setImageUrl}
-          onClear={() => setImageUrl(null)}
-        />
+        {/* Image attachment — post mode only */}
+        {!isPoll && (
+          <ImagePicker
+            previewUrl={imageUrl}
+            onUpload={setImageUrl}
+            onClear={() => setImageUrl(null)}
+          />
+        )}
 
         {error && (
           <p className="text-downvote text-sm rounded-[var(--r-md)] px-4 py-3 bg-downvote/10 border border-downvote/20">
@@ -242,10 +302,15 @@ export function PostComposer() {
 
         <button
           onClick={() => { haptic('medium'); void handleSubmit() }}
-          disabled={isSubmitting || !title.trim() || !body.trim()}
+          disabled={
+            isSubmitting ||
+            !title.trim() ||
+            (!isPoll && !body.trim()) ||
+            (isPoll && pollOptions.filter((o) => o.trim()).length < 2)
+          }
           className="w-full bg-accent disabled:opacity-30 text-white font-semibold py-4 rounded-[var(--r-lg)] transition-all active:scale-[0.98] active:bg-accent-hover text-base tracking-[-0.01em] shadow-lg shadow-accent/25"
         >
-          {isSubmitting ? 'Posting…' : 'Post'}
+          {isSubmitting ? (isPoll ? 'Creating poll…' : 'Posting…') : (isPoll ? 'Create poll' : 'Post')}
         </button>
       </div>
     </BottomSheet>

@@ -28,6 +28,14 @@ export interface Post {
   lat: number | null
   lng: number | null
   countryCode: string | null
+  type: 'text' | 'poll'
+  pollOptions: { index: number; text: string }[] | null
+  pollEndsAt: Date | null
+}
+
+export interface PollResult {
+  optionIndex: number
+  count: number
 }
 
 export interface Reply {
@@ -78,6 +86,10 @@ export interface CreatePostInput {
   lat?: number | undefined
   lng?: number | undefined
   countryCode?: string | undefined
+  type?: 'text' | 'poll'
+  pollOptions?: { index: number; text: string }[]
+  pollDuration?: number
+  pollEndsAt?: Date | undefined
 }
 
 export interface CreateReplyInput {

@@ -4,7 +4,7 @@ A provably human anonymous message board. Every voice is verified.
 
 Arkora is a World App miniapp where users post, vote, and converse anonymously — but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities. TikTok-style scroll feed, 4chan anonymity, Reddit boards structure — every voice cryptographically guaranteed real.
 
-**Features:** Posts + threaded replies · Upvotes / downvotes · Community Notes · Bookmarks · Boards · Following feed · Local feed (GPS radius) · E2E encrypted DMs · @ mentions with notifications · Live ephemeral Rooms · Block / report / moderation · WLD tips & subscriptions
+**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Upvotes / downvotes · Community Notes · Bookmarks · Boards · Following feed · Local feed (GPS radius) · E2E encrypted DMs · @ mentions with notifications · Live ephemeral Rooms · Block / report / moderation · WLD tips & subscriptions
 
 ---
 

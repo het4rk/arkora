@@ -107,19 +107,47 @@ export async function POST(req: NextRequest) {
       title?: string; body?: string; boardId?: string
       pseudoHandle?: string; imageUrl?: string; quotedPostId?: string
       lat?: number; lng?: number
+      type?: string; pollOptions?: string[]; pollDuration?: number
     }
 
     const { title: rawTitle, body: rawBody, boardId: rawBoardId, pseudoHandle: rawHandle } = body
 
-    if (!rawTitle?.trim() || !rawBody?.trim() || !rawBoardId) {
+    const isPoll = body.type === 'poll'
+
+    if (!rawTitle?.trim() || !rawBoardId) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
+    // For regular posts body is required; polls use title as the question
+    if (!isPoll && !rawBody?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    // Poll-specific validation
+    if (isPoll) {
+      const opts = body.pollOptions
+      if (!Array.isArray(opts) || opts.length < 2 || opts.length > 4) {
+        return NextResponse.json({ success: false, error: 'Polls require 2–4 options' }, { status: 400 })
+      }
+      for (const opt of opts) {
+        if (typeof opt !== 'string' || !opt.trim() || opt.trim().length > 100) {
+          return NextResponse.json({ success: false, error: 'Each option must be 1–100 characters' }, { status: 400 })
+        }
+      }
+      const duration = body.pollDuration
+      if (duration !== undefined && ![24, 72, 168].includes(duration)) {
+        return NextResponse.json({ success: false, error: 'Invalid poll duration' }, { status: 400 })
+      }
+    }
+
     const title = sanitizeLine(rawTitle)
-    const postBody = sanitizeText(rawBody)
+    const postBody = isPoll ? '' : sanitizeText(rawBody ?? '')
     const pseudoHandle = rawHandle ? sanitizeLine(rawHandle) : undefined
 
     const boardId = rawBoardId as BoardId
@@ -137,7 +165,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (postBody.length > 10000) {
+    if (!isPoll && postBody.length > 10000) {
       return NextResponse.json(
         { success: false, error: 'Body exceeds 10,000 characters' },
         { status: 400 }
@@ -177,7 +205,22 @@ export async function POST(req: NextRequest) {
     const lat = typeof body.lat === 'number' && isFinite(body.lat) ? body.lat : undefined
     const lng = typeof body.lng === 'number' && isFinite(body.lng) ? body.lng : undefined
 
-    const post = await createPost({ title, body: postBody, boardId, nullifierHash, pseudoHandle, imageUrl: rawImageUrl, quotedPostId, lat, lng, countryCode })
+    // Build poll-specific fields
+    let pollOptions: { index: number; text: string }[] | undefined
+    let pollEndsAt: Date | undefined
+    if (isPoll && Array.isArray(body.pollOptions)) {
+      pollOptions = body.pollOptions.map((opt, i) => ({ index: i, text: sanitizeLine(opt) }))
+      const durationHours = body.pollDuration ?? 72
+      pollEndsAt = new Date(Date.now() + durationHours * 60 * 60 * 1000)
+    }
+
+    const post = await createPost({
+      title, body: postBody, boardId, nullifierHash, pseudoHandle,
+      imageUrl: rawImageUrl, quotedPostId, lat, lng, countryCode,
+      type: isPoll ? 'poll' : 'text',
+      ...(pollOptions !== undefined && { pollOptions }),
+      ...(pollEndsAt !== undefined && { pollEndsAt }),
+    })
     invalidatePosts()
 
     // Process @mentions — fire-and-forget, does not block response

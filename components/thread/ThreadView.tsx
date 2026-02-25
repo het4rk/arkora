@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Post, CommunityNote } from '@/lib/types'
+import type { Post, CommunityNote, PollResult } from '@/lib/types'
+import { PollCard } from '@/components/feed/PollCard'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { InlineFollowButton } from '@/components/ui/InlineFollowButton'
 import { BoardTag } from '@/components/ui/BoardTag'
@@ -21,6 +22,8 @@ interface ThreadData {
   post: Post
   replies: Reply[]
   notes: CommunityNote[]
+  pollResults: PollResult[] | null
+  userVote: number | null
 }
 
 function NoteCard({
@@ -149,7 +152,7 @@ export function ThreadView({ postId }: Props) {
         if (res.status === 404) { router.replace('/'); return }
         throw new Error('Failed to fetch thread')
       }
-      const json = (await res.json()) as { success: boolean; data: ThreadData }
+      const json = (await res.json()) as { success: boolean; data: ThreadData; error?: string }
       setData(json.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -197,7 +200,7 @@ export function ThreadView({ postId }: Props) {
     )
   }
 
-  const { post, replies, notes } = data
+  const { post, replies, notes, pollResults, userVote } = data
 
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
 
@@ -259,9 +262,17 @@ export function ThreadView({ postId }: Props) {
             </div>
           )}
 
-          <p className="text-text-secondary text-[15px] leading-[1.65] whitespace-pre-wrap">
-            <BodyText text={post.body} />
-          </p>
+          {post.type === 'poll' && post.pollOptions ? (
+            <PollCard
+              post={post}
+              initialResults={pollResults ?? []}
+              initialUserVote={userVote ?? null}
+            />
+          ) : (
+            <p className="text-text-secondary text-[15px] leading-[1.65] whitespace-pre-wrap">
+              <BodyText text={post.body} />
+            </p>
+          )}
 
           {/* Community Notes */}
           {notes.length > 0 && (

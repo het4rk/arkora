@@ -39,6 +39,15 @@ pnpm db:seed          # Seed database (reads .env.local)
 
 ## What's Been Built (Shipped Features)
 
+### Polls (Sprint 7 — Sybil-Resistant)
+- [x] Poll type on posts — question + 2–4 options + duration (24h / 3d / 7d)
+- [x] DB: `type`, `pollOptions` (JSONB), `pollEndsAt` columns on `posts`; new `pollVotes` table with `UNIQUE(postId, nullifierHash)` — one verified human, one vote, cryptographically enforced
+- [x] `POST /api/polls/[id]/vote` — casts vote, returns updated results
+- [x] `GET /api/posts/[id]` extended — returns `pollResults` + `userVote` for poll posts
+- [x] PostComposer: Post / Poll mode toggle (two pills). Poll mode shows `PollOptionInputs` + duration selector
+- [x] `PollCard.tsx` — clickable option buttons → live % bars with your checkmark
+- [x] Feed and ThreadView both render polls inline
+
 ### Core
 - [x] Snap-scroll vertical feed (TikTok-style) with cards
 - [x] 5 topic boards (arkora, technology, markets, politics, worldchain)
@@ -170,7 +179,8 @@ activeRoomId                                             — currently joined ro
 ### Database Schema (Key Tables)
 
 - `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode; indexed on `pseudoHandle` for mention autocomplete
-- `posts` — id, title, body, boardId, nullifierHash, pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId
+- `posts` — id, title, body, boardId, nullifierHash, pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId, `type` ('text'|'poll'), `pollOptions` (JSONB), `pollEndsAt`
+- `pollVotes` — id, postId (FK→posts cascade), nullifierHash, optionIndex; UNIQUE(postId, nullifierHash) enforces sybil resistance
 - `replies` — id, postId, parentReplyId, content, nullifierHash, pseudoHandle, upvotes, downvotes
 - `follows`, `bookmarks`, `postVotes`, `replyVotes`
 - `dmKeys` — nullifierHash, publicKey (Curve25519)
@@ -244,7 +254,11 @@ activeRoomId                                             — currently joined ro
 | `app/api/auth/wallet/route.ts` | SIWE verify + issue session cookies |
 | `app/api/auth/verify/route.ts` | World ID proof verify |
 | `app/api/signout/route.ts` | Clear session cookies |
-| `app/api/posts/route.ts` | Feed GET (rate limited) + post create (sanitized, fires mention notifications) |
+| `app/api/posts/route.ts` | Feed GET (rate limited) + post create (sanitized, fires mention notifications, accepts poll fields) |
+| `app/api/polls/[id]/vote/route.ts` | Cast poll vote (auth required, rate limited, idempotent via UNIQUE constraint) |
+| `lib/db/polls.ts` | `castPollVote`, `getPollResults`, `getUserVote` |
+| `components/compose/PollOptionInputs.tsx` | 2–4 option inputs with add/remove |
+| `components/feed/PollCard.tsx` | Poll voting UI (buttons → % bars → checkmark on your vote) |
 | `app/api/rooms/route.ts` | Rooms list + create |
 | `app/api/rooms/[id]/route.ts` | Room detail + end |
 | `app/api/rooms/[id]/join/route.ts` | Join room with identity choice |
@@ -271,7 +285,8 @@ activeRoomId                                             — currently joined ro
 ## Next Steps / Future Work
 
 - [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)
-- [ ] Trending / hot posts algorithm (time-decay scoring)
+- [x] Sybil-resistant polls — Sprint 7 shipped
+- [ ] Reputation/karma score — Sprint 8
 - [ ] Admin moderation queue for reports
 - [ ] Upgrade rate limiter to Upstash Redis for cross-instance enforcement
 - [ ] Add `connection_limit` to DATABASE_URL for Neon pooling
