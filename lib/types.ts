@@ -115,7 +115,7 @@ export interface VoteInput {
 export interface Notification {
   id: string
   recipientHash: string
-  type: 'reply' | 'follow' | 'dm' | 'mention'
+  type: 'reply' | 'follow' | 'dm'
   referenceId: string | null
   actorHash: string | null
   read: boolean

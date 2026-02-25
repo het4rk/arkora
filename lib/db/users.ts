@@ -1,6 +1,6 @@
 import { db } from './index'
 import { humanUsers } from './schema'
-import { eq, inArray, sql, ilike, and } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import type { HumanUser } from '@/lib/types'
 
 function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
@@ -127,63 +127,3 @@ export async function isVerifiedHuman(nullifierHash: string): Promise<boolean> {
   return !!row
 }
 
-/**
- * Autocomplete search for @mention suggestions.
- * Only returns users with alias or named identity mode (consistent handles).
- */
-export async function searchUsersByHandle(
-  prefix: string,
-  limit = 5
-): Promise<Pick<HumanUser, 'nullifierHash' | 'pseudoHandle' | 'identityMode' | 'avatarUrl'>[]> {
-  if (!prefix.trim()) return []
-  const rows = await db
-    .select({
-      nullifierHash: humanUsers.nullifierHash,
-      pseudoHandle: humanUsers.pseudoHandle,
-      identityMode: humanUsers.identityMode,
-      avatarUrl: humanUsers.avatarUrl,
-    })
-    .from(humanUsers)
-    .where(
-      and(
-        ilike(humanUsers.pseudoHandle, `${prefix}%`),
-        sql`${humanUsers.identityMode} IN ('alias', 'named')`
-      )
-    )
-    .limit(Math.min(limit, 10))
-
-  return rows.map((r) => ({
-    nullifierHash: r.nullifierHash,
-    pseudoHandle: r.pseudoHandle ?? null,
-    identityMode: r.identityMode as HumanUser['identityMode'],
-    avatarUrl: r.avatarUrl ?? null,
-  }))
-}
-
-/**
- * Resolve a list of @handles to their nullifierHashes for mention notifications.
- * Only returns alias/named users (anonymous users cannot be consistently mentioned).
- */
-export async function getUsersByHandles(
-  handles: string[]
-): Promise<Map<string, string>> {
-  if (handles.length === 0) return new Map()
-  const rows = await db
-    .select({
-      nullifierHash: humanUsers.nullifierHash,
-      pseudoHandle: humanUsers.pseudoHandle,
-    })
-    .from(humanUsers)
-    .where(
-      and(
-        inArray(humanUsers.pseudoHandle, handles),
-        sql`${humanUsers.identityMode} IN ('alias', 'named')`
-      )
-    )
-
-  const map = new Map<string, string>()
-  for (const row of rows) {
-    if (row.pseudoHandle) map.set(row.pseudoHandle.toLowerCase(), row.nullifierHash)
-  }
-  return map
-}

@@ -11,8 +11,6 @@ import { BOARDS, ANONYMOUS_BOARDS, type BoardId } from '@/lib/types'
 import { cn, haptic } from '@/lib/utils'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { QuotedPost } from '@/components/ui/QuotedPost'
-import { MentionSuggestions } from '@/components/ui/MentionSuggestions'
-import { useMentionAutocomplete } from '@/hooks/useMentionAutocomplete'
 import { PollOptionInputs } from '@/components/compose/PollOptionInputs'
 
 export function PostComposer() {
@@ -39,8 +37,6 @@ export function PostComposer() {
   const [pollOptions, setPollOptions] = useState<string[]>(['', ''])
   const [pollDuration, setPollDuration] = useState<24 | 72 | 168>(72)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
-
-  const mention = useMentionAutocomplete(body)
 
   // Ensure alias exists when mode is selected
   useEffect(() => {
@@ -214,33 +210,11 @@ export function PostComposer() {
                 id="post-body"
                 ref={bodyRef}
                 value={body}
-                onChange={(e) => {
-                  const val = e.target.value.slice(0, 10000)
-                  setBody(val)
-                  mention.onTextChange(val, e.target.selectionStart ?? val.length)
-                }}
-                onKeyDown={(e) => {
-                  if (!mention.isOpen) return
-                  if (e.key === 'ArrowDown') { e.preventDefault(); mention.setActiveIndex(Math.min(mention.activeIndex + 1, mention.suggestions.length - 1)) }
-                  if (e.key === 'ArrowUp') { e.preventDefault(); mention.setActiveIndex(Math.max(mention.activeIndex - 1, 0)) }
-                  if (e.key === 'Enter' || e.key === 'Tab') {
-                    const s = mention.suggestions[mention.activeIndex]
-                    if (s?.pseudoHandle) { e.preventDefault(); setBody(mention.selectSuggestion(s.pseudoHandle)) }
-                  }
-                  if (e.key === 'Escape') mention.close()
-                }}
-                placeholder="Say more… (type @handle to mention)"
+                onChange={(e) => setBody(e.target.value.slice(0, 10000))}
+                placeholder="Say more…"
                 rows={4}
                 className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed"
               />
-              {mention.isOpen && (
-                <MentionSuggestions
-                  suggestions={mention.suggestions}
-                  activeIndex={mention.activeIndex}
-                  onSelect={(handle) => { setBody(mention.selectSuggestion(handle)); bodyRef.current?.focus() }}
-                  onHover={mention.setActiveIndex}
-                />
-              )}
             </div>
           </div>
         ) : (

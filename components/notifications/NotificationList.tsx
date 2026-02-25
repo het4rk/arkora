@@ -10,14 +10,12 @@ const TYPE_LABELS: Record<Notification['type'], string> = {
   reply: 'replied to your post',
   follow: 'started following you',
   dm: 'sent you a message',
-  mention: 'mentioned you',
 }
 
 const TYPE_ICONS: Record<Notification['type'], string> = {
   reply: '💬',
   follow: '👤',
   dm: '✉️',
-  mention: '@',
 }
 
 type FilterType = 'all' | Notification['type']
@@ -25,7 +23,6 @@ type FilterType = 'all' | Notification['type']
 const FILTERS: { id: FilterType; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'reply', label: 'Replies' },
-  { id: 'mention', label: 'Mentions' },
   { id: 'follow', label: 'Follows' },
   { id: 'dm', label: 'DMs' },
 ]
@@ -64,8 +61,6 @@ export function NotificationList() {
       router.push(`/dm/${n.actorHash}`)
     } else if (n.type === 'follow' && n.actorHash) {
       router.push(`/u/${n.actorHash}`)
-    } else if (n.type === 'mention' && n.referenceId) {
-      router.push(`/post/${n.referenceId}`)
     }
   }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createReply, getReplyPostId } from '@/lib/db/replies'
-import { sanitizeLine, sanitizeText, parseMentions } from '@/lib/sanitize'
-import { isVerifiedHuman, getUsersByHandles } from '@/lib/db/users'
+import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
+import { isVerifiedHuman } from '@/lib/db/users'
 import { getPostNullifier } from '@/lib/db/posts'
 import { createNotification } from '@/lib/db/notifications'
 import { pusherServer } from '@/lib/pusher'
@@ -76,17 +76,7 @@ export async function POST(req: NextRequest) {
           void pusherServer.trigger(`user-${authorHash}`, 'notif-count', { delta: 1 })
           void worldAppNotify(authorHash, 'New reply', 'Someone replied to your post', `/posts/${postId}`)
         }
-        // @mentions in reply body
-        const handles = parseMentions(replyBody)
-        if (handles.length > 0) {
-          const handleMap = await getUsersByHandles(handles)
-          for (const [, mentionedHash] of handleMap) {
-            if (mentionedHash === nullifierHash || mentionedHash === authorHash) continue
-            await createNotification(mentionedHash, 'mention', reply.id, nullifierHash)
-            void pusherServer.trigger(`user-${mentionedHash}`, 'notif-count', { delta: 1 })
-            void worldAppNotify(mentionedHash, 'You were mentioned', 'Someone mentioned you in a reply', `/posts/${postId}`)
-          }
-        }
+
       } catch { /* non-critical */ }
     })()
 
