@@ -29,6 +29,7 @@ export function TopBar() {
         className="fixed top-0 left-0 right-0 z-30 glass-nav-top"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
+        <div className="max-w-[640px] mx-auto">
         <div className="relative flex items-center h-14 px-2">
           {/* Hamburger — left */}
           <button
@@ -49,6 +50,7 @@ export function TopBar() {
           <span className="absolute left-1/2 -translate-x-1/2 text-base font-bold tracking-[-0.03em] text-text select-none">
             Arkora
           </span>
+        </div>
         </div>
       </header>
     </>

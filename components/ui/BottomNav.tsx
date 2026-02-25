@@ -63,6 +63,7 @@ export function BottomNav() {
       <nav className="fixed bottom-0 left-0 right-0 z-30" aria-label="Main navigation">
         {/* Liquid glass bar */}
         <div className="glass-nav">
+          <div className="max-w-[640px] mx-auto">
           <div className="flex items-center justify-around h-14 px-2">
 
             {/* Feed */}
@@ -159,6 +160,7 @@ export function BottomNav() {
               </span>
             </Link>
 
+          </div>
           </div>
         </div>
       </nav>
