@@ -9,8 +9,7 @@ import { IDKitWidget, VerificationLevel, type ISuccessResult } from '@worldcoin/
 
 export function VerifyHuman() {
   const { isVerifySheetOpen, setVerifySheetOpen, isVerified } = useArkoraStore()
-  const { status, error, isMiniKit, verify, handleDesktopVerify, onDesktopSuccess } = useVerification()
-  // Holds the IDKit open() fn so we can call it after the sheet closes
+  const { status, error, env, verify, handleDesktopVerify, onDesktopSuccess } = useVerification()
   const idkitOpenRef = useRef<(() => void) | null>(null)
 
   if (isVerified) return null
@@ -18,11 +17,45 @@ export function VerifyHuman() {
   const appId = (process.env.NEXT_PUBLIC_APP_ID ?? '') as `app_${string}`
   const actionId = process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman'
 
+  // IDKit handles both mobile-browser (deeplink to World App) and desktop (QR code).
+  const needsIdKit = env === 'mobile-browser' || env === 'desktop'
+
+  function openIdKit() {
+    setVerifySheetOpen(false)
+    setTimeout(() => idkitOpenRef.current?.(), 200)
+  }
+
+  const subtitles = {
+    detecting: 'Detecting your environment…',
+    minikit: 'Arkora uses World ID Orb verification to guarantee every voice is from a real, unique human. No accounts. No tracking. Your identity stays private.',
+    'mobile-browser': "You're in a browser, not the World App. Tap below — World App will open automatically to verify you.",
+    desktop: 'Scan the QR code with World App on your phone to verify your humanity. Your identity stays private.',
+  }
+
+  const footers = {
+    detecting: 'Powered by World ID',
+    minikit: 'Powered by World ID — Orb verification required',
+    'mobile-browser': 'World App will open on your phone or tablet',
+    desktop: 'Scan the QR code with World App on your phone',
+  }
+
+  const buttonLabel =
+    status === 'pending' ? 'Verifying…'
+    : env === 'detecting' ? 'Loading…'
+    : env === 'minikit' ? 'Verify with World ID'
+    : env === 'mobile-browser' ? 'Open World App to Verify'
+    : 'Scan QR with World App'
+
+  const envBadge =
+    env === 'minikit' ? { color: 'bg-green-400', label: 'World App detected' }
+    : env === 'mobile-browser' ? { color: 'bg-yellow-400', label: 'Browser detected — not in World App' }
+    : env === 'desktop' ? { color: 'bg-blue-400', label: 'Desktop browser' }
+    : null
+
   return (
     <>
-      {/* IDKitWidget lives OUTSIDE the sheet so closing the sheet doesn't unmount it.
-          Its children render nothing — we call open() imperatively via ref. */}
-      {!isMiniKit && (
+      {/* IDKitWidget lives outside the sheet so closing doesn't unmount it */}
+      {needsIdKit && (
         <IDKitWidget
           app_id={appId}
           action={actionId}
@@ -30,7 +63,6 @@ export function VerifyHuman() {
           handleVerify={(proof: ISuccessResult) => handleDesktopVerify(proof)}
           onSuccess={onDesktopSuccess}
           onError={() => {
-            // Reopen verify sheet so the user can see the error message
             setTimeout(() => setVerifySheetOpen(true), 100)
           }}
         >
@@ -54,11 +86,17 @@ export function VerifyHuman() {
               One scan. Forever verified.
             </h3>
             <p className="text-text-secondary text-sm leading-relaxed">
-              {isMiniKit
-                ? 'Arkora uses World ID Orb verification to guarantee every voice is from a real, unique human. No accounts. No tracking. Your identity stays private.'
-                : 'Scan the QR code with your World App to verify your humanity. Your identity stays private.'}
+              {subtitles[env]}
             </p>
           </div>
+
+          {/* Environment indicator */}
+          {envBadge && (
+            <div className="flex items-center gap-2 glass rounded-full px-3 py-1.5 text-xs text-text-muted">
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${envBadge.color}`} />
+              {envBadge.label}
+            </div>
+          )}
 
           {error && (
             <p className="text-downvote text-sm bg-downvote/10 rounded-xl px-4 py-2 w-full">
@@ -66,35 +104,25 @@ export function VerifyHuman() {
             </p>
           )}
 
-          {isMiniKit ? (
-            /* ─── World App: MiniKit flow ─────────────────────────── */
+          {env === 'minikit' ? (
             <button
               onClick={() => void verify()}
               disabled={status === 'pending'}
               className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-colors active:scale-95 text-base"
             >
-              {status === 'pending' ? 'Verifying…' : 'Verify with World ID'}
+              {buttonLabel}
             </button>
           ) : (
-            /* ─── Desktop: close sheet first, then open IDKit QR ─── */
             <button
-              onClick={() => {
-                setVerifySheetOpen(false)
-                // Let the sheet animate out before IDKit's modal opens
-                setTimeout(() => idkitOpenRef.current?.(), 200)
-              }}
-              disabled={status === 'pending'}
+              onClick={env === 'detecting' ? undefined : openIdKit}
+              disabled={status === 'pending' || env === 'detecting'}
               className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-colors active:scale-95 text-base"
             >
-              {status === 'pending' ? 'Verifying…' : 'Verify with World ID'}
+              {buttonLabel}
             </button>
           )}
 
-          <p className="text-text-muted text-xs">
-            {isMiniKit
-              ? 'Powered by World ID — Orb verification required'
-              : 'Scan the QR code with World App on your phone'}
-          </p>
+          <p className="text-text-muted text-xs">{footers[env]}</p>
         </div>
       </BottomSheet>
     </>

@@ -7,16 +7,32 @@ import type { HumanUser } from '@/lib/types'
 
 type VerificationStatus = 'idle' | 'pending' | 'success' | 'error'
 
+/**
+ * Three-way environment:
+ *  'detecting'      — polling for MiniKit, UI should show neutral loading state
+ *  'minikit'        — running inside World App WebView (MiniKit available)
+ *  'mobile-browser' — mobile device (phone/tablet/iPad) but NOT inside World App
+ *  'desktop'        — desktop / laptop browser
+ */
+export type VerifyEnvironment = 'detecting' | 'minikit' | 'mobile-browser' | 'desktop'
+
+function isMobileDevice(): boolean {
+  // maxTouchPoints covers modern iPads even when they report a desktop UA.
+  // Regex covers older devices and Android.
+  return (
+    navigator.maxTouchPoints > 0 ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  )
+}
+
 interface UseVerificationReturn {
   status: VerificationStatus
   error: string | null
-  /** True when running inside World App (uses MiniKit). False = desktop (uses IDKit). */
+  env: VerifyEnvironment
+  /** @deprecated use env === 'minikit' */
   isMiniKit: boolean
-  /** MiniKit flow — call this directly from a button click. */
   verify: () => Promise<boolean>
-  /** IDKit flow — pass as `handleVerify` prop to IDKitWidget. Throws on failure. */
   handleDesktopVerify: (proof: ISuccessResult) => Promise<void>
-  /** IDKit flow — pass as `onSuccess` prop to IDKitWidget. */
   onDesktopSuccess: () => void
   isVerified: boolean
 }
@@ -24,13 +40,44 @@ interface UseVerificationReturn {
 export function useVerification(): UseVerificationReturn {
   const [status, setStatus] = useState<VerificationStatus>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [isMiniKit, setIsMiniKit] = useState(true) // default true; update after mount
+  const [env, setEnv] = useState<VerifyEnvironment>('detecting')
 
   const { isVerified, nullifierHash, walletAddress, setVerified } = useArkoraStore()
 
-  // Detect environment after mount (MiniKit requires DOM)
+  // Detect environment after mount.
+  // MiniKit requires the World App WebView to inject window.WorldApp, which can
+  // take 300–600 ms. We poll up to ~3 s (15 × 200 ms) before concluding
+  // MiniKit is unavailable — same strategy as WalletConnect.tsx.
   useEffect(() => {
-    setIsMiniKit(MiniKit.isInstalled())
+    let retries = 0
+    const MAX_RETRIES = 15
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    function silentIsInstalled(): boolean {
+      const orig = console.error
+      console.error = (...args: unknown[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('MiniKit is not installed')) return
+        ;(orig as (...a: unknown[]) => void)(...args)
+      }
+      const result = MiniKit.isInstalled()
+      console.error = orig
+      return result
+    }
+
+    function poll() {
+      if (silentIsInstalled()) {
+        setEnv('minikit')
+        return
+      }
+      if (retries++ < MAX_RETRIES) {
+        timer = setTimeout(poll, 200)
+      } else {
+        setEnv(isMobileDevice() ? 'mobile-browser' : 'desktop')
+      }
+    }
+
+    poll()
+    return () => { if (timer !== null) clearTimeout(timer) }
   }, [])
 
   // ─── MiniKit flow (World App) ──────────────────────────────────────────
@@ -95,9 +142,7 @@ export function useVerification(): UseVerificationReturn {
     }
   }, [isVerified, nullifierHash, walletAddress, setVerified])
 
-  // ─── IDKit flow (desktop) ─────────────────────────────────────────────
-  // Called by IDKitWidget's handleVerify prop. Must throw on failure to
-  // show the error screen in the widget.
+  // ─── IDKit flow (mobile browser + desktop) ────────────────────────────
   const handleDesktopVerify = useCallback(
     async (proof: ISuccessResult): Promise<void> => {
       setStatus('pending')
@@ -109,7 +154,6 @@ export function useVerification(): UseVerificationReturn {
         body: JSON.stringify({
           payload: proof,
           action: process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman',
-          // No walletAddress for desktop — server handles it
         }),
       })
 
@@ -139,5 +183,14 @@ export function useVerification(): UseVerificationReturn {
     setStatus('success')
   }, [])
 
-  return { status, error, isMiniKit, verify, handleDesktopVerify, onDesktopSuccess, isVerified }
+  return {
+    status,
+    error,
+    env,
+    isMiniKit: env === 'minikit',
+    verify,
+    handleDesktopVerify,
+    onDesktopSuccess,
+    isVerified,
+  }
 }
