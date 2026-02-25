@@ -8,6 +8,7 @@ import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen'
 import { PostComposer } from '@/components/compose/PostComposer'
 import { VerifyHuman } from '@/components/auth/VerifyHuman'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { SessionHydrator } from '@/components/auth/SessionHydrator'
 
 export const metadata: Metadata = {
   title: 'Arkora',
@@ -34,6 +35,7 @@ export default function RootLayout({
         <MiniKitProvider>
           <ThemeProvider />
           {/* Auto-triggers walletAuth on mount */}
+          <SessionHydrator />
           <WalletConnect />
           <OnboardingScreen />
           <PostComposer />

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { type ISuccessResult } from '@worldcoin/minikit-js'
 import { verifyWorldIdProof } from '@/lib/worldid'
-import { getOrCreateUser } from '@/lib/db/users'
+import { getOrCreateUser, getUserByNullifier } from '@/lib/db/users'
 
 interface RequestBody {
   payload: ISuccessResult
@@ -25,6 +25,31 @@ export async function POST(req: NextRequest) {
     const result = await verifyWorldIdProof(payload, action, signal)
 
     if (!result.success || !result.nullifierHash) {
+      // Graceful path: Worldcoin rejects duplicate nullifiers with "already verified".
+      // The proof was still valid (real human) — restore the session from our DB.
+      const alreadyVerified =
+        result.error?.toLowerCase().includes('already') ||
+        result.error?.toLowerCase().includes('max_verifications')
+
+      if (alreadyVerified && payload.nullifier_hash) {
+        const existingUser = await getUserByNullifier(payload.nullifier_hash)
+        if (existingUser) {
+          const restored = NextResponse.json({
+            success: true,
+            nullifierHash: payload.nullifier_hash,
+            user: existingUser,
+          })
+          restored.cookies.set('arkora-nh', payload.nullifier_hash, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'strict',
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30,
+          })
+          return restored
+        }
+      }
+
       return NextResponse.json(
         { success: false, error: result.error ?? 'Verification failed' },
         { status: 400 }
