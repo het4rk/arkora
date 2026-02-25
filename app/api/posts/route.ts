@@ -148,18 +148,19 @@ export async function POST(req: NextRequest) {
 
     const title = sanitizeLine(rawTitle)
     const postBody = isPoll ? '' : sanitizeText(rawBody ?? '')
+
+    if (!VALID_BOARD_IDS.has(rawBoardId as BoardId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid board' },
+        { status: 400 }
+      )
+    }
     const boardId = rawBoardId as BoardId
 
     // Force-anonymous on boards like Confessions — strip handle regardless of identity mode
     const pseudoHandle = ANONYMOUS_BOARDS.has(boardId)
       ? undefined
       : rawHandle ? sanitizeLine(rawHandle) : undefined
-    if (!VALID_BOARD_IDS.has(boardId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid board' },
-        { status: 400 }
-      )
-    }
 
     if (title.length > 280) {
       return NextResponse.json(

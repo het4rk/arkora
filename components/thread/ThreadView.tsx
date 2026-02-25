@@ -236,15 +236,15 @@ export function ThreadView({ postId }: Props) {
             {post.title}
           </h1>
 
-          {/* Only navigate to profile from non-anonymous posts */}
+          {/* Only navigate to profile / show social actions on non-anonymous posts */}
           <div className="flex items-center gap-2 flex-wrap">
             <HumanBadge
               label={displayName}
               nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
               size="md"
             />
-            <KarmaBadge score={authorKarmaScore} />
-            <InlineFollowButton targetHash={post.nullifierHash} />
+            {post.pseudoHandle && <KarmaBadge score={authorKarmaScore} />}
+            {post.pseudoHandle && <InlineFollowButton targetHash={post.nullifierHash} />}
           </div>
 
           {/* Quoted post */}

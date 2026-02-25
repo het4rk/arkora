@@ -1,6 +1,6 @@
 'use client'
 
-import { getKarmaTier } from '@/lib/db/karma'
+import { getKarmaTier } from '@/lib/karma'
 import { cn } from '@/lib/utils'
 
 interface Props {
