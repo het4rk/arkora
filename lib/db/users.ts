@@ -1,6 +1,6 @@
 import { db } from './index'
 import { humanUsers } from './schema'
-import { eq, inArray, sql } from 'drizzle-orm'
+import { eq, inArray, sql, and } from 'drizzle-orm'
 import type { HumanUser } from '@/lib/types'
 
 function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
@@ -19,7 +19,8 @@ function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
 export async function getOrCreateUser(
   nullifierHash: string,
   walletAddress: string,
-  username?: string
+  username?: string,
+  worldIdVerified?: boolean
 ): Promise<HumanUser> {
   const existing = await getUserByNullifier(nullifierHash)
   if (existing) {
@@ -31,7 +32,13 @@ export async function getOrCreateUser(
 
   const [row] = await db
     .insert(humanUsers)
-    .values({ nullifierHash, walletAddress, pseudoHandle: username ?? null })
+    .values({
+      nullifierHash,
+      walletAddress,
+      pseudoHandle: username ?? null,
+      // Wallet-only (SIWE) users start unverified. World ID verify route sets this to true.
+      worldIdVerified: worldIdVerified ?? false,
+    })
     .onConflictDoNothing()
     .returning()
 
@@ -90,7 +97,7 @@ export async function updateBio(
 ): Promise<HumanUser> {
   const [row] = await db
     .update(humanUsers)
-    .set({ bio: bio ? bio.slice(0, 160) : null })
+    .set({ bio: bio ? bio.slice(0, 500) : null })
     .where(eq(humanUsers.nullifierHash, nullifierHash))
     .returning()
 
@@ -103,6 +110,13 @@ export async function updateIdentityMode(
   identityMode: 'anonymous' | 'alias' | 'named'
 ): Promise<void> {
   await db.update(humanUsers).set({ identityMode }).where(eq(humanUsers.nullifierHash, nullifierHash))
+}
+
+export async function setWorldIdVerified(nullifierHash: string): Promise<void> {
+  await db
+    .update(humanUsers)
+    .set({ worldIdVerified: true })
+    .where(eq(humanUsers.nullifierHash, nullifierHash))
 }
 
 export async function getUsersByNullifiers(
@@ -122,8 +136,10 @@ export async function isVerifiedHuman(nullifierHash: string): Promise<boolean> {
   const [row] = await db
     .select({ v: sql<number>`1` })
     .from(humanUsers)
-    .where(eq(humanUsers.nullifierHash, nullifierHash))
+    .where(and(
+      eq(humanUsers.nullifierHash, nullifierHash),
+      eq(humanUsers.worldIdVerified, true)
+    ))
     .limit(1)
   return !!row
 }
-

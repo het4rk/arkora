@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostById, softDeletePost } from '@/lib/db/posts'
 import { getRepliesByPostId } from '@/lib/db/replies'
-import { getNotesByPostId } from '@/lib/db/notes'
+import { getNotesByPostId } from '@/lib/db/communityNotes'
 import { getPollResults, getUserVote } from '@/lib/db/polls'
 import { getKarmaScore } from '@/lib/db/karma'
 import { getCallerNullifier } from '@/lib/serverAuth'

@@ -31,6 +31,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   const router = useRouter()
   const { nullifierHash, setComposerQuotedPost, setComposerOpen } = useArkoraStore()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -56,13 +57,17 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
     if (!nullifierHash || isDeleting) return
     haptic('medium')
     setIsDeleting(true)
+    setDeleteError(null)
     try {
-      const res = await fetch(`/api/posts/${post.id}`, {
-        method: 'DELETE',
-      })
+      const res = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' })
       if (res.ok) {
         onDeleted?.(post.id)
+      } else {
+        const json = (await res.json()) as { error?: string }
+        setDeleteError(json.error ?? 'Failed to delete post')
       }
+    } catch {
+      setDeleteError('Failed to delete post')
     } finally {
       setIsDeleting(false)
     }
@@ -111,6 +116,11 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           )}
         </div>
       </div>
+
+      {/* Delete error */}
+      {deleteError && (
+        <p className="text-downvote text-xs mb-2">{deleteError}</p>
+      )}
 
       {/* Hero content */}
       <div className="flex flex-col">

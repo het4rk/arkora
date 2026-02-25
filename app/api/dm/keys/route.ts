@@ -27,6 +27,10 @@ export async function POST(req: NextRequest) {
     if (!publicKey) {
       return NextResponse.json({ success: false, error: 'publicKey required' }, { status: 400 })
     }
+    // Base64 standard encoding of 32 bytes = 44 chars (43 + '=' padding)
+    if (!/^[A-Za-z0-9+/]{43}=$/.test(publicKey)) {
+      return NextResponse.json({ success: false, error: 'Invalid public key format' }, { status: 400 })
+    }
     if (!(await isVerifiedHuman(nullifierHash))) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }

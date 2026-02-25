@@ -11,7 +11,7 @@ export default function GlobalError({ error, reset }: Props) {
       <body style={{ background: '#0a0a0a', color: '#fff', fontFamily: 'system-ui, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', padding: '24px', textAlign: 'center' }}>
         <p style={{ fontSize: 32, marginBottom: 16 }}>⚡</p>
         <p style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Something went wrong</p>
-        <p style={{ color: '#888', fontSize: 13, marginBottom: 4, maxWidth: 320, wordBreak: 'break-all' }}>{error.message}</p>
+        <p style={{ color: '#888', fontSize: 13, marginBottom: 4, maxWidth: 320 }}>An unexpected error occurred. Please try again.</p>
         {error.digest && <p style={{ color: '#555', fontSize: 11, marginBottom: 24 }}>digest: {error.digest}</p>}
         <button
           onClick={reset}

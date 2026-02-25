@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
     if (!recipientHash || !ciphertext || !nonce) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
+    if (ciphertext.length > 131072 || nonce.length > 32) {
+      return NextResponse.json({ success: false, error: 'Message too large' }, { status: 413 })
+    }
     if (senderHash === recipientHash) {
       return NextResponse.json({ success: false, error: 'Cannot DM yourself' }, { status: 400 })
     }

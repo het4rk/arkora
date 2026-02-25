@@ -43,6 +43,11 @@ export async function POST(req: NextRequest) {
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
+
+    if (!rateLimit(`bookmark:${nullifierHash}`, 30, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })
+    }
+
     const { postId } = (await req.json()) as { postId?: string }
     if (!postId) {
       return NextResponse.json({ success: false, error: 'postId required' }, { status: 400 })

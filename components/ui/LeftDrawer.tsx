@@ -80,8 +80,8 @@ export function LeftDrawer() {
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
             drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={{ left: 0.25, right: 0 }}
+            dragConstraints={{ left: -400, right: 0 }}
+            dragElastic={0}
             onDragEnd={(_, info) => {
               if (info.offset.x < -56 || info.velocity.x < -400) {
                 setDrawerOpen(false)
@@ -134,11 +134,6 @@ export function LeftDrawer() {
                     <div key={opt.mode}>
                       <button
                         onClick={() => {
-                          if (!isVerified) {
-                            useArkoraStore.getState().setVerifySheetOpen(true)
-                            setDrawerOpen(false)
-                            return
-                          }
                           setIdentityMode(opt.mode)
                         }}
                         className={cn(

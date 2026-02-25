@@ -7,6 +7,7 @@ import { ThreadCard } from './ThreadCard'
 import { FeedSkeleton } from './FeedSkeleton'
 import { haptic } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import type { PollResult } from '@/lib/types'
 
 // Discrete radius options in miles; -1 means "entire country"
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
@@ -62,6 +63,20 @@ export function Feed() {
   const sentinelRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
+  const [pollDataMap, setPollDataMap] = useState<Record<string, { results: PollResult[]; userVote: number | null }>>({})
+
+  const fetchPollData = useCallback((pollPostIds: string[]) => {
+    if (pollPostIds.length === 0) return
+    const ids = pollPostIds.join(',')
+    void fetch(`/api/polls/batch?postIds=${encodeURIComponent(ids)}`)
+      .then((r) => r.json())
+      .then((j: { success: boolean; data?: Record<string, { results: PollResult[]; userVote: number | null }> }) => {
+        if (j.success && j.data) {
+          setPollDataMap((prev) => ({ ...prev, ...j.data! }))
+        }
+      })
+      .catch(() => null)
+  }, [])
 
   // Pull-to-refresh state
   const [pullDistance, setPullDistance] = useState(0)
@@ -122,6 +137,11 @@ export function Feed() {
     if (!nullifierHash || posts.length === 0) return
     fetchBookmarks(posts.map((p) => p.id), nullifierHash)
   }, [posts, nullifierHash, fetchBookmarks])
+
+  useEffect(() => {
+    const pollPostIds = posts.filter((p) => p.type === 'poll').map((p) => p.id)
+    fetchPollData(pollPostIds)
+  }, [posts, fetchPollData])
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -320,7 +340,14 @@ export function Feed() {
         )}
 
         {posts.map((post) => (
-          <ThreadCard key={post.id} post={post} onDeleted={removePost} isBookmarked={bookmarkedIds.has(post.id)} />
+          <ThreadCard
+            key={post.id}
+            post={post}
+            onDeleted={removePost}
+            isBookmarked={bookmarkedIds.has(post.id)}
+            pollResults={pollDataMap[post.id]?.results ?? null}
+            userVote={pollDataMap[post.id]?.userVote ?? null}
+          />
         ))}
 
         {/* Infinite scroll sentinel */}

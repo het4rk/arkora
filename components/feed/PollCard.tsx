@@ -23,6 +23,7 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
   const [results, setResults] = useState<PollResult[]>(initialResults)
   const [userVote, setUserVote] = useState<number | null>(initialUserVote)
   const [isVoting, setIsVoting] = useState(false)
+  const [voteError, setVoteError] = useState<string | null>(null)
 
   const options = post.pollOptions ?? []
   const isExpired = post.pollEndsAt ? new Date(post.pollEndsAt) < new Date() : false
@@ -45,19 +46,22 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
     if (isVoting || hasVoted || isExpired) return
     haptic('medium')
     setIsVoting(true)
+    setVoteError(null)
     try {
       const res = await fetch(`/api/polls/${post.id}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ optionIndex }),
       })
-      const json = (await res.json()) as { success: boolean; data?: { results: PollResult[]; userVote: number } }
+      const json = (await res.json()) as { success: boolean; data?: { results: PollResult[]; userVote: number }; error?: string }
       if (json.success && json.data) {
         setResults(json.data.results)
         setUserVote(json.data.userVote)
+      } else if (!json.success) {
+        setVoteError(json.error ?? 'Failed to cast vote')
       }
     } catch {
-      // silent
+      setVoteError('Failed to cast vote')
     } finally {
       setIsVoting(false)
     }
@@ -113,6 +117,11 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
           </div>
         )
       })}
+
+      {/* Vote error */}
+      {voteError && (
+        <p className="text-downvote text-[11px] pt-1">{voteError}</p>
+      )}
 
       {/* Footer */}
       <p className="text-text-muted text-[11px] font-medium pt-1">

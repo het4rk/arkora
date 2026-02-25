@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getOrCreateUser, updateBio, updateIdentityMode } from '@/lib/db/users'
 import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
 import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
+import { rateLimit } from '@/lib/rateLimit'
 
 const VALID_IDENTITY_MODES = new Set(['anonymous', 'alias', 'named'])
 
@@ -16,11 +17,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Rate limit: 10 registrations per 60s per wallet prefix
+    if (!rateLimit(`auth-user:${walletAddress.slice(0, 10)}`, 10, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
+
     // Sanitize and length-cap username before storing
     const sanitizedUsername = username ? sanitizeLine(username).slice(0, 50) : undefined
 
     const nullifierHash = walletToNullifier(walletAddress)
-    const user = await getOrCreateUser(nullifierHash, walletAddress, sanitizedUsername)
+    // worldIdVerified: false — wallet-auth only, requires World ID verify to unlock actions
+    const user = await getOrCreateUser(nullifierHash, walletAddress, sanitizedUsername, false)
 
     const res = NextResponse.json({ success: true, nullifierHash, user })
     // Set server-side identity cookie so protected endpoints can verify the caller

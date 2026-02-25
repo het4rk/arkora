@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { type ISuccessResult } from '@worldcoin/minikit-js'
 import { verifyWorldIdProof } from '@/lib/worldid'
-import { getOrCreateUser, getUserByNullifier } from '@/lib/db/users'
+import { getOrCreateUser, getUserByNullifier, setWorldIdVerified } from '@/lib/db/users'
 import { walletToNullifier } from '@/lib/serverAuth'
 
 interface RequestBody {
@@ -70,6 +70,8 @@ export async function POST(req: NextRequest) {
         if (existingUser) {
           const { nullifierHash: sessionHash, user: sessionUser } =
             await resolveIdentity(payload.nullifier_hash, existingUser)
+          // Ensure worldIdVerified is set — handles users created before this column existed
+          await setWorldIdVerified(sessionHash)
           const restored = NextResponse.json({
             success: true,
             nullifierHash: sessionHash,
@@ -89,10 +91,13 @@ export async function POST(req: NextRequest) {
     // Upsert user — idempotent, safe to call multiple times
     // Desktop IDKit users may not have a wallet; use nullifier as placeholder
     const effectiveWallet = walletAddress || `idkit_${result.nullifierHash.slice(0, 40)}`
-    const worldIdUser = await getOrCreateUser(result.nullifierHash, effectiveWallet)
+    const worldIdUser = await getOrCreateUser(result.nullifierHash, effectiveWallet, undefined, true)
 
     const { nullifierHash: sessionHash, user: sessionUser } =
       await resolveIdentity(result.nullifierHash, worldIdUser)
+
+    // Mark the canonical session identity as World ID verified
+    await setWorldIdVerified(sessionHash)
 
     const res = NextResponse.json({
       success: true,

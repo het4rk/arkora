@@ -12,6 +12,18 @@ const ALLOWED_TYPES = new Set([
   'image/webp',
 ])
 
+function validateMagicBytes(buf: Buffer, mimeType: string): boolean {
+  if (mimeType === 'image/jpeg' || mimeType === 'image/jpg')
+    return buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF
+  if (mimeType === 'image/png')
+    return buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47
+  if (mimeType === 'image/gif')
+    return buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46
+  if (mimeType === 'image/webp')
+    return buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46
+  return false
+}
+
 /**
  * Strip EXIF/metadata from JPEG files to protect user privacy.
  * Removes APP1 (EXIF), APP2 (ICC profile), and comment markers.
@@ -87,6 +99,15 @@ export async function POST(req: NextRequest) {
     }
 
     const rawBuffer = Buffer.from(await file.arrayBuffer())
+
+    // Validate magic bytes — file.type is client-supplied and can be spoofed
+    if (!validateMagicBytes(rawBuffer, file.type)) {
+      return NextResponse.json(
+        { success: false, error: 'File content does not match declared type' },
+        { status: 400 }
+      )
+    }
+
     // Strip EXIF metadata from JPEG to protect user privacy (GPS coords, device info, etc.)
     const buffer = stripExif(rawBuffer)
     // Strip path separators and control characters to prevent path traversal

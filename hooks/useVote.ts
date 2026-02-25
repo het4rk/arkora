@@ -39,11 +39,12 @@ export function useVote(): UseVoteReturn {
       setIsVoting(true)
 
       try {
-        await fetch('/api/vote', {
+        const res = await fetch('/api/vote', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ postId, direction: isToggleOff ? 0 : direction }),
         })
+        if (!res.ok) throw new Error('Vote rejected')
       } catch {
         // Restore exact previous state on failure
         if (previousVote !== null) {

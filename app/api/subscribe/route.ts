@@ -60,6 +60,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
 
+    const parsedAmount = parseFloat(amountWld)
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return NextResponse.json({ success: false, error: 'Invalid WLD amount' }, { status: 400 })
+    }
+
     if (!rateLimit(`subscribe:${subscriberHash}`, 5, 60_000)) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }

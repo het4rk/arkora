@@ -29,7 +29,7 @@ export async function POST(
     if (!room.isLive) {
       return NextResponse.json({ success: false, error: 'Room has ended' }, { status: 410 })
     }
-    if (room.participantCount !== undefined && room.participantCount >= room.maxParticipants) {
+    if ((room.participantCount ?? 0) >= room.maxParticipants) {
       return NextResponse.json({ success: false, error: 'Room is full' }, { status: 409 })
     }
 

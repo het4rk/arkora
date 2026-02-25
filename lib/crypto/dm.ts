@@ -18,7 +18,8 @@ import { sha256 } from '@noble/hashes/sha2.js'
 // ── Encoding helpers ─────────────────────────────────────────────────────────
 
 function toBase64(buf: Uint8Array): string {
-  return btoa(String.fromCharCode(...buf))
+  // Avoid spread (...buf) which overflows the JS call stack for large buffers
+  return btoa(Array.from(buf, (b) => String.fromCharCode(b)).join(''))
 }
 
 function fromBase64(s: string): Uint8Array {

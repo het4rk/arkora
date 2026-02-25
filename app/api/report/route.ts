@@ -4,6 +4,7 @@ import { reports } from '@/lib/db/schema'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { sanitizeText } from '@/lib/sanitize'
 import { and, eq } from 'drizzle-orm'
 
 const VALID_TARGET_TYPES = new Set(['post', 'reply', 'user'])
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
       targetType: body.targetType,
       targetId: body.targetId,
       reason: body.reason,
-      details: body.details?.slice(0, 500) ?? null,
+      details: body.details ? sanitizeText(body.details).slice(0, 500) : null,
     })
 
     return NextResponse.json({ success: true, data: { reported: true } }, { status: 201 })

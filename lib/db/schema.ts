@@ -7,6 +7,7 @@ import {
   timestamp,
   uuid,
   index,
+  uniqueIndex,
   primaryKey,
   jsonb,
   unique,
@@ -89,6 +90,10 @@ export const humanUsers = pgTable(
     identityMode: text('identity_mode').default('anonymous').notNull(), // 'anonymous' | 'alias' | 'named'
     // Net upvotes received across all posts + replies. Updated incrementally on vote.
     karmaScore: integer('karma_score').default(0).notNull(),
+    // True only after successful World ID Orb/Device verification via /api/verify.
+    // Wallet-only (SIWE) users start as false and cannot post/reply/vote.
+    // DEFAULT true so existing verified users keep access after migration.
+    worldIdVerified: boolean('world_id_verified').default(true).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
@@ -327,8 +332,8 @@ export const reports = pgTable(
   (table) => ({
     targetIdx: index('reports_target_idx').on(table.targetType, table.targetId),
     statusIdx: index('reports_status_idx').on(table.status),
-    // Prevent duplicate reports from same user on same target
-    reporterTargetIdx: index('reports_reporter_target_idx').on(table.reporterHash, table.targetType, table.targetId),
+    // Prevent duplicate reports from same user on same target (DB-level enforcement)
+    reporterTargetIdx: uniqueIndex('reports_reporter_target_idx').on(table.reporterHash, table.targetType, table.targetId),
   })
 )
 
