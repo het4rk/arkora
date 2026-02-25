@@ -6,7 +6,6 @@ import { haptic } from '@/lib/utils'
 import { generateAlias } from '@/lib/session'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { useArkoraStore } from '@/store/useArkoraStore'
-import { HumanBadge } from '@/components/ui/HumanBadge'
 
 interface Props {
   postId: string
@@ -109,8 +108,6 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
         />
       )}
       <div className="flex items-end gap-3">
-        <HumanBadge size="sm" className="mb-[3px] shrink-0" />
-
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value.slice(0, 10000))}

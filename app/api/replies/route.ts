@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createReply } from '@/lib/db/replies'
+import { sanitizeText } from '@/lib/sanitize'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { getPostNullifier } from '@/lib/db/posts'
 import { createNotification } from '@/lib/db/notifications'
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { postId, body: replyBody, pseudoHandle, parentReplyId, imageUrl } = (await req.json()) as {
+    const { postId, body: rawBody, pseudoHandle: rawHandle, parentReplyId, imageUrl } = (await req.json()) as {
       postId?: string
       body?: string
       pseudoHandle?: string
@@ -21,12 +22,15 @@ export async function POST(req: NextRequest) {
       imageUrl?: string
     }
 
-    if (!postId || !replyBody?.trim()) {
+    if (!postId || !rawBody?.trim()) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       )
     }
+
+    const replyBody = sanitizeText(rawBody)
+    const pseudoHandle = rawHandle ? sanitizeText(rawHandle) : undefined
 
     if (replyBody.length > 10000) {
       return NextResponse.json(

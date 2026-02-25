@@ -145,22 +145,25 @@ export function PostComposer() {
         {/* Title */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Title</p>
-            <span className="text-text-muted/60 text-[11px] tabular-nums">{title.length}/280</span>
+            <label htmlFor="post-title" className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Title</label>
+            <span className="text-text-muted/60 text-[11px] tabular-nums" aria-live="polite">{title.length}/280</span>
           </div>
           <input
+            id="post-title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value.slice(0, 280))}
             placeholder="What's on your mind?"
             className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base"
+            autoComplete="off"
           />
         </div>
 
         {/* Body */}
         <div>
-          <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">Body</p>
+          <label htmlFor="post-body" className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2 block">Body</label>
           <textarea
+            id="post-body"
             value={body}
             onChange={(e) => setBody(e.target.value.slice(0, 10000))}
             placeholder="Say more…"

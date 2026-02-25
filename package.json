@@ -16,6 +16,7 @@
     "@aws-sdk/client-s3": "^3.995.0",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
+    "@worldcoin/idkit": "^1.5.0",
     "@worldcoin/minikit-js": "^1.7.0",
     "@worldcoin/minikit-react": "^1.7.0",
     "clsx": "^2.1.1",
@@ -38,7 +39,11 @@
       "esbuild": ">=0.25.0",
       "minimatch": ">=10.2.1"
     },
-    "onlyBuiltDependencies": ["esbuild", "sharp", "unrs-resolver"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

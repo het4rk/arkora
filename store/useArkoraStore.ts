@@ -40,6 +40,12 @@ interface ArkoraState {
   // DM — private key stored client-side only, never sent to server
   dmPrivateKey: string | null
 
+  // Notification preferences
+  notifyReplies: boolean
+  notifyDms: boolean
+  notifyFollows: boolean
+  notifyFollowedPosts: boolean
+
   // Optimistic vote cache: postId → direction
   optimisticVotes: Record<string, 1 | -1>
 
@@ -64,6 +70,10 @@ interface ArkoraState {
   setLocationRadius: (miles: number) => void
   setOptimisticVote: (postId: string, direction: 1 | -1) => void
   clearOptimisticVote: (postId: string) => void
+  setNotifyReplies: (v: boolean) => void
+  setNotifyDms: (v: boolean) => void
+  setNotifyFollows: (v: boolean) => void
+  setNotifyFollowedPosts: (v: boolean) => void
   setUnreadNotificationCount: (count: number) => void
   reset: () => void
   signOut: () => void
@@ -84,6 +94,10 @@ const initialState = {
   locationEnabled: false,
   locationRadius: 50,
   dmPrivateKey: null,
+  notifyReplies: true,
+  notifyDms: true,
+  notifyFollows: true,
+  notifyFollowedPosts: true,
   isVerifySheetOpen: false,
   isDrawerOpen: false,
   isSearchOpen: false,
@@ -139,6 +153,14 @@ export const useArkoraStore = create<ArkoraState>()(
           return { optimisticVotes: next }
         }),
 
+      setNotifyReplies: (v) => set({ notifyReplies: v }),
+
+      setNotifyDms: (v) => set({ notifyDms: v }),
+
+      setNotifyFollows: (v) => set({ notifyFollows: v }),
+
+      setNotifyFollowedPosts: (v) => set({ notifyFollowedPosts: v }),
+
       setUnreadNotificationCount: (count) => set({ unreadNotificationCount: count }),
 
       reset: () => set(initialState),
@@ -174,6 +196,10 @@ export const useArkoraStore = create<ArkoraState>()(
         locationEnabled: state.locationEnabled,
         locationRadius: state.locationRadius,
         dmPrivateKey: state.dmPrivateKey,
+        notifyReplies: state.notifyReplies,
+        notifyDms: state.notifyDms,
+        notifyFollows: state.notifyFollows,
+        notifyFollowedPosts: state.notifyFollowedPosts,
         optimisticVotes: state.optimisticVotes,
       }),
     }

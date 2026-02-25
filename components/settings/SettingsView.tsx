@@ -41,6 +41,10 @@ export function SettingsView() {
     user,
     locationEnabled, setLocationEnabled,
     locationRadius, setLocationRadius,
+    notifyReplies, setNotifyReplies,
+    notifyDms, setNotifyDms,
+    notifyFollows, setNotifyFollows,
+    notifyFollowedPosts, setNotifyFollowedPosts,
     signOut,
   } = useArkoraStore()
 
@@ -334,6 +338,39 @@ export function SettingsView() {
                   <span>Country</span>
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* ── Notifications ──────────────────────────────────── */}
+          <section className="space-y-3">
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">Notifications</p>
+            <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
+              {([
+                { label: 'Replies', sub: 'When someone replies to your post', value: notifyReplies, setter: setNotifyReplies },
+                { label: 'Direct messages', sub: 'When you receive a new DM', value: notifyDms, setter: setNotifyDms },
+                { label: 'Follows', sub: 'When someone follows you', value: notifyFollows, setter: setNotifyFollows },
+                { label: 'Following posts', sub: 'When someone you follow posts', value: notifyFollowedPosts, setter: setNotifyFollowedPosts },
+              ] as const).map((opt) => (
+                <div key={opt.label} className="px-4 py-3.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-text text-sm font-semibold leading-tight">{opt.label}</p>
+                    <p className="text-text-muted text-xs mt-0.5 leading-tight">{opt.sub}</p>
+                  </div>
+                  <button
+                    onClick={() => opt.setter(!opt.value)}
+                    className={cn(
+                      'relative w-11 h-6 rounded-full transition-colors shrink-0',
+                      opt.value ? 'bg-accent' : 'bg-white/10'
+                    )}
+                    aria-label={`Toggle ${opt.label.toLowerCase()} notifications`}
+                  >
+                    <span className={cn(
+                      'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                      opt.value ? 'translate-x-5' : 'translate-x-0'
+                    )} />
+                  </button>
+                </div>
+              ))}
             </div>
           </section>
 

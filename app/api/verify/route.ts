@@ -6,7 +6,7 @@ import { getOrCreateUser } from '@/lib/db/users'
 interface RequestBody {
   payload: ISuccessResult
   action: string
-  walletAddress: string
+  walletAddress?: string
   signal?: string
 }
 
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as RequestBody
     const { payload, action, walletAddress, signal } = body
 
-    if (!payload || !action || !walletAddress) {
+    if (!payload || !action) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Upsert user — idempotent, safe to call multiple times
-    const user = await getOrCreateUser(result.nullifierHash, walletAddress)
+    // Desktop IDKit users may not have a wallet; use nullifier as placeholder
+    const effectiveWallet = walletAddress || `idkit_${result.nullifierHash.slice(0, 40)}`
+    const user = await getOrCreateUser(result.nullifierHash, effectiveWallet)
 
     const res = NextResponse.json({
       success: true,
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Set server-side identity cookie so protected endpoints can verify the caller
     res.cookies.set('arkora-nh', result.nullifierHash, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'strict',
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30 days

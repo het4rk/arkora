@@ -2,6 +2,7 @@ import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrCreateUser, updateBio, updateIdentityMode } from '@/lib/db/users'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { sanitizeText } from '@/lib/sanitize'
 
 /**
  * Derives a stable pseudonymous identity from the wallet address
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     // Set server-side identity cookie so protected endpoints can verify the caller
     res.cookies.set('arkora-nh', nullifierHash, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'strict',
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30 days
@@ -67,7 +68,7 @@ export async function PATCH(req: NextRequest) {
     const { bio, identityMode } = body
     let user
     if (bio !== undefined) {
-      user = await updateBio(nullifierHash, bio ?? null)
+      user = await updateBio(nullifierHash, bio ? sanitizeText(bio) : null)
     } else if (identityMode !== undefined) {
       await updateIdentityMode(nullifierHash, identityMode)
       return NextResponse.json({ success: true })
