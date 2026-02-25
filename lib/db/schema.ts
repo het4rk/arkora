@@ -87,6 +87,8 @@ export const humanUsers = pgTable(
     avatarUrl: text('avatar_url'),
     bio: text('bio'),
     identityMode: text('identity_mode').default('anonymous').notNull(), // 'anonymous' | 'alias' | 'named'
+    // Net upvotes received across all posts + replies. Updated incrementally on vote.
+    karmaScore: integer('karma_score').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({

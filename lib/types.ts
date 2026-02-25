@@ -60,6 +60,7 @@ export interface HumanUser {
   avatarUrl: string | null
   bio: string | null
   identityMode: 'anonymous' | 'alias' | 'named'
+  karmaScore: number
   createdAt: Date
 }
 

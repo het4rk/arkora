@@ -3,6 +3,7 @@ import { getPostById, softDeletePost } from '@/lib/db/posts'
 import { getRepliesByPostId } from '@/lib/db/replies'
 import { getNotesByPostId } from '@/lib/db/notes'
 import { getPollResults, getUserVote } from '@/lib/db/polls'
+import { getKarmaScore } from '@/lib/db/karma'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { invalidatePosts } from '@/lib/cache'
 
@@ -26,20 +27,19 @@ export async function GET(_req: NextRequest, { params }: Params) {
       )
     }
 
-    // For polls, fetch aggregated results + caller's vote in parallel
-    let pollResults: { optionIndex: number; count: number }[] | null = null
-    let userVote: number | null = null
-    if (post.type === 'poll') {
-      const nullifierHash = await getCallerNullifier()
-      const [results, vote] = await Promise.all([
-        getPollResults(id),
-        nullifierHash ? getUserVote(id, nullifierHash) : Promise.resolve(null),
-      ])
-      pollResults = results
-      userVote = vote
-    }
+    const nullifierHash = await getCallerNullifier()
 
-    return NextResponse.json({ success: true, data: { post, replies, notes, pollResults, userVote } })
+    // Fetch author karma + poll data in parallel
+    const [authorKarmaScore, pollResultsRaw, userVoteRaw] = await Promise.all([
+      getKarmaScore(post.nullifierHash),
+      post.type === 'poll' ? getPollResults(id) : Promise.resolve(null),
+      post.type === 'poll' && nullifierHash ? getUserVote(id, nullifierHash) : Promise.resolve(null),
+    ])
+
+    const pollResults = pollResultsRaw ?? null
+    const userVote = userVoteRaw ?? null
+
+    return NextResponse.json({ success: true, data: { post, replies, notes, pollResults, userVote, authorKarmaScore } })
   } catch (err) {
     console.error('[posts/[id] GET]', err)
     return NextResponse.json(

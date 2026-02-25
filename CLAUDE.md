@@ -39,6 +39,16 @@ pnpm db:seed          # Seed database (reads .env.local)
 
 ## What's Been Built (Shipped Features)
 
+### Reputation / Karma (Sprint 8)
+- [x] `karmaScore INTEGER` column on `humanUsers` — updated incrementally on every post/reply vote
+- [x] Karma tiers: Newcomer (0–9) / Contributor (10–99) / Trusted (100–499) / Elder (500+)
+- [x] `lib/db/karma.ts` — `updateKarma()`, `recomputeKarma()`, `getKarmaScore()`, `getKarmaTier()`, `KARMA_TIERS`
+- [x] Vote routes (`/api/vote`, `/api/replies/vote`) compute karma delta from old→new direction and fire-and-forget `updateKarma()`
+- [x] `KarmaBadge` component — renders colored tier pill; no badge for Newcomers (keeps UI clean)
+- [x] KarmaBadge shown in ThreadView (post detail) next to HumanBadge
+- [x] KarmaBadge + score shown on own profile (ProfileView) + public profile (PublicProfileView)
+- [x] `GET /api/posts/[id]` returns `authorKarmaScore` for the ThreadView to display
+
 ### Polls (Sprint 7 — Sybil-Resistant)
 - [x] Poll type on posts — question + 2–4 options + duration (24h / 3d / 7d)
 - [x] DB: `type`, `pollOptions` (JSONB), `pollEndsAt` columns on `posts`; new `pollVotes` table with `UNIQUE(postId, nullifierHash)` — one verified human, one vote, cryptographically enforced
@@ -259,6 +269,8 @@ activeRoomId                                             — currently joined ro
 | `lib/db/polls.ts` | `castPollVote`, `getPollResults`, `getUserVote` |
 | `components/compose/PollOptionInputs.tsx` | 2–4 option inputs with add/remove |
 | `components/feed/PollCard.tsx` | Poll voting UI (buttons → % bars → checkmark on your vote) |
+| `lib/db/karma.ts` | `updateKarma()`, `recomputeKarma()`, `getKarmaScore()`, `getKarmaTier()`, `KARMA_TIERS` |
+| `components/ui/KarmaBadge.tsx` | Tier pill badge (Contributor/Trusted/Elder); no badge for Newcomer |
 | `app/api/rooms/route.ts` | Rooms list + create |
 | `app/api/rooms/[id]/route.ts` | Room detail + end |
 | `app/api/rooms/[id]/join/route.ts` | Join room with identity choice |
@@ -286,7 +298,7 @@ activeRoomId                                             — currently joined ro
 
 - [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)
 - [x] Sybil-resistant polls — Sprint 7 shipped
-- [ ] Reputation/karma score — Sprint 8
+- [x] Reputation/karma score — Sprint 8 shipped
 - [ ] Admin moderation queue for reports
 - [ ] Upgrade rate limiter to Upstash Redis for cross-instance enforcement
 - [ ] Add `connection_limit` to DATABASE_URL for Neon pooling

@@ -125,6 +125,19 @@ export async function getReplyNullifier(replyId: string): Promise<string | null>
   return row?.nullifierHash ?? null
 }
 
+/** Get the existing vote direction (1 | -1) a user cast on a reply, or null if not voted. */
+export async function getReplyVoteByNullifier(
+  replyId: string,
+  nullifierHash: string
+): Promise<{ direction: number } | null> {
+  const [row] = await db
+    .select({ direction: replyVotes.direction })
+    .from(replyVotes)
+    .where(and(eq(replyVotes.replyId, replyId), eq(replyVotes.nullifierHash, nullifierHash)))
+    .limit(1)
+  return row ? { direction: row.direction } : null
+}
+
 export async function getRepliesByNullifier(
   nullifierHash: string,
   limit = 30

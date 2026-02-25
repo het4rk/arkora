@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { Post, CommunityNote, PollResult } from '@/lib/types'
 import { PollCard } from '@/components/feed/PollCard'
 import { HumanBadge } from '@/components/ui/HumanBadge'
+import { KarmaBadge } from '@/components/ui/KarmaBadge'
 import { InlineFollowButton } from '@/components/ui/InlineFollowButton'
 import { BoardTag } from '@/components/ui/BoardTag'
 import { VoteButtons } from '@/components/ui/VoteButtons'
@@ -24,6 +25,7 @@ interface ThreadData {
   notes: CommunityNote[]
   pollResults: PollResult[] | null
   userVote: number | null
+  authorKarmaScore: number
 }
 
 function NoteCard({
@@ -200,7 +202,7 @@ export function ThreadView({ postId }: Props) {
     )
   }
 
-  const { post, replies, notes, pollResults, userVote } = data
+  const { post, replies, notes, pollResults, userVote, authorKarmaScore } = data
 
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
 
@@ -241,6 +243,7 @@ export function ThreadView({ postId }: Props) {
               nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
               size="md"
             />
+            <KarmaBadge score={authorKarmaScore} />
             <InlineFollowButton targetHash={post.nullifierHash} />
           </div>
 

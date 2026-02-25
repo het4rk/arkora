@@ -7,6 +7,7 @@ import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { formatDisplayName } from '@/lib/utils'
 import { HumanBadge } from '@/components/ui/HumanBadge'
+import { KarmaBadge } from '@/components/ui/KarmaBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { ProfilePostCard } from './ProfilePostCard'
 import { ProfileReplyCard } from './ProfileReplyCard'
@@ -244,7 +245,10 @@ export function ProfileView() {
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar avatarUrl={user?.avatarUrl ?? null} label={displayName()} size="md" />
-                  <HumanBadge label={displayName()} size="lg" />
+                  <div className="flex flex-col gap-1">
+                    <HumanBadge label={displayName()} size="lg" />
+                    {user && <KarmaBadge score={user.karmaScore} showScore />}
+                  </div>
                 </div>
               </div>
 

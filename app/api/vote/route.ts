@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { upsertVote, getPostNullifier, deletePostVote } from '@/lib/db/posts'
+import { upsertVote, getPostNullifier, deletePostVote, getVoteByNullifier } from '@/lib/db/posts'
 import { isVerifiedHuman } from '@/lib/db/users'
+import { updateKarma } from '@/lib/db/karma'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 
@@ -32,9 +33,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Fetch old vote before any mutation so we can compute the karma delta
+    const oldVote = await getVoteByNullifier(postId, nullifierHash)
+    const oldDir = oldVote?.direction ?? 0
+
     // direction=0 means un-vote — no self-vote check needed
     if (direction === 0) {
       await deletePostVote(postId, nullifierHash)
+      // Karma delta: reverse the old vote effect
+      if (oldDir !== 0) {
+        const postOwner = await getPostNullifier(postId)
+        if (postOwner) void updateKarma(postOwner, -oldDir).catch(() => {/* silent */})
+      }
       return NextResponse.json({ success: true })
     }
 
@@ -53,6 +63,14 @@ export async function POST(req: NextRequest) {
     }
 
     await upsertVote(postId, nullifierHash, direction)
+
+    // Karma delta: newDirection - oldDirection
+    // e.g. new=+1, old=0 → +1; new=-1, old=+1 → -2; new=+1, old=-1 → +2
+    const karmaDelta = direction - oldDir
+    if (karmaDelta !== 0) {
+      void updateKarma(postOwner, karmaDelta).catch(() => {/* silent */})
+    }
+
     // Client uses optimistic updates — no need to re-fetch the post
     return NextResponse.json({ success: true })
   } catch (err) {

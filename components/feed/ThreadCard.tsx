@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { Post, PollResult } from '@/lib/types'
 import { PollCard } from '@/components/feed/PollCard'
 import { HumanBadge } from '@/components/ui/HumanBadge'
+import { KarmaBadge } from '@/components/ui/KarmaBadge'
 import { BoardTag } from '@/components/ui/BoardTag'
 import { VoteButtons } from '@/components/ui/VoteButtons'
 import { TimeAgo } from '@/components/ui/TimeAgo'
@@ -23,9 +24,10 @@ interface Props {
   isBookmarked?: boolean
   pollResults?: PollResult[] | null
   userVote?: number | null
+  authorKarmaScore?: number | null
 }
 
-export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, isBookmarked, pollResults, userVote }: Props) {
+export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, isBookmarked, pollResults, userVote, authorKarmaScore }: Props) {
   const router = useRouter()
   const { nullifierHash, setComposerQuotedPost, setComposerOpen } = useArkoraStore()
   const [isDeleting, setIsDeleting] = useState(false)
@@ -118,11 +120,14 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
 
         {/* Only pass nullifierHash when the user posted non-anonymously.
             Anonymous posts (pseudoHandle null) must never link to a profile. */}
-        <HumanBadge
-          label={displayName}
-          nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
-          size="md"
-        />
+        <div className="flex items-center gap-2 flex-wrap">
+          <HumanBadge
+            label={displayName}
+            nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
+            size="md"
+          />
+          {authorKarmaScore != null && <KarmaBadge score={authorKarmaScore} />}
+        </div>
 
         {/* Poll — rendered in feed with results if available, otherwise options as preview */}
         {post.type === 'poll' && post.pollOptions && (

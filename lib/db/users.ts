@@ -11,6 +11,7 @@ function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
     avatarUrl: row.avatarUrl ?? null,
     bio: row.bio ?? null,
     identityMode: (row.identityMode as HumanUser['identityMode']) ?? 'anonymous',
+    karmaScore: row.karmaScore ?? 0,
     createdAt: row.createdAt,
   }
 }

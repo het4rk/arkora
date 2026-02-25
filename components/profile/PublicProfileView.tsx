@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { Avatar } from '@/components/ui/Avatar'
 import { HumanBadge } from '@/components/ui/HumanBadge'
+import { KarmaBadge } from '@/components/ui/KarmaBadge'
 import { ProfilePostCard } from './ProfilePostCard'
 import { AnimatePresence } from 'framer-motion'
 import { TipModal } from '@/components/ui/TipModal'
@@ -117,8 +118,9 @@ export function PublicProfileView({ nullifierHash }: Props) {
                   size="lg"
                   className="shrink-0"
                 />
-                <div className="min-w-0">
+                <div className="min-w-0 flex flex-col gap-1">
                   <HumanBadge label={displayName} size="lg" />
+                  {data?.user && <KarmaBadge score={data.user.karmaScore} showScore />}
                 </div>
               </div>
 
