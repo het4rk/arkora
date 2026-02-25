@@ -96,11 +96,12 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] Conversation list + individual view
 
 ### Notifications
-- [x] In-app notifications (replies, follows, DMs, @mentions)
+- [x] In-app notifications (replies, follows, DMs, @mentions, **likes, quotes, reposts**)
 - [x] Real-time unread count badge via Pusher
 - [x] Notification preferences (replies, DMs, follows, following posts) in Settings
-- [x] Notification filter tabs (All / Replies / Mentions / Follows / DMs)
+- [x] Notification filter tabs (All / Replies / Mentions / Follows / DMs / **Likes / Quotes**)
 - [x] World App native push notifications (Worldcoin API) — fires on reply, mention, follow, DM even when app is closed
+- [x] Enriched notifications — identity-aware actor display (anonymous → "Someone", alias/named → handle)
 
 ### @ Mentions
 - [x] `@handle` autocomplete in PostComposer + ReplyComposer (debounced, keyboard nav)
@@ -118,10 +119,26 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] Rooms link in LeftDrawer
 - [x] Pusher presence auth endpoint (`/api/pusher/auth`)
 
+### Vote Reactions
+- [x] `GET /api/vote/reactions?postId=X` — returns identity-aware upvoter/downvoter lists (max 50 each, no hashes exposed)
+- [x] `VoteReactionsSheet` — bottom sheet with Upvotes/Downvotes tabs; fetches on open
+- [x] Vote counts in VoteButtons are tappable — clicking the number opens the reactions sheet for that direction
+
+### Repost
+- [x] Straight repost (`type: 'repost'`) — shares original post to your followers instantly
+- [x] Repost/quote action sheet — tap the repost icon → choose "Repost" or "Quote"
+- [x] Repost display in feed: "Reposted by {handle}" header + QuotedPost card
+- [x] Repost notification sent to original post author
+
+### Sign-out Persistence Fix
+- [x] `hasExplicitlySignedOut` flag in Zustand (persisted) — blocks WalletConnect auto-auth after sign-out
+- [x] Settings shows "Sign in again" button when signed out
+
 ### Moderation
 - [x] Block users (`/api/block`)
 - [x] Report posts/replies (`/api/report`, `components/ui/ReportSheet.tsx`)
 - [x] Input sanitization on all user-generated content (`lib/sanitize.ts`)
+- [x] Report threshold: `reportCount` on posts; auto-hides from all feeds at ≥5 reports (post stays in DB)
 
 ### Monetization
 - [x] Tips (one-time WLD token payments)
@@ -192,18 +209,18 @@ activeBoard                                              — current board filte
 activeRoomId                                             — currently joined room (non-persisted)
 ```
 
-`signOut()` clears auth state, preserves preferences (theme, identity, location, notification prefs).
+`signOut()` clears auth state, sets `hasExplicitlySignedOut: true`, preserves preferences (theme, identity, location, notification prefs). `hasExplicitlySignedOut` (persisted) prevents WalletConnect from silently re-authing on next mount.
 
 ### Database Schema (Key Tables)
 
 - `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode, **karmaScore** (integer); indexed on `pseudoHandle` for mention autocomplete
-- `posts` — id, title, body, boardId, nullifierHash, pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId, `type` ('text'|'poll'), `pollOptions` (JSONB), `pollEndsAt`
+- `posts` — id, title, body, boardId, nullifierHash, pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId, `type` ('text'|'poll'|'repost'), `pollOptions` (JSONB), `pollEndsAt`, `reportCount` (integer, default 0)
 - `pollVotes` — id, postId (FK→posts cascade), nullifierHash, optionIndex; UNIQUE(postId, nullifierHash) enforces sybil resistance
 - `replies` — id, postId, parentReplyId, content, nullifierHash, pseudoHandle, upvotes, downvotes
 - `follows`, `bookmarks`, `postVotes`, `replyVotes`
 - `dmKeys` — nullifierHash, publicKey (Curve25519)
 - `dmMessages` — id, senderHash, recipientHash, ciphertext, nonce
-- `notifications` — userId, type (`reply`/`follow`/`dm`/`mention`), referenceId, actorHash, read
+- `notifications` — userId, type (`reply`/`follow`/`dm`/`mention`/`like`/`quote`/`repost`), referenceId, actorHash, read
 - `subscriptions`, `tips` — monetization
 - `communityNotes`, `communityNoteVotes` — fact-check system
 - `blocks` — blocker/blocked user pairs
@@ -286,7 +303,10 @@ activeRoomId                                             — currently joined ro
 | `app/api/pusher/auth/route.ts` | Pusher presence channel auth |
 | `app/api/users/search/route.ts` | Handle prefix search for @mention autocomplete |
 | `app/api/block/route.ts` | Block / unblock a user |
-| `app/api/report/route.ts` | Report a post or reply |
+| `app/api/report/route.ts` | Report a post or reply; increments `reportCount` on target post |
+| `app/api/vote/reactions/route.ts` | Identity-aware upvoter/downvoter lists for a post |
+| `components/ui/VoteReactionsSheet.tsx` | Bottom sheet: Upvotes / Downvotes tabs with voter display names |
+| `components/ui/VoteButtons.tsx` | Vote buttons; count numbers are tappable to open VoteReactionsSheet |
 | `components/auth/VerifyHuman.tsx` | World ID verification sheet (mobile) + IDKit QR (desktop) |
 | `components/auth/WalletConnect.tsx` | Auto-triggers walletAuth after onboarding |
 | `components/ui/LeftDrawer.tsx` | Slide-in drawer (identity, privacy, sign out) |
@@ -308,6 +328,11 @@ activeRoomId                                             — currently joined ro
 - [x] Sybil-resistant polls — Sprint 7 shipped
 - [x] Reputation/karma score — Sprint 8 shipped
 - [x] Confessions board (force-anonymous verified human posts) — Sprint 9 shipped
+- [x] Sign-out persistence fix (hasExplicitlySignedOut flag) — Sprint 10 shipped
+- [x] Report threshold auto-hide at 5 reports — Sprint 10 shipped
+- [x] Like/quote/repost in-app notifications — Sprint 10 shipped
+- [x] Vote reactions panel (who liked/disliked) — Sprint 10 shipped
+- [x] Repost feature (straight repost + quote) — Sprint 10 shipped
 - [ ] WLD tipping leaderboard + tip amount on posts (Sprint 9b)
 - [ ] Admin moderation queue for reports
 - [ ] Upgrade rate limiter to Upstash Redis for cross-instance enforcement
