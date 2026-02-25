@@ -29,6 +29,10 @@ export function VerifyHuman() {
           verification_level={VerificationLevel.Orb}
           handleVerify={(proof: ISuccessResult) => handleDesktopVerify(proof)}
           onSuccess={onDesktopSuccess}
+          onError={() => {
+            // Reopen verify sheet so the user can see the error message
+            setTimeout(() => setVerifySheetOpen(true), 100)
+          }}
         >
           {({ open }: { open: () => void }) => {
             idkitOpenRef.current = open
