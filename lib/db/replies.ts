@@ -115,6 +115,16 @@ export async function deleteReplyVote(
   }
 }
 
+/** Look up the nullifier hash of a reply's author. */
+export async function getReplyNullifier(replyId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ nullifierHash: replies.nullifierHash })
+    .from(replies)
+    .where(eq(replies.id, replyId))
+    .limit(1)
+  return row?.nullifierHash ?? null
+}
+
 export async function getRepliesByNullifier(
   nullifierHash: string,
   limit = 30

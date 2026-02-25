@@ -28,7 +28,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
   const isDeleted = !!reply.deletedAt
 
   async function handleVote(dir: 1 | -1) {
-    if (!nullifierHash || !isVerified || isVoting) return
+    if (!nullifierHash || !isVerified || isVoting || isOwner) return
     haptic('light')
     const prev = myVote
     const prevUp = upvotes
@@ -154,9 +154,10 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
       <div className="flex items-center justify-between pt-0.5">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => void handleVote(1)}
-            disabled={isVoting || !isVerified}
-            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${myVote === 1 ? 'text-upvote font-semibold' : 'text-text-muted'}`}
+            onClick={() => { if (!isOwner) void handleVote(1) }}
+            disabled={isVoting || !isVerified || isOwner}
+            title={isOwner ? "Can't vote on your own reply" : undefined}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${isOwner ? 'text-text-muted/40 cursor-not-allowed' : myVote === 1 ? 'text-upvote font-semibold' : 'text-text-muted'}`}
           >
             <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
               <path d="M6 1L11.196 9.5H0.804L6 1Z" />
@@ -164,9 +165,10 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
             {upvotes}
           </button>
           <button
-            onClick={() => void handleVote(-1)}
-            disabled={isVoting || !isVerified}
-            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${myVote === -1 ? 'text-downvote font-semibold' : 'text-text-muted'}`}
+            onClick={() => { if (!isOwner) void handleVote(-1) }}
+            disabled={isVoting || !isVerified || isOwner}
+            title={isOwner ? "Can't vote on your own reply" : undefined}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${isOwner ? 'text-text-muted/40 cursor-not-allowed' : myVote === -1 ? 'text-downvote font-semibold' : 'text-text-muted'}`}
           >
             <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
               <path d="M6 11L0.804 2.5H11.196L6 11Z" />

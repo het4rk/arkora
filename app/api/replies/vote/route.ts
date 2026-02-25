@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { upsertReplyVote, deleteReplyVote } from '@/lib/db/replies'
+import { upsertReplyVote, deleteReplyVote, getReplyNullifier } from '@/lib/db/replies'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
@@ -26,9 +26,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
 
-    const counts = direction === 0
-      ? await deleteReplyVote(replyId, nullifierHash)
-      : await upsertReplyVote(replyId, nullifierHash, direction as 1 | -1)
+    // direction=0 means un-vote — no self-vote check needed
+    if (direction === 0) {
+      const counts = await deleteReplyVote(replyId, nullifierHash)
+      return NextResponse.json({ success: true, data: counts })
+    }
+
+    const replyOwner = await getReplyNullifier(replyId)
+    if (!replyOwner) {
+      return NextResponse.json({ success: false, error: 'Reply not found' }, { status: 404 })
+    }
+    if (replyOwner === nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Cannot vote on your own reply' }, { status: 403 })
+    }
+
+    const counts = await upsertReplyVote(replyId, nullifierHash, direction as 1 | -1)
     return NextResponse.json({ success: true, data: counts })
   } catch (err) {
     console.error('[replies/vote POST]', err)
