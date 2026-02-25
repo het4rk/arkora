@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCommunityNote } from '@/lib/db/communityNotes'
+import { sanitizeText } from '@/lib/sanitize'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
 
-    const note = await createCommunityNote(postId, body.trim(), submitterNullifierHash)
+    const note = await createCommunityNote(postId, sanitizeText(body), submitterNullifierHash)
     return NextResponse.json({ success: true, data: note }, { status: 201 })
   } catch (err) {
     console.error('[community-notes POST]', err)

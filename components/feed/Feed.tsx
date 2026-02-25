@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, type TouchEvent as ReactTouchEvent } from 'react'
 import { useFeed, type FeedMode } from '@/hooks/useFeed'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { ThreadCard } from './ThreadCard'
@@ -61,7 +61,45 @@ export function Feed() {
     localCoords
   )
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
+
+  // Pull-to-refresh state
+  const [pullDistance, setPullDistance] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const touchStartY = useRef(0)
+  const PULL_THRESHOLD = 80
+
+  const handleTouchStart = useCallback((e: ReactTouchEvent) => {
+    const touch = e.touches[0]
+    if (!touch) return
+    if (scrollRef.current && scrollRef.current.scrollTop <= 0) {
+      touchStartY.current = touch.clientY
+    } else {
+      touchStartY.current = 0
+    }
+  }, [])
+
+  const handleTouchMove = useCallback((e: ReactTouchEvent) => {
+    const touch = e.touches[0]
+    if (!touch || !touchStartY.current || isRefreshing) return
+    const delta = touch.clientY - touchStartY.current
+    if (delta > 0 && scrollRef.current && scrollRef.current.scrollTop <= 0) {
+      // Dampen the pull distance
+      setPullDistance(Math.min(delta * 0.4, 120))
+    }
+  }, [isRefreshing])
+
+  const handleTouchEnd = useCallback(async () => {
+    if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
+      setIsRefreshing(true)
+      haptic('medium')
+      await refresh()
+      setIsRefreshing(false)
+    }
+    setPullDistance(0)
+    touchStartY.current = 0
+  }, [pullDistance, isRefreshing, refresh])
 
   // Batch-fetch bookmark state for all visible posts in a single request
   const fetchBookmarks = useCallback((postIds: string[], userHash: string) => {
@@ -177,10 +215,31 @@ export function Feed() {
         </div>
       )}
 
-      <div className={cn(
-        'overflow-y-scroll snap-y snap-mandatory h-[calc(100dvh-56px)] scroll-smooth',
-        hasLocalCoords ? 'pt-8' : ''
-      )}>
+      <div
+        ref={scrollRef}
+        className={cn(
+          'overflow-y-scroll snap-y snap-mandatory h-[calc(100dvh-56px)] scroll-smooth',
+          hasLocalCoords ? 'pt-8' : ''
+        )}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Pull-to-refresh indicator */}
+        {(pullDistance > 0 || isRefreshing) && (
+          <div
+            className="flex items-center justify-center transition-all"
+            style={{ height: isRefreshing ? 48 : pullDistance }}
+          >
+            <div className={cn(
+              'w-6 h-6 rounded-full border-2 border-accent border-t-transparent',
+              isRefreshing ? 'animate-spin' : '',
+              pullDistance >= PULL_THRESHOLD ? 'opacity-100 scale-100' : 'opacity-50 scale-75'
+            )}
+              style={!isRefreshing ? { transform: `rotate(${pullDistance * 3}deg) scale(${pullDistance >= PULL_THRESHOLD ? 1 : 0.75})` } : undefined}
+            />
+          </div>
+        )}
         {/* Local feed: requesting location */}
         {showLocalLoading && (
           <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">

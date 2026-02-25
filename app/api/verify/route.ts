@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     // Set server-side identity cookie so protected endpoints can verify the caller
     res.cookies.set('arkora-nh', result.nullifierHash, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'strict',
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30 days

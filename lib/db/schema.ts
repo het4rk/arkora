@@ -277,3 +277,43 @@ export const subscriptions = pgTable(
 
 export type DbTip = typeof tips.$inferSelect
 export type DbSubscription = typeof subscriptions.$inferSelect
+
+// ── Reports ──────────────────────────────────────────────────────────────────
+export const reports = pgTable(
+  'reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    reporterHash: text('reporter_hash').notNull(),
+    targetType: text('target_type').notNull(), // 'post' | 'reply' | 'user'
+    targetId: text('target_id').notNull(),      // postId, replyId, or nullifierHash
+    reason: text('reason').notNull(),           // 'spam' | 'harassment' | 'hate' | 'violence' | 'misinformation' | 'other'
+    details: text('details'),
+    status: text('status').default('pending').notNull(), // 'pending' | 'reviewed' | 'actioned' | 'dismissed'
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    targetIdx: index('reports_target_idx').on(table.targetType, table.targetId),
+    statusIdx: index('reports_status_idx').on(table.status),
+    // Prevent duplicate reports from same user on same target
+    reporterTargetIdx: index('reports_reporter_target_idx').on(table.reporterHash, table.targetType, table.targetId),
+  })
+)
+
+export type DbReport = typeof reports.$inferSelect
+
+// ── Blocks ───────────────────────────────────────────────────────────────────
+export const blocks = pgTable(
+  'blocks',
+  {
+    blockerHash: text('blocker_hash').notNull(),
+    blockedHash: text('blocked_hash').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.blockerHash, table.blockedHash] }),
+    blockerIdx: index('blocks_blocker_idx').on(table.blockerHash),
+    blockedIdx: index('blocks_blocked_idx').on(table.blockedHash),
+  })
+)
+
+export type DbBlock = typeof blocks.$inferSelect

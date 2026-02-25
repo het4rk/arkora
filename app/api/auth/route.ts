@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     // Store wallet session
     cookieStore.set('wallet-address', payload.address, {
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       httpOnly: true,
       sameSite: 'strict',
       maxAge: 60 * 60 * 24 * 7, // 7 days

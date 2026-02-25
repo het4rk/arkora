@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPost } from '@/lib/db/posts'
+import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
 import { getFeedFollowing } from '@/lib/db/follows'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
@@ -91,14 +92,18 @@ export async function POST(req: NextRequest) {
       lat?: number; lng?: number
     }
 
-    const { title, body: postBody, boardId: rawBoardId, pseudoHandle } = body
+    const { title: rawTitle, body: rawBody, boardId: rawBoardId, pseudoHandle: rawHandle } = body
 
-    if (!title?.trim() || !postBody?.trim() || !rawBoardId) {
+    if (!rawTitle?.trim() || !rawBody?.trim() || !rawBoardId) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       )
     }
+
+    const title = sanitizeLine(rawTitle)
+    const postBody = sanitizeText(rawBody)
+    const pseudoHandle = rawHandle ? sanitizeLine(rawHandle) : undefined
 
     const boardId = rawBoardId as BoardId
     if (!VALID_BOARD_IDS.has(boardId)) {

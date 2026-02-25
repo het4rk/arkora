@@ -10,6 +10,7 @@ import { VoteButtons } from '@/components/ui/VoteButtons'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { BookmarkButton } from '@/components/ui/BookmarkButton'
 import { QuotedPost } from '@/components/ui/QuotedPost'
+import { ReportSheet } from '@/components/ui/ReportSheet'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic, formatDisplayName } from '@/lib/utils'
 
@@ -24,6 +25,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   const router = useRouter()
   const { nullifierHash, setComposerQuotedPost, setComposerOpen } = useArkoraStore()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const isOwner = !!nullifierHash && post.nullifierHash === nullifierHash
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
 
@@ -45,6 +47,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   }
 
   return (
+    <>
     <motion.article
       className="h-[calc(100dvh-56px)] w-full flex-shrink-0 snap-start bg-background flex flex-col px-[5vw] pt-10 pb-6"
       initial={{ opacity: 0, y: 10 }}
@@ -57,6 +60,19 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
         <BoardTag boardId={post.boardId} />
         <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
           <TimeAgo date={post.createdAt} />
+          {!isOwner && (
+            <button
+              onClick={(e) => { e.stopPropagation(); haptic('light'); setReportOpen(true) }}
+              aria-label="Report post"
+              className="text-text-muted/40 hover:text-downvote active:scale-90 transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+            </button>
+          )}
           {isOwner && (
             <button
               onClick={handleDelete}
@@ -153,5 +169,13 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
         </div>
       </div>
     </motion.article>
+
+    <ReportSheet
+      isOpen={reportOpen}
+      onClose={() => setReportOpen(false)}
+      targetType="post"
+      targetId={post.id}
+    />
+    </>
   )
 })
