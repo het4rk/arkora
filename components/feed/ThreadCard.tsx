@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, memo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import type { Post, PollResult } from '@/lib/types'
 import { PollCard } from '@/components/feed/PollCard'
@@ -34,6 +34,8 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
+  const [repostMenuOpen, setRepostMenuOpen] = useState(false)
+  const [isReposting, setIsReposting] = useState(false)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isOwner = !!nullifierHash && post.nullifierHash === nullifierHash
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
@@ -51,6 +53,22 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
       longPressTimer.current = null
     }
   }, [])
+
+  async function handleRepost() {
+    if (!nullifierHash || isReposting) return
+    haptic('medium')
+    setIsReposting(true)
+    setRepostMenuOpen(false)
+    try {
+      await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'repost', quotedPostId: post.id, boardId: post.boardId }),
+      })
+    } catch { /* non-critical */ } finally {
+      setIsReposting(false)
+    }
+  }
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
@@ -124,20 +142,38 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
 
       {/* Hero content */}
       <div className="flex flex-col">
-        <h2 className="text-fluid-hero font-bold text-text line-clamp-5 mb-5">
-          {post.title}
-        </h2>
+        {/* Repost header */}
+        {post.type === 'repost' && (
+          <p className="text-text-muted text-xs font-medium mb-3 flex items-center gap-1.5">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="17 1 21 5 17 9" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <polyline points="7 23 3 19 7 15" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            </svg>
+            Reposted by {displayName}
+          </p>
+        )}
+
+        {post.type !== 'repost' && (
+          <h2 className="text-fluid-hero font-bold text-text line-clamp-5 mb-5">
+            {post.title}
+          </h2>
+        )}
 
         {/* Only pass nullifierHash when the user posted non-anonymously.
             Anonymous posts (pseudoHandle null) must never link to a profile. */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <HumanBadge
-            label={displayName}
-            nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
-            size="md"
-          />
-          {authorKarmaScore != null && <KarmaBadge score={authorKarmaScore} />}
-        </div>
+        {post.type !== 'repost' && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <HumanBadge
+              label={displayName}
+              nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
+              size="md"
+            />
+            {authorKarmaScore != null && <KarmaBadge score={authorKarmaScore} />}
+          </div>
+        )}
 
         {/* Poll — rendered in feed with results if available, otherwise options as preview */}
         {post.type === 'poll' && post.pollOptions && (
@@ -148,7 +184,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           />
         )}
 
-        {/* Quoted post preview */}
+        {/* Quoted post preview (also covers repost) */}
         {post.quotedPost && (
           <QuotedPost post={post.quotedPost} className="mt-4" />
         )}
@@ -194,11 +230,12 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
         <VoteButtons post={post} />
 
         <div className="flex items-center gap-3">
-          {/* Quote / repost button */}
+          {/* Repost / quote button */}
           <button
-            onClick={(e) => { e.stopPropagation(); haptic('light'); setComposerQuotedPost(post); setComposerOpen(true) }}
-            aria-label="Quote post"
-            className="flex items-center gap-1 text-text-muted text-xs active:scale-90 transition-all"
+            onClick={(e) => { e.stopPropagation(); haptic('light'); setRepostMenuOpen(true) }}
+            disabled={isReposting}
+            aria-label="Repost or quote"
+            className="flex items-center gap-1 text-text-muted text-xs active:scale-90 transition-all disabled:opacity-40"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -234,6 +271,66 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
         onClose={() => setImageViewerOpen(false)}
       />
     )}
+
+    {/* Repost / quote action sheet */}
+    <AnimatePresence>
+      {repostMenuOpen && (
+        <>
+          <motion.div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setRepostMenuOpen(false)}
+          />
+          <motion.div
+            className="fixed bottom-0 left-0 right-0 z-50 glass-sheet rounded-t-3xl"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          >
+            <div className="px-5 pt-5 pb-[max(env(safe-area-inset-bottom),20px)] space-y-3">
+              <button
+                onClick={() => void handleRepost()}
+                className="w-full flex items-center gap-3 px-4 py-4 rounded-[var(--r-lg)] glass active:scale-[0.97] transition-all"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="17 1 21 5 17 9" />
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                  <polyline points="7 23 3 19 7 15" />
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+                <div className="text-left">
+                  <p className="text-text font-semibold text-sm">Repost</p>
+                  <p className="text-text-muted text-xs">Share to your followers instantly</p>
+                </div>
+              </button>
+              <button
+                onClick={() => { setRepostMenuOpen(false); setComposerQuotedPost(post); setComposerOpen(true) }}
+                className="w-full flex items-center gap-3 px-4 py-4 rounded-[var(--r-lg)] glass active:scale-[0.97] transition-all"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <div className="text-left">
+                  <p className="text-text font-semibold text-sm">Quote</p>
+                  <p className="text-text-muted text-xs">Add your own comment</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setRepostMenuOpen(false)}
+                className="w-full py-3 text-text-muted text-sm font-medium active:opacity-60 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
     </>
   )
 })

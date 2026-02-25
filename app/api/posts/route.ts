@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createPost } from '@/lib/db/posts'
+import { createPost, getPostNullifier } from '@/lib/db/posts'
 import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
 import { getFeedFollowing } from '@/lib/db/follows'
 import { isVerifiedHuman } from '@/lib/db/users'
@@ -113,20 +113,31 @@ export async function POST(req: NextRequest) {
     const { title: rawTitle, body: rawBody, boardId: rawBoardId, pseudoHandle: rawHandle } = body
 
     const isPoll = body.type === 'poll'
+    const isRepost = body.type === 'repost'
 
-    if (!rawTitle?.trim() || !rawBoardId) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    if (isRepost) {
+      // Repost: only boardId + quotedPostId required
+      if (!rawBoardId) {
+        return NextResponse.json({ success: false, error: 'Missing boardId' }, { status: 400 })
+      }
+      if (!body.quotedPostId) {
+        return NextResponse.json({ success: false, error: 'Missing quotedPostId for repost' }, { status: 400 })
+      }
+    } else {
+      if (!rawTitle?.trim() || !rawBoardId) {
+        return NextResponse.json(
+          { success: false, error: 'Missing required fields' },
+          { status: 400 }
+        )
+      }
 
-    // For regular posts body is required; polls use title as the question
-    if (!isPoll && !rawBody?.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      )
+      // For regular posts body is required; polls use title as the question
+      if (!isPoll && !rawBody?.trim()) {
+        return NextResponse.json(
+          { success: false, error: 'Missing required fields' },
+          { status: 400 }
+        )
+      }
     }
 
     // Poll-specific validation
@@ -146,8 +157,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const title = sanitizeLine(rawTitle)
-    const postBody = isPoll ? '' : sanitizeText(rawBody ?? '')
+    const title = isRepost ? '' : sanitizeLine(rawTitle ?? '')
+    const postBody = (isPoll || isRepost) ? '' : sanitizeText(rawBody ?? '')
 
     if (!VALID_BOARD_IDS.has(rawBoardId as BoardId)) {
       return NextResponse.json(
@@ -162,14 +173,14 @@ export async function POST(req: NextRequest) {
       ? undefined
       : rawHandle ? sanitizeLine(rawHandle) : undefined
 
-    if (title.length > 280) {
+    if (!isRepost && title.length > 280) {
       return NextResponse.json(
         { success: false, error: 'Title exceeds 280 characters' },
         { status: 400 }
       )
     }
 
-    if (!isPoll && postBody.length > 10000) {
+    if (!isPoll && !isRepost && postBody.length > 10000) {
       return NextResponse.json(
         { success: false, error: 'Body exceeds 10,000 characters' },
         { status: 400 }
@@ -221,11 +232,25 @@ export async function POST(req: NextRequest) {
     const post = await createPost({
       title, body: postBody, boardId, nullifierHash, pseudoHandle,
       imageUrl: rawImageUrl, quotedPostId, lat, lng, countryCode,
-      type: isPoll ? 'poll' : 'text',
+      type: isPoll ? 'poll' : isRepost ? 'repost' : 'text',
       ...(pollOptions !== undefined && { pollOptions }),
       ...(pollEndsAt !== undefined && { pollEndsAt }),
     })
     invalidatePosts()
+
+    // Notify quoted post author — fire-and-forget
+    if (quotedPostId) {
+      void (async () => {
+        try {
+          const quotedOwner = await getPostNullifier(quotedPostId)
+          if (quotedOwner && quotedOwner !== nullifierHash) {
+            const notifType = isRepost ? 'repost' : 'quote'
+            await createNotification(quotedOwner, notifType, quotedPostId, nullifierHash)
+            void pusherServer.trigger(`user-${quotedOwner}`, 'notif-count', { delta: 1 })
+          }
+        } catch { /* non-critical */ }
+      })()
+    }
 
     return NextResponse.json({ success: true, data: post }, { status: 201 })
   } catch (err) {

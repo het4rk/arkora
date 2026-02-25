@@ -71,7 +71,7 @@ export function ReportSheet({ isOpen, onClose, targetType, targetId }: Props) {
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           >
-            <div className="px-5 pt-5 pb-[max(env(safe-area-inset-bottom),20px)]">
+            <div className="px-5 pt-5 pb-[max(env(safe-area-inset-bottom),20px)] overflow-y-auto" style={{ maxHeight: 'calc(80dvh - env(safe-area-inset-bottom, 0px))' }}>
               {submitted ? (
                 <div className="text-center py-8">
                   <p className="text-2xl mb-2">Thanks</p>

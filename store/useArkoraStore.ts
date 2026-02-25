@@ -55,6 +55,9 @@ interface ArkoraState {
   // Notification badge (non-persisted)
   unreadNotificationCount: number
 
+  // Set when user explicitly clicks "Sign out" — prevents auto-re-auth on page reload
+  hasExplicitlySignedOut: boolean
+
   // Actions
   setWalletAddress: (address: string | null) => void
   setVerified: (nullifierHash: string, user: HumanUser) => void
@@ -79,6 +82,7 @@ interface ArkoraState {
   setNotifyFollowedPosts: (v: boolean) => void
   setUnreadNotificationCount: (count: number) => void
   setActiveRoomId: (id: string | null) => void
+  setHasExplicitlySignedOut: (v: boolean) => void
   reset: () => void
   signOut: () => void
 }
@@ -108,6 +112,7 @@ const initialState = {
   isSearchOpen: false,
   optimisticVotes: {},
   unreadNotificationCount: 0,
+  hasExplicitlySignedOut: false,
 }
 
 export const useArkoraStore = create<ArkoraState>()(
@@ -118,7 +123,7 @@ export const useArkoraStore = create<ArkoraState>()(
       setWalletAddress: (address) => set({ walletAddress: address }),
 
       setVerified: (nullifierHash, user) =>
-        set({ nullifierHash, user, isVerified: true }),
+        set({ nullifierHash, user, isVerified: true, hasExplicitlySignedOut: false }),
 
       setIdentityMode: (mode) => set({ identityMode: mode }),
 
@@ -170,6 +175,8 @@ export const useArkoraStore = create<ArkoraState>()(
 
       setActiveRoomId: (id) => set({ activeRoomId: id }),
 
+      setHasExplicitlySignedOut: (v) => set({ hasExplicitlySignedOut: v }),
+
       reset: () => set(initialState),
 
       // Clears auth state only — preserves theme, identity prefs, location settings, and onboarding flag
@@ -187,6 +194,7 @@ export const useArkoraStore = create<ArkoraState>()(
           isVerifySheetOpen: false,
           isDrawerOpen: false,
           isSearchOpen: false,
+          hasExplicitlySignedOut: true,
         }),
     }),
     {
@@ -208,6 +216,7 @@ export const useArkoraStore = create<ArkoraState>()(
         notifyFollows: state.notifyFollows,
         notifyFollowedPosts: state.notifyFollowedPosts,
         optimisticVotes: state.optimisticVotes,
+        hasExplicitlySignedOut: state.hasExplicitlySignedOut,
       }),
     }
   )

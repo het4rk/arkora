@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { upsertVote, getPostNullifier, deletePostVote, getVoteByNullifier } from '@/lib/db/posts'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { updateKarma } from '@/lib/db/karma'
+import { createNotification } from '@/lib/db/notifications'
+import { pusherServer } from '@/lib/pusher'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 
@@ -69,6 +71,16 @@ export async function POST(req: NextRequest) {
     const karmaDelta = direction - oldDir
     if (karmaDelta !== 0) {
       void updateKarma(postOwner, karmaDelta).catch(() => {/* silent */})
+    }
+
+    // Notify post owner on new upvote (not on un-vote, downvote, or re-vote same direction)
+    if (direction === 1 && oldDir !== 1) {
+      void (async () => {
+        try {
+          await createNotification(postOwner, 'like', postId, nullifierHash)
+          void pusherServer.trigger(`user-${postOwner}`, 'notif-count', { delta: 1 })
+        } catch { /* non-critical */ }
+      })()
     }
 
     // Client uses optimistic updates — no need to re-fetch the post

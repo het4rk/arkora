@@ -8,12 +8,15 @@ import type { HumanUser } from '@/lib/types'
 // Silently triggers walletAuth on app open, then auto-verifies the user
 // using a wallet-derived identity — no separate World ID ZK step required.
 export function WalletConnect() {
-  const { walletAddress, isVerified, user, setWalletAddress, setVerified, hasOnboarded } = useArkoraStore()
+  const { walletAddress, isVerified, user, setWalletAddress, setVerified, hasOnboarded, hasExplicitlySignedOut } = useArkoraStore()
   const attempted = useRef(false)
 
   useEffect(() => {
     // Don't attempt auth until the user has dismissed onboarding
     if (!hasOnboarded) return
+
+    // Don't auto-auth if the user explicitly signed out this session
+    if (hasExplicitlySignedOut) return
 
     // Guard: only run once per session mount
     if (attempted.current) return

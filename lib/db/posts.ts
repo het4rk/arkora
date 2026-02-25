@@ -31,7 +31,7 @@ function toPost(
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     countryCode: row.countryCode ?? null,
-    type: (row.type as 'text' | 'poll') ?? 'text',
+    type: (row.type as 'text' | 'poll' | 'repost') ?? 'text',
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
   }
@@ -102,7 +102,7 @@ export async function getPostNullifier(id: string): Promise<string | null> {
 export async function getFeed(params: FeedParams): Promise<Post[]> {
   const limit = Math.min(params.limit ?? 20, 50)
 
-  const conditions = [isNull(posts.deletedAt)]
+  const conditions = [isNull(posts.deletedAt), lt(posts.reportCount, 5)]
   if (params.boardId) {
     conditions.push(eq(posts.boardId, params.boardId))
   }
@@ -135,6 +135,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         FROM posts p
         LEFT JOIN posts qp ON p.quoted_post_id = qp.id AND qp.deleted_at IS NULL
         WHERE p.deleted_at IS NULL
+          AND p.report_count < 5
           ${boardId ? sql`AND p.board_id = ${boardId}` : sql``}
           AND p.created_at > now() - interval '7 days'
         ORDER BY
@@ -159,7 +160,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
       lat: (r['lat'] as number | null) ?? null,
       lng: (r['lng'] as number | null) ?? null,
       countryCode: (r['country_code'] as string | null) ?? null,
-      type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll',
+      type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll' | 'repost',
       pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
     }
@@ -184,6 +185,13 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
 
     return post
   })
+}
+
+export async function incrementReportCount(postId: string): Promise<void> {
+  await db
+    .update(posts)
+    .set({ reportCount: sql`${posts.reportCount} + 1` })
+    .where(eq(posts.id, postId))
 }
 
 export async function incrementReplyCount(postId: string): Promise<void> {
@@ -342,6 +350,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
         FROM posts p
         LEFT JOIN posts qp ON p.quoted_post_id = qp.id AND qp.deleted_at IS NULL
         WHERE p.deleted_at IS NULL
+          AND p.report_count < 5
           AND p.country_code = ${params.countryCode}
           ${params.boardId ? sql`AND p.board_id = ${params.boardId}` : sql``}
           ${params.cursor ? sql`AND p.created_at < ${new Date(params.cursor)}` : sql``}
@@ -374,7 +383,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
       lat: (r['lat'] as number | null) ?? null,
       lng: (r['lng'] as number | null) ?? null,
       countryCode: (r['country_code'] as string | null) ?? null,
-      type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll',
+      type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll' | 'repost',
       pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
     }

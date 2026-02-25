@@ -4,25 +4,33 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { TimeAgo } from '@/components/ui/TimeAgo'
-import type { Notification } from '@/lib/types'
+import type { EnrichedNotification, Notification } from '@/lib/types'
 
 const TYPE_LABELS: Record<Notification['type'], string> = {
   reply: 'replied to your post',
   follow: 'started following you',
   dm: 'sent you a message',
+  like: 'upvoted your post',
+  quote: 'quoted your post',
+  repost: 'reposted your post',
 }
 
 const TYPE_ICONS: Record<Notification['type'], string> = {
   reply: '💬',
   follow: '👤',
   dm: '✉️',
+  like: '↑',
+  quote: '"',
+  repost: '↺',
 }
 
 type FilterType = 'all' | Notification['type']
 
 const FILTERS: { id: FilterType; label: string }[] = [
   { id: 'all', label: 'All' },
+  { id: 'like', label: 'Likes' },
   { id: 'reply', label: 'Replies' },
+  { id: 'quote', label: 'Quotes' },
   { id: 'follow', label: 'Follows' },
   { id: 'dm', label: 'DMs' },
 ]
@@ -30,7 +38,7 @@ const FILTERS: { id: FilterType; label: string }[] = [
 export function NotificationList() {
   const router = useRouter()
   const { nullifierHash, isVerified, setUnreadNotificationCount } = useArkoraStore()
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notifications, setNotifications] = useState<EnrichedNotification[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('all')
 
@@ -44,8 +52,8 @@ export function NotificationList() {
     if (!nullifierHash) return
     try {
       const res = await fetch('/api/notifications')
-      const json = (await res.json()) as { success: boolean; data?: Notification[] }
-      if (json.success && json.data) setNotifications(json.data)
+      const json = (await res.json()) as { success: boolean; data?: { notifications: EnrichedNotification[]; unreadCount: number } }
+      if (json.success && json.data) setNotifications(json.data.notifications)
       // Mark all as read after viewing
       void fetch('/api/notifications', { method: 'POST' })
         .then(() => setUnreadNotificationCount(0))
@@ -54,8 +62,8 @@ export function NotificationList() {
     }
   }
 
-  function handleTap(n: Notification) {
-    if (n.type === 'reply' && n.referenceId) {
+  function handleTap(n: EnrichedNotification) {
+    if ((n.type === 'reply' || n.type === 'quote' || n.type === 'repost' || n.type === 'like') && n.referenceId) {
       router.push(`/post/${n.referenceId}`)
     } else if (n.type === 'dm' && n.actorHash) {
       router.push(`/dm/${n.actorHash}`)
@@ -121,14 +129,11 @@ export function NotificationList() {
                 !n.read ? 'border border-accent/20' : ''
               }`}
             >
-              <span className="text-xl shrink-0 mt-0.5">{TYPE_ICONS[n.type]}</span>
+              <span className="text-xl shrink-0 mt-0.5">{TYPE_ICONS[n.type] ?? '🔔'}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-text text-sm leading-snug">
-                  {n.actorHash
-                    ? <span className="font-semibold">Someone</span>
-                    : <span className="font-semibold">A human</span>
-                  }
-                  {' '}{TYPE_LABELS[n.type]}
+                  <span className="font-semibold">{n.actorDisplay ?? 'Someone'}</span>
+                  {' '}{TYPE_LABELS[n.type] ?? 'interacted with your post'}
                 </p>
                 <TimeAgo date={n.createdAt} className="mt-1" />
               </div>

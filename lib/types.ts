@@ -32,7 +32,7 @@ export interface Post {
   lat: number | null
   lng: number | null
   countryCode: string | null
-  type: 'text' | 'poll'
+  type: 'text' | 'poll' | 'repost'
   pollOptions: { index: number; text: string }[] | null
   pollEndsAt: Date | null
 }
@@ -91,7 +91,7 @@ export interface CreatePostInput {
   lat?: number | undefined
   lng?: number | undefined
   countryCode?: string | undefined
-  type?: 'text' | 'poll'
+  type?: 'text' | 'poll' | 'repost'
   pollOptions?: { index: number; text: string }[]
   pollDuration?: number
   pollEndsAt?: Date | undefined
@@ -115,11 +115,16 @@ export interface VoteInput {
 export interface Notification {
   id: string
   recipientHash: string
-  type: 'reply' | 'follow' | 'dm'
+  type: 'reply' | 'follow' | 'dm' | 'like' | 'quote' | 'repost'
   referenceId: string | null
   actorHash: string | null
   read: boolean
   createdAt: Date
+}
+
+// Notification enriched with identity-aware actor display name
+export interface EnrichedNotification extends Notification {
+  actorDisplay: string | null  // null = actor is anonymous; string = alias or @username
 }
 
 // ── Rooms ─────────────────────────────────────────────────────────────────────

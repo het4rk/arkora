@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { reports } from '@/lib/db/schema'
 import { isVerifiedHuman } from '@/lib/db/users'
+import { incrementReportCount } from '@/lib/db/posts'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { sanitizeText } from '@/lib/sanitize'
@@ -65,6 +66,11 @@ export async function POST(req: NextRequest) {
       reason: body.reason,
       details: body.details ? sanitizeText(body.details).slice(0, 500) : null,
     })
+
+    // Auto-hide posts after 5 unique reports — fire-and-forget
+    if (body.targetType === 'post') {
+      void incrementReportCount(body.targetId).catch(() => { /* non-critical */ })
+    }
 
     return NextResponse.json({ success: true, data: { reported: true } }, { status: 201 })
   } catch (err) {

@@ -37,8 +37,10 @@ export const posts = pgTable(
     lng: real('lng'),
     // Country inferred from poster's IP at creation time (for local feed country filter)
     countryCode: text('country_code'),
+    // Number of unique reports — posts with 5+ are hidden from public feeds
+    reportCount: integer('report_count').default(0).notNull(),
     // Poll fields — only set when type = 'poll'
-    type: text('type').notNull().default('text'), // 'text' | 'poll'
+    type: text('type').notNull().default('text'), // 'text' | 'poll' | 'repost'
     pollOptions: jsonb('poll_options').$type<{ index: number; text: string }[]>(),
     pollEndsAt: timestamp('poll_ends_at', { withTimezone: true }),
   },
