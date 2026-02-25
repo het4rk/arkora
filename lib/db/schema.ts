@@ -72,15 +72,22 @@ export const replies = pgTable(
   })
 )
 
-export const humanUsers = pgTable('human_users', {
-  nullifierHash: text('nullifier_hash').primaryKey(),
-  walletAddress: text('wallet_address').notNull(),
-  pseudoHandle: text('pseudo_handle'),
-  avatarUrl: text('avatar_url'),
-  bio: text('bio'),
-  identityMode: text('identity_mode').default('anonymous').notNull(), // 'anonymous' | 'alias' | 'named'
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-})
+export const humanUsers = pgTable(
+  'human_users',
+  {
+    nullifierHash: text('nullifier_hash').primaryKey(),
+    walletAddress: text('wallet_address').notNull(),
+    pseudoHandle: text('pseudo_handle'),
+    avatarUrl: text('avatar_url'),
+    bio: text('bio'),
+    identityMode: text('identity_mode').default('anonymous').notNull(), // 'anonymous' | 'alias' | 'named'
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    // Speeds up @mention autocomplete: pseudoHandle ILIKE prefix% + identityMode filter
+    pseudoHandleIdx: index('human_users_pseudo_handle_idx').on(table.pseudoHandle),
+  })
+)
 
 export const communityNotes = pgTable(
   'community_notes',
@@ -317,3 +324,48 @@ export const blocks = pgTable(
 )
 
 export type DbBlock = typeof blocks.$inferSelect
+
+// ── Rooms ─────────────────────────────────────────────────────────────────────
+export const rooms = pgTable(
+  'rooms',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: text('title').notNull(),
+    boardId: text('board_id').notNull(),
+    hostHash: text('host_hash').notNull(),
+    hostHandle: text('host_handle').notNull(),
+    maxParticipants: integer('max_participants').default(50).notNull(),
+    isLive: boolean('is_live').default(true).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    endsAt: timestamp('ends_at').notNull(),
+    messageCount: integer('message_count').default(0).notNull(),
+  },
+  (table) => ({
+    boardLiveIdx: index('rooms_board_live_idx').on(table.boardId, table.isLive),
+    createdAtIdx: index('rooms_created_at_idx').on(table.createdAt),
+  })
+)
+
+export const roomParticipants = pgTable(
+  'room_participants',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    roomId: uuid('room_id')
+      .references(() => rooms.id, { onDelete: 'cascade' })
+      .notNull(),
+    nullifierHash: text('nullifier_hash').notNull(),
+    displayHandle: text('display_handle').notNull(),
+    identityMode: text('identity_mode').notNull(), // 'anonymous' | 'alias' | 'named'
+    joinedAt: timestamp('joined_at').defaultNow().notNull(),
+    leftAt: timestamp('left_at'),
+    isMuted: boolean('is_muted').default(false).notNull(),
+    isCoHost: boolean('is_co_host').default(false).notNull(),
+  },
+  (table) => ({
+    roomIdx: index('room_participants_room_idx').on(table.roomId),
+    userRoomIdx: index('room_participants_user_room_idx').on(table.nullifierHash, table.roomId),
+  })
+)
+
+export type DbRoom = typeof rooms.$inferSelect
+export type DbRoomParticipant = typeof roomParticipants.$inferSelect

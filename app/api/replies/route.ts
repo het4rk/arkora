@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createReply } from '@/lib/db/replies'
-import { sanitizeText } from '@/lib/sanitize'
-import { isVerifiedHuman } from '@/lib/db/users'
+import { sanitizeText, parseMentions } from '@/lib/sanitize'
+import { isVerifiedHuman, getUsersByHandles } from '@/lib/db/users'
 import { getPostNullifier } from '@/lib/db/posts'
 import { createNotification } from '@/lib/db/notifications'
+import { pusherServer } from '@/lib/pusher'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { worldAppNotify } from '@/lib/worldAppNotify'
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,13 +59,28 @@ export async function POST(req: NextRequest) {
 
     const reply = await createReply({ postId, body: replyBody, nullifierHash, parentReplyId, pseudoHandle, imageUrl: imageUrl ?? undefined })
 
-    // Notify post author — fire-and-forget, does not block the response
-    void getPostNullifier(postId).then((authorHash) => {
-      if (authorHash && authorHash !== nullifierHash) {
-        // Only pass actorHash for non-anonymous replies (privacy)
-        void createNotification(authorHash, 'reply', postId, pseudoHandle ? nullifierHash : undefined)
-      }
-    })
+    // Notify post author + process @mentions — fire-and-forget
+    void (async () => {
+      try {
+        const authorHash = await getPostNullifier(postId)
+        if (authorHash && authorHash !== nullifierHash) {
+          await createNotification(authorHash, 'reply', postId, pseudoHandle ? nullifierHash : undefined)
+          void pusherServer.trigger(`user-${authorHash}`, 'notif-count', { delta: 1 })
+          void worldAppNotify(authorHash, 'New reply', 'Someone replied to your post', `/posts/${postId}`)
+        }
+        // @mentions in reply body
+        const handles = parseMentions(replyBody)
+        if (handles.length > 0) {
+          const handleMap = await getUsersByHandles(handles)
+          for (const [, mentionedHash] of handleMap) {
+            if (mentionedHash === nullifierHash || mentionedHash === authorHash) continue
+            await createNotification(mentionedHash, 'mention', reply.id, nullifierHash)
+            void pusherServer.trigger(`user-${mentionedHash}`, 'notif-count', { delta: 1 })
+            void worldAppNotify(mentionedHash, 'You were mentioned', 'Someone mentioned you in a reply', `/posts/${postId}`)
+          }
+        }
+      } catch { /* non-critical */ }
+    })()
 
     return NextResponse.json({ success: true, data: reply }, { status: 201 })
   } catch (err) {

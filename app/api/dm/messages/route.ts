@@ -5,6 +5,7 @@ import { createNotification } from '@/lib/db/notifications'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { pusherServer } from '@/lib/pusher'
+import { worldAppNotify } from '@/lib/worldAppNotify'
 
 // GET /api/dm/messages?otherHash=&cursor=&since=
 // myHash is derived from the auth cookie — never trusted from query params
@@ -76,6 +77,9 @@ export async function POST(req: NextRequest) {
 
     // Also increment the recipient's unread badge in real-time
     void pusherServer.trigger(`user-${recipientHash}`, 'notif-count', { delta: 1 })
+
+    // World App push notification — delivered even when app is closed
+    void worldAppNotify(recipientHash, 'New message', 'You have a new message on Arkora', '/dm')
 
     return NextResponse.json({ success: true, data: { id } }, { status: 201 })
   } catch (err) {

@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { haptic } from '@/lib/utils'
 import { generateAlias } from '@/lib/session'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { useArkoraStore } from '@/store/useArkoraStore'
+import { MentionSuggestions } from '@/components/ui/MentionSuggestions'
+import { useMentionAutocomplete } from '@/hooks/useMentionAutocomplete'
 
 interface Props {
   postId: string
@@ -19,8 +21,10 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { nullifierHash, isVerified, setVerifySheetOpen, identityMode, persistentAlias, walletAddress, user } = useArkoraStore()
+  const mention = useMentionAutocomplete(body)
 
   function shortWallet(): string | undefined {
     if (!walletAddress) return undefined
@@ -108,13 +112,38 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
         />
       )}
       <div className="flex items-end gap-3">
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value.slice(0, 10000))}
-          placeholder="Add a reply…"
-          rows={2}
-          className="glass-input flex-1 rounded-[var(--r-md)] px-3.5 py-3 text-sm resize-none leading-relaxed"
-        />
+        <div className="relative flex-1">
+          <textarea
+            ref={textareaRef}
+            value={body}
+            onChange={(e) => {
+              const val = e.target.value.slice(0, 10000)
+              setBody(val)
+              mention.onTextChange(val, e.target.selectionStart ?? val.length)
+            }}
+            onKeyDown={(e) => {
+              if (!mention.isOpen) return
+              if (e.key === 'ArrowDown') { e.preventDefault(); mention.setActiveIndex(Math.min(mention.activeIndex + 1, mention.suggestions.length - 1)) }
+              if (e.key === 'ArrowUp') { e.preventDefault(); mention.setActiveIndex(Math.max(mention.activeIndex - 1, 0)) }
+              if (e.key === 'Enter' || e.key === 'Tab') {
+                const s = mention.suggestions[mention.activeIndex]
+                if (s?.pseudoHandle) { e.preventDefault(); setBody(mention.selectSuggestion(s.pseudoHandle)) }
+              }
+              if (e.key === 'Escape') mention.close()
+            }}
+            placeholder="Add a reply… (@mention)"
+            rows={2}
+            className="glass-input w-full rounded-[var(--r-md)] px-3.5 py-3 text-sm resize-none leading-relaxed"
+          />
+          {mention.isOpen && (
+            <MentionSuggestions
+              suggestions={mention.suggestions}
+              activeIndex={mention.activeIndex}
+              onSelect={(handle) => { setBody(mention.selectSuggestion(handle)); textareaRef.current?.focus() }}
+              onHover={mention.setActiveIndex}
+            />
+          )}
+        </div>
 
         <button
           onClick={() => { haptic('medium'); void handleSubmit() }}

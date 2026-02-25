@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { BottomSheet } from '@/components/ui/BottomSheet'
@@ -11,6 +11,8 @@ import { BOARDS, type BoardId } from '@/lib/types'
 import { cn, haptic } from '@/lib/utils'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { QuotedPost } from '@/components/ui/QuotedPost'
+import { MentionSuggestions } from '@/components/ui/MentionSuggestions'
+import { useMentionAutocomplete } from '@/hooks/useMentionAutocomplete'
 
 export function PostComposer() {
   const router = useRouter()
@@ -32,6 +34,9 @@ export function PostComposer() {
   const [body, setBody] = useState('')
   const [boardId, setBoardId] = useState<BoardId>('arkora')
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+
+  const mention = useMentionAutocomplete(body)
 
   // Ensure alias exists when mode is selected
   useEffect(() => {
@@ -162,14 +167,39 @@ export function PostComposer() {
         {/* Body */}
         <div>
           <label htmlFor="post-body" className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2 block">Body</label>
-          <textarea
-            id="post-body"
-            value={body}
-            onChange={(e) => setBody(e.target.value.slice(0, 10000))}
-            placeholder="Say more…"
-            rows={4}
-            className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed"
-          />
+          <div className="relative">
+            <textarea
+              id="post-body"
+              ref={bodyRef}
+              value={body}
+              onChange={(e) => {
+                const val = e.target.value.slice(0, 10000)
+                setBody(val)
+                mention.onTextChange(val, e.target.selectionStart ?? val.length)
+              }}
+              onKeyDown={(e) => {
+                if (!mention.isOpen) return
+                if (e.key === 'ArrowDown') { e.preventDefault(); mention.setActiveIndex(Math.min(mention.activeIndex + 1, mention.suggestions.length - 1)) }
+                if (e.key === 'ArrowUp') { e.preventDefault(); mention.setActiveIndex(Math.max(mention.activeIndex - 1, 0)) }
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                  const s = mention.suggestions[mention.activeIndex]
+                  if (s?.pseudoHandle) { e.preventDefault(); setBody(mention.selectSuggestion(s.pseudoHandle)) }
+                }
+                if (e.key === 'Escape') mention.close()
+              }}
+              placeholder="Say more… (type @handle to mention)"
+              rows={4}
+              className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed"
+            />
+            {mention.isOpen && (
+              <MentionSuggestions
+                suggestions={mention.suggestions}
+                activeIndex={mention.activeIndex}
+                onSelect={(handle) => { setBody(mention.selectSuggestion(handle)); bodyRef.current?.focus() }}
+                onHover={mention.setActiveIndex}
+              />
+            )}
+          </div>
         </div>
 
         {/* Identity row — tappable for verified; lock notice for guests */}

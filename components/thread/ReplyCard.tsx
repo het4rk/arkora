@@ -7,6 +7,7 @@ import { InlineFollowButton } from '@/components/ui/InlineFollowButton'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic, formatDisplayName } from '@/lib/utils'
+import { BodyText } from '@/components/ui/BodyText'
 
 type VoteDir = 1 | -1 | null
 
@@ -134,7 +135,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
 
       {/* Body */}
       <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">
-        {reply.body}
+        <BodyText text={reply.body} />
       </p>
 
       {/* Reply image */}

@@ -228,6 +228,20 @@ export function LeftDrawer() {
             {/* ── Footer ───────────────────────────────────────────── */}
             <div className="px-6 pb-[max(env(safe-area-inset-bottom),24px)] pt-4 border-t border-white/[0.07] space-y-3">
               <button
+                onClick={() => { setDrawerOpen(false); router.push('/rooms') }}
+                className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-text-secondary text-sm active:opacity-70 transition-opacity"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>Rooms</span>
+              </button>
+
+              <button
                 onClick={() => { setDrawerOpen(false); router.push('/settings') }}
                 className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-text-muted text-sm active:opacity-70 transition-opacity"
               >
@@ -245,7 +259,8 @@ export function LeftDrawer() {
                     setDrawerOpen(false)
                     await fetch('/api/signout', { method: 'POST' })
                     signOut()
-                    router.push('/')
+                    // Hard reload: remounts WalletConnect so walletAuth re-runs
+                    window.location.href = '/'
                   }}
                   className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-downvote/80 text-sm active:opacity-70 transition-opacity"
                 >

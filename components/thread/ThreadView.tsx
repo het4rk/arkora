@@ -15,6 +15,7 @@ import { ReplyComposer } from './ReplyComposer'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic, formatDisplayName } from '@/lib/utils'
 import type { Reply } from '@/lib/types'
+import { BodyText } from '@/components/ui/BodyText'
 
 interface ThreadData {
   post: Post
@@ -258,7 +259,7 @@ export function ThreadView({ postId }: Props) {
           )}
 
           <p className="text-text-secondary text-[15px] leading-[1.65] whitespace-pre-wrap">
-            {post.body}
+            <BodyText text={post.body} />
           </p>
 
           {/* Community Notes */}

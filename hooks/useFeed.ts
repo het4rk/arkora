@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Post, BoardId } from '@/lib/types'
 
-export type FeedMode = 'forYou' | 'following' | 'local'
+export type FeedMode = 'forYou' | 'following' | 'local' | 'hot'
 
 const FEED_LIMIT = 10
 
@@ -42,12 +42,13 @@ export function useFeed(
 
   const applyPage = useCallback((fetched: Post[], reset: boolean) => {
     setPosts((prev) => (reset ? fetched : [...prev, ...fetched]))
-    setHasMore(fetched.length === FEED_LIMIT)
+    // Hot feed is a ranked snapshot — no pagination
+    setHasMore(feedMode !== 'hot' && fetched.length === FEED_LIMIT)
     if (fetched.length > 0) {
       const last = fetched[fetched.length - 1]
       if (last) cursorRef.current = new Date(last.createdAt).toISOString()
     }
-  }, [])
+  }, [feedMode])
 
   const fetchPosts = useCallback(
     async (reset: boolean) => {
@@ -69,6 +70,9 @@ export function useFeed(
           params.set('radiusMiles', '-1')
         }
         if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
+      } else if (feedMode === 'hot') {
+        params.set('feed', 'hot')
+        // No cursor — hot feed always returns a fresh ranked snapshot
       } else {
         if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
       }

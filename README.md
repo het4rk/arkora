@@ -4,6 +4,8 @@ A provably human anonymous message board. Every voice is verified.
 
 Arkora is a World App miniapp where users post, vote, and converse anonymously — but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities. TikTok-style scroll feed, 4chan anonymity, Reddit boards structure — every voice cryptographically guaranteed real.
 
+**Features:** Posts + threaded replies · Upvotes / downvotes · Community Notes · Bookmarks · Boards · Following feed · Local feed (GPS radius) · E2E encrypted DMs · @ mentions with notifications · Live ephemeral Rooms · Block / report / moderation · WLD tips & subscriptions
+
 ---
 
 ## Tech Stack
@@ -177,9 +179,10 @@ In-memory sliding-window rate limiter (`lib/rateLimit.ts`). Per-Vercel-instance 
 
 ```
 app/
-  api/                API routes (auth, posts, replies, votes, dm, search, …)
+  api/                API routes (auth, posts, replies, votes, dm, rooms, search, …)
   boards/             Boards list page
   post/[id]/          Thread / post detail
+  rooms/              Rooms discovery + room view pages
   settings/           Settings page
   dm/                 DM inbox + conversation pages
   notifications/      Notifications page
@@ -191,19 +194,25 @@ components/
   dm/                 ConversationView, ConversationList
   feed/               Feed, ThreadCard, FeedSkeleton
   onboarding/         OnboardingScreen (first-run slides)
+  rooms/              RoomsDiscovery, RoomView, RoomCard, RoomComposer, …
   settings/           SettingsView
-  ui/                 BottomNav, LeftDrawer, Avatar, HumanBadge, …
+  thread/             ThreadView, ReplyCard, ReplyTree
+  ui/                 BottomNav, LeftDrawer, BodyText, MentionSuggestions, …
+
+hooks/
+  useMentionAutocomplete.ts   @mention detection + debounced autocomplete
 
 lib/
-  db/                 Drizzle schema + per-entity query modules
+  db/                 Drizzle schema + per-entity query modules (posts, replies, rooms, …)
   crypto/             DM encryption (Curve25519 + AES-256-GCM)
   storage/            Hippius S3 adapter
   rateLimit.ts        In-memory sliding-window rate limiter
   cache.ts            In-memory feed cache (30s TTL)
+  sanitize.ts         Input sanitization + parseMentions()
   serverAuth.ts       Read caller nullifierHash from session cookie
 
 store/
-  useArkoraStore.ts   Global Zustand store (auth, UI, preferences)
+  useArkoraStore.ts   Global Zustand store (auth, UI, preferences, activeRoomId)
 ```
 
 ---

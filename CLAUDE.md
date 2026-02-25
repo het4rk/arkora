@@ -69,9 +69,27 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] Conversation list + individual view
 
 ### Notifications
-- [x] In-app notifications (replies, follows, DMs)
+- [x] In-app notifications (replies, follows, DMs, @mentions)
 - [x] Real-time unread count badge via Pusher
 - [x] Notification preferences (replies, DMs, follows, following posts) in Settings
+- [x] Notification filter tabs (All / Replies / Mentions / Follows / DMs)
+- [x] World App native push notifications (Worldcoin API) — fires on reply, mention, follow, DM even when app is closed
+
+### @ Mentions
+- [x] `@handle` autocomplete in PostComposer + ReplyComposer (debounced, keyboard nav)
+- [x] `parseMentions()` on post/reply save — resolves handles, creates notifications
+- [x] Real-time notification delivery via Pusher on mention
+- [x] Styled `@handle` spans in post body (ThreadView) and reply body (ReplyCard)
+- [x] `GET /api/users/search?q=<prefix>` autocomplete endpoint (rate limited 20/min)
+
+### Rooms (Phase 1 — Text-only, Ephemeral)
+- [x] Create/join/leave ephemeral text rooms (auto-expire after 2 hours)
+- [x] Identity chosen at join time (anonymous / alias / named)
+- [x] Real-time messages via Pusher presence channels (ephemeral, no DB storage)
+- [x] Host controls: mute / kick participants
+- [x] Rooms discovery page (`/rooms`) with board filter
+- [x] Rooms link in LeftDrawer
+- [x] Pusher presence auth endpoint (`/api/pusher/auth`)
 
 ### Moderation
 - [x] Block users (`/api/block`)
@@ -91,6 +109,8 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] Left drawer with identity, privacy mode, appearance, sign out
 
 ### Infrastructure
+- [x] Hot feed — Wilson-score time-decay ranking (`getHotFeed()` in `lib/db/posts.ts`); "🔥 Hot" tab in feed header; 60s cached
+- [x] Removed unused `next-auth` dependency
 - [x] In-memory feed cache (30s TTL, invalidated on new post)
 - [x] Rate limiting — feed GET 60/min/IP, writes per-user
 - [x] Pusher crash guard (null-check env vars + try/catch in BottomNav)
@@ -142,23 +162,26 @@ dmPrivateKey                                             — DM encryption (clie
 optimisticVotes, unreadNotificationCount                 — ephemeral UI
 isComposerOpen, isDrawerOpen, isSearchOpen, …            — UI toggles
 activeBoard                                              — current board filter
+activeRoomId                                             — currently joined room (non-persisted)
 ```
 
 `signOut()` clears auth state, preserves preferences (theme, identity, location, notification prefs).
 
 ### Database Schema (Key Tables)
 
-- `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode
+- `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode; indexed on `pseudoHandle` for mention autocomplete
 - `posts` — id, title, body, boardId, nullifierHash, pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId
 - `replies` — id, postId, parentReplyId, content, nullifierHash, pseudoHandle, upvotes, downvotes
 - `follows`, `bookmarks`, `postVotes`, `replyVotes`
 - `dmKeys` — nullifierHash, publicKey (Curve25519)
 - `dmMessages` — id, senderHash, recipientHash, ciphertext, nonce
-- `notifications` — userId, type (reply/follow/dm), referenceId, read
+- `notifications` — userId, type (`reply`/`follow`/`dm`/`mention`), referenceId, actorHash, read
 - `subscriptions`, `tips` — monetization
 - `communityNotes`, `communityNoteVotes` — fact-check system
 - `blocks` — blocker/blocked user pairs
 - `reports` — post/reply reports with reason
+- `rooms` — id, title, boardId, hostHash, hostHandle, maxParticipants, isLive, createdAt, endsAt, messageCount
+- `room_participants` — id, roomId (FK→rooms cascade), nullifierHash, displayHandle, identityMode, joinedAt, leftAt, isMuted, isCoHost
 
 ### Pusher Setup
 
@@ -166,6 +189,7 @@ activeBoard                                              — current board filte
 - BottomNav: subscribes to `user-${nullifierHash}` for `notif-count` events
 - ConversationView: subscribes to `user-${nullifierHash}` for `new-dm` events
 - Both guarded with null-check on env vars + try/catch (World App crash fix)
+- Rooms: presence channel `presence-room-${roomId}`; auth via `POST /api/pusher/auth`; events: `new-message`, `participant-muted`, `participant-kicked`, `room-ended`
 
 ### Hippius S3
 
@@ -194,6 +218,7 @@ activeBoard                                              — current board filte
 - [ ] `PUSHER_*` + `NEXT_PUBLIC_PUSHER_*` vars
 - [ ] `HIPPIUS_*` vars
 - [ ] `NEXT_PUBLIC_APP_ID` / `APP_ID` matching Developer Portal
+- [ ] `WORLDCOIN_API_KEY` — World App push notifications (Worldcoin Developer Portal)
 - [ ] Developer Portal redirect URL = production domain
 - [ ] `pnpm db:push` run against production DB
 
@@ -206,18 +231,26 @@ activeBoard                                              — current board filte
 | `store/useArkoraStore.ts` | Single source of truth for all client state |
 | `lib/serverAuth.ts` | `getCallerNullifier()` — used in every auth'd API route |
 | `lib/db/schema.ts` | Drizzle schema (source of truth for DB shape) |
-| `lib/db/users.ts` | User CRUD + `getUsersByNullifiers` batch query |
-| `lib/sanitize.ts` | `sanitizeLine` / `sanitizeText` — strip XSS before DB writes |
+| `lib/db/users.ts` | User CRUD + `getUsersByNullifiers` batch query + `searchUsersByHandle` (mention autocomplete) |
+| `lib/db/rooms.ts` | All rooms + participants DB functions |
+| `lib/sanitize.ts` | `sanitizeLine` / `sanitizeText` — strip XSS before DB writes; `parseMentions` |
 | `lib/rateLimit.ts` | In-memory sliding-window rate limiter |
 | `lib/cache.ts` | Feed cache with TTL |
 | `lib/crypto/dm.ts` | ECDH key gen + AES-256-GCM encrypt/decrypt |
 | `lib/storage/hippius.ts` | S3 upload adapter |
 | `lib/pusher.ts` | Server-side Pusher trigger |
+| `lib/worldAppNotify.ts` | World App native push notification helper (Worldcoin API, fire-and-forget) |
 | `hooks/useVerification.ts` | World ID verify flow (MiniKit mobile + IDKit desktop) |
 | `app/api/auth/wallet/route.ts` | SIWE verify + issue session cookies |
 | `app/api/auth/verify/route.ts` | World ID proof verify |
 | `app/api/signout/route.ts` | Clear session cookies |
-| `app/api/posts/route.ts` | Feed GET (rate limited) + post create (sanitized) |
+| `app/api/posts/route.ts` | Feed GET (rate limited) + post create (sanitized, fires mention notifications) |
+| `app/api/rooms/route.ts` | Rooms list + create |
+| `app/api/rooms/[id]/route.ts` | Room detail + end |
+| `app/api/rooms/[id]/join/route.ts` | Join room with identity choice |
+| `app/api/rooms/[id]/message/route.ts` | Broadcast ephemeral message via Pusher |
+| `app/api/pusher/auth/route.ts` | Pusher presence channel auth |
+| `app/api/users/search/route.ts` | Handle prefix search for @mention autocomplete |
 | `app/api/block/route.ts` | Block / unblock a user |
 | `app/api/report/route.ts` | Report a post or reply |
 | `components/auth/VerifyHuman.tsx` | World ID verification sheet (mobile) + IDKit QR (desktop) |
@@ -225,6 +258,11 @@ activeBoard                                              — current board filte
 | `components/ui/LeftDrawer.tsx` | Slide-in drawer (identity, privacy, sign out) |
 | `components/ui/ReportSheet.tsx` | Report bottom sheet UI |
 | `components/ui/ErrorBoundary.tsx` | React error boundary for subtree isolation |
+| `components/ui/BodyText.tsx` | Renders body text with `@mention` styled spans |
+| `components/ui/MentionSuggestions.tsx` | @mention autocomplete dropdown |
+| `hooks/useMentionAutocomplete.ts` | Mention detection + debounced search hook |
+| `components/rooms/RoomView.tsx` | Main room UI (Pusher presence subscription) |
+| `components/rooms/RoomsDiscovery.tsx` | Rooms list + create sheet |
 | `components/settings/SettingsView.tsx` | Full settings (identity, appearance, notifications, location, account, subs) |
 | `next.config.ts` | remotePatterns, CSP headers, HSTS |
 
@@ -232,13 +270,14 @@ activeBoard                                              — current board filte
 
 ## Next Steps / Future Work
 
-- [ ] Push notifications (Web Push API or World App native)
+- [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)
 - [ ] Trending / hot posts algorithm (time-decay scoring)
 - [ ] Admin moderation queue for reports
 - [ ] Upgrade rate limiter to Upstash Redis for cross-instance enforcement
 - [ ] Add `connection_limit` to DATABASE_URL for Neon pooling
 - [ ] Remove unused `next-auth` package
 - [ ] World Chain smart contract for on-chain votes (`contracts/ArkVotes.sol`)
-- [ ] Rooms feature (see `.github/ISSUE_ROOMS_FEATURE.md`)
+- [x] Rooms feature — Phase 1 text-only shipped
+- [ ] Rooms Phase 2 — audio (WebRTC or LiveKit)
 - [ ] Multi-language support
 - [ ] Light theme polish

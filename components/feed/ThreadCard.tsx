@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, memo } from 'react'
+import { useState, useRef, useCallback, memo } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import type { Post } from '@/lib/types'
@@ -11,6 +11,7 @@ import { TimeAgo } from '@/components/ui/TimeAgo'
 import { BookmarkButton } from '@/components/ui/BookmarkButton'
 import { QuotedPost } from '@/components/ui/QuotedPost'
 import { ReportSheet } from '@/components/ui/ReportSheet'
+import { ImageViewer } from '@/components/ui/ImageViewer'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic, formatDisplayName } from '@/lib/utils'
 
@@ -26,8 +27,24 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   const { nullifierHash, setComposerQuotedPost, setComposerOpen } = useArkoraStore()
   const [isDeleting, setIsDeleting] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [imageViewerOpen, setImageViewerOpen] = useState(false)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isOwner = !!nullifierHash && post.nullifierHash === nullifierHash
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
+
+  const handleImageTouchStart = useCallback(() => {
+    longPressTimer.current = setTimeout(() => {
+      haptic('medium')
+      setImageViewerOpen(true)
+    }, 500)
+  }, [])
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }, [])
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
@@ -49,7 +66,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   return (
     <>
     <motion.article
-      className="h-[calc(100dvh-56px)] w-full flex-shrink-0 snap-start bg-background flex flex-col px-[5vw] pt-10 pb-6"
+      className="w-full bg-background flex flex-col px-[5vw] pt-10 pb-6 border-b border-border/20"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -91,7 +108,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
       </div>
 
       {/* Hero content */}
-      <div className="flex-1 flex flex-col justify-start min-h-0">
+      <div className="flex flex-col">
         <h2 className="text-fluid-hero font-bold text-text line-clamp-5 mb-5">
           {post.title}
         </h2>
@@ -109,14 +126,21 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           <QuotedPost post={post.quotedPost} className="mt-4" />
         )}
 
-        {/* Post image */}
+        {/* Post image — tap to view card, long-press to view full-resolution */}
         {post.imageUrl && (
-          <div className="mt-4 rounded-[var(--r-lg)] overflow-hidden">
+          <div
+            className="mt-4 rounded-[var(--r-lg)] overflow-hidden cursor-pointer select-none"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => { e.stopPropagation(); handleImageTouchStart() }}
+            onTouchEnd={(e) => { e.stopPropagation(); cancelLongPress() }}
+            onTouchMove={(e) => { e.stopPropagation(); cancelLongPress() }}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setImageViewerOpen(true) }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={post.imageUrl}
               alt=""
-              className="w-full max-h-56 object-cover"
+              className="w-full max-h-72 object-cover"
               loading="lazy"
             />
           </div>
@@ -176,6 +200,13 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
       targetType="post"
       targetId={post.id}
     />
+    {post.imageUrl && (
+      <ImageViewer
+        src={post.imageUrl}
+        isOpen={imageViewerOpen}
+        onClose={() => setImageViewerOpen(false)}
+      />
+    )}
     </>
   )
 })

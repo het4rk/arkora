@@ -42,3 +42,16 @@ export function sanitizeLine(input: string): string {
     .replace(/\s+/g, ' ')
     .trim()
 }
+
+/**
+ * Extract @mention handles from sanitized text.
+ * Returns unique handles found matching @word (alias/named style).
+ * Only call this on already-sanitized text.
+ */
+const MENTION_RE = /\B@([a-zA-Z0-9_-]{1,50})/g
+
+export function parseMentions(text: string): string[] {
+  const matches = [...text.matchAll(MENTION_RE)].map((m) => m[1]!)
+  // Deduplicate while preserving order
+  return [...new Set(matches)]
+}

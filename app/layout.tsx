@@ -6,6 +6,7 @@ import { WalletConnect } from '@/components/auth/WalletConnect'
 import { BottomNav } from '@/components/ui/BottomNav'
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen'
 import { PostComposer } from '@/components/compose/PostComposer'
+import { VerifyHuman } from '@/components/auth/VerifyHuman'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default function RootLayout({
           <WalletConnect />
           <OnboardingScreen />
           <PostComposer />
+          <VerifyHuman />
           <ErrorBoundary>
             <main className="pb-20 safe-top">{children}</main>
           </ErrorBoundary>

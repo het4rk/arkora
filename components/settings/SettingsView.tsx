@@ -264,7 +264,7 @@ export function SettingsView() {
                 onClick={async () => {
                   await fetch('/api/signout', { method: 'POST' })
                   signOut()
-                  router.push('/')
+                  window.location.href = '/'
                 }}
                 className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-downvote/80 text-sm active:opacity-70 transition-opacity"
               >

@@ -1,5 +1,5 @@
 import { unstable_cache, revalidateTag } from 'next/cache'
-import { getFeed, getLocalFeed } from '@/lib/db/posts'
+import { getFeed, getLocalFeed, getHotFeed } from '@/lib/db/posts'
 import type { FeedParams, LocalFeedParams } from '@/lib/types'
 
 /**
@@ -22,6 +22,17 @@ export const getCachedLocalFeed = unstable_cache(
   (params: LocalFeedParams) => getLocalFeed(params),
   ['local-feed'],
   { revalidate: 15, tags: ['posts'] }
+)
+
+/**
+ * Cached version of the hot feed (Wilson-score time-decay ranking).
+ * Revalidates every 60 s (or on new/deleted post) — longer TTL is fine since
+ * the ranking changes slowly and the query is more expensive.
+ */
+export const getCachedHotFeed = unstable_cache(
+  (boardId?: string) => getHotFeed(boardId),
+  ['hot-feed'],
+  { revalidate: 60, tags: ['posts'] }
 )
 
 // ── Invalidation helpers ─────────────────────────────────────────────────────

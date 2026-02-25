@@ -4,6 +4,7 @@ import { isVerifiedHuman } from '@/lib/db/users'
 import { createNotification } from '@/lib/db/notifications'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { worldAppNotify } from '@/lib/worldAppNotify'
 
 export async function GET(req: NextRequest) {
   try {
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
     // Notify when following (not unfollowing)
     if (isNowFollowing) {
       void createNotification(followedId, 'follow', undefined, followerId)
+      void worldAppNotify(followedId, 'New follower', 'Someone followed you on Arkora', '/notifications')
     }
     return NextResponse.json({ success: true, data: { isFollowing: isNowFollowing } })
   } catch (err) {

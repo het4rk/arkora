@@ -98,11 +98,48 @@ export interface VoteInput {
 export interface Notification {
   id: string
   recipientHash: string
-  type: 'reply' | 'follow' | 'dm'
+  type: 'reply' | 'follow' | 'dm' | 'mention'
   referenceId: string | null
   actorHash: string | null
   read: boolean
   createdAt: Date
+}
+
+// ── Rooms ─────────────────────────────────────────────────────────────────────
+
+export interface Room {
+  id: string
+  title: string
+  boardId: BoardId
+  hostHash: string
+  hostHandle: string
+  maxParticipants: number
+  isLive: boolean
+  createdAt: Date
+  endsAt: Date
+  messageCount: number
+  participantCount?: number // populated when fetching room list/detail
+}
+
+export interface RoomParticipant {
+  id: string
+  roomId: string
+  nullifierHash: string
+  displayHandle: string
+  identityMode: 'anonymous' | 'alias' | 'named'
+  joinedAt: Date
+  leftAt: Date | null
+  isMuted: boolean
+  isCoHost: boolean
+}
+
+// Shape of messages delivered over Pusher (not stored in DB)
+export interface RoomMessage {
+  id: string
+  senderHash: string
+  displayHandle: string
+  text: string
+  createdAt: string // ISO string for Pusher transport
 }
 
 export interface CreateNoteInput {

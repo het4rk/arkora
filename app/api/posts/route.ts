@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPost } from '@/lib/db/posts'
-import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
+import { sanitizeLine, sanitizeText, parseMentions } from '@/lib/sanitize'
 import { getFeedFollowing } from '@/lib/db/follows'
-import { isVerifiedHuman } from '@/lib/db/users'
+import { isVerifiedHuman, getUsersByHandles } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
-import { getCachedFeed, getCachedLocalFeed, invalidatePosts } from '@/lib/cache'
+import { getCachedFeed, getCachedLocalFeed, getCachedHotFeed, invalidatePosts } from '@/lib/cache'
+import { createNotification } from '@/lib/db/notifications'
+import { pusherServer } from '@/lib/pusher'
+import { worldAppNotify } from '@/lib/worldAppNotify'
 import { BOARDS } from '@/lib/types'
 import type { BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 
@@ -42,6 +45,14 @@ export async function GET(req: NextRequest) {
       }
       const posts = await getFeedFollowing(callerHash, cursor, limit)
       return NextResponse.json({ success: true, data: posts })
+    }
+
+    // Hot feed — Wilson-score time-decay ranking, no cursor pagination
+    if (feed === 'hot') {
+      const rawBoardId = searchParams.get('boardId')
+      const hotBoardId = rawBoardId && VALID_BOARD_IDS.has(rawBoardId as BoardId) ? rawBoardId : undefined
+      const hotPosts = await getCachedHotFeed(hotBoardId)
+      return NextResponse.json({ success: true, data: hotPosts })
     }
 
     // Local feed — country-scoped, optionally radius-filtered
@@ -168,6 +179,22 @@ export async function POST(req: NextRequest) {
 
     const post = await createPost({ title, body: postBody, boardId, nullifierHash, pseudoHandle, imageUrl: rawImageUrl, quotedPostId, lat, lng, countryCode })
     invalidatePosts()
+
+    // Process @mentions — fire-and-forget, does not block response
+    void (async () => {
+      try {
+        const handles = parseMentions(postBody)
+        if (handles.length === 0) return
+        const handleMap = await getUsersByHandles(handles)
+        for (const [, mentionedHash] of handleMap) {
+          if (mentionedHash === nullifierHash) continue // don't notify self
+          await createNotification(mentionedHash, 'mention', post.id, nullifierHash)
+          void pusherServer.trigger(`user-${mentionedHash}`, 'notif-count', { delta: 1 })
+          void worldAppNotify(mentionedHash, 'You were mentioned', 'Someone mentioned you in a post', `/posts/${post.id}`)
+        }
+      } catch { /* non-critical */ }
+    })()
+
     return NextResponse.json({ success: true, data: post }, { status: 201 })
   } catch (err) {
     console.error('[posts POST]', err)

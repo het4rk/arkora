@@ -46,6 +46,9 @@ interface ArkoraState {
   notifyFollows: boolean
   notifyFollowedPosts: boolean
 
+  // Active room (non-persisted — clears on reload)
+  activeRoomId: string | null
+
   // Optimistic vote cache: postId → direction
   optimisticVotes: Record<string, 1 | -1>
 
@@ -75,6 +78,7 @@ interface ArkoraState {
   setNotifyFollows: (v: boolean) => void
   setNotifyFollowedPosts: (v: boolean) => void
   setUnreadNotificationCount: (count: number) => void
+  setActiveRoomId: (id: string | null) => void
   reset: () => void
   signOut: () => void
 }
@@ -89,6 +93,7 @@ const initialState = {
   theme: 'dark' as Theme,
   hasOnboarded: false,
   activeBoard: null,
+  activeRoomId: null,
   isComposerOpen: false,
   composerQuotedPost: null,
   locationEnabled: false,
@@ -162,6 +167,8 @@ export const useArkoraStore = create<ArkoraState>()(
       setNotifyFollowedPosts: (v) => set({ notifyFollowedPosts: v }),
 
       setUnreadNotificationCount: (count) => set({ unreadNotificationCount: count }),
+
+      setActiveRoomId: (id) => set({ activeRoomId: id }),
 
       reset: () => set(initialState),
 

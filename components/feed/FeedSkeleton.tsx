@@ -1,6 +1,6 @@
 export function FeedSkeleton() {
   return (
-    <div className="h-[calc(100dvh-56px)] w-full bg-background flex flex-col px-5 pt-8 pb-6 animate-pulse">
+    <div className="w-full bg-background flex flex-col px-5 pt-10 pb-6 border-b border-border/20 animate-pulse">
       {/* Meta row */}
       <div className="flex items-center justify-between mb-5">
         <div className="h-4 w-20 bg-surface-up rounded-full" />
@@ -8,7 +8,7 @@ export function FeedSkeleton() {
       </div>
 
       {/* Title */}
-      <div className="flex-1 flex flex-col justify-start space-y-3">
+      <div className="flex flex-col space-y-3">
         <div className="h-9 w-full bg-surface-up rounded-xl" />
         <div className="h-9 w-5/6 bg-surface-up rounded-xl" />
         <div className="h-9 w-2/3 bg-surface-up rounded-xl" />

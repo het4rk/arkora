@@ -5,7 +5,6 @@ import { useFeed, type FeedMode } from '@/hooks/useFeed'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { ThreadCard } from './ThreadCard'
 import { FeedSkeleton } from './FeedSkeleton'
-import { VerifyHuman } from '@/components/auth/VerifyHuman'
 import { haptic } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -24,7 +23,7 @@ function radiusIndexOf(miles: number): number {
 
 export function Feed() {
   const { activeBoard, nullifierHash, isVerified, locationRadius, setLocationRadius } = useArkoraStore()
-  const [feedMode, setFeedMode] = useState<FeedMode>('forYou')
+  const [feedMode, setFeedMode] = useState<FeedMode>('hot')
 
   // Local feed — viewer GPS coords (requested on demand)
   const [viewerCoords, setViewerCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -154,7 +153,9 @@ export function Feed() {
 
   if (isLoading) {
     return (
-      <div className="h-screen">
+      <div className="h-[calc(100dvh-56px)] overflow-y-auto">
+        <FeedSkeleton />
+        <FeedSkeleton />
         <FeedSkeleton />
       </div>
     )
@@ -162,7 +163,7 @@ export function Feed() {
 
   if (error) {
     return (
-      <div className="h-screen flex items-center justify-center text-text-secondary px-6 text-center">
+      <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
         <div>
           <p className="text-2xl mb-2">⚡</p>
           <p className="font-semibold text-text mb-1">Failed to load feed</p>
@@ -181,7 +182,7 @@ export function Feed() {
     <>
       {/* Feed mode toggle — shown to all users; Following tab gated to verified */}
       <div className="fixed top-[max(env(safe-area-inset-top),12px)] left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg">
-        {(['forYou', ...(isVerified ? ['following'] : []), 'local'] as FeedMode[]).map((mode) => (
+        {(['hot', ...(isVerified ? ['following'] : []), 'local'] as FeedMode[]).map((mode) => (
           <button
             key={mode}
             onClick={() => { haptic('light'); setFeedMode(mode) }}
@@ -190,7 +191,7 @@ export function Feed() {
               feedMode === mode ? 'bg-accent text-white shadow-sm' : 'text-text-muted'
             )}
           >
-            {mode === 'forYou' ? 'Curated' : mode === 'following' ? 'Following' : '📍 Local'}
+            {mode === 'hot' ? 'Trending' : mode === 'following' ? 'Following' : 'Local'}
           </button>
         ))}
       </div>
@@ -218,7 +219,7 @@ export function Feed() {
       <div
         ref={scrollRef}
         className={cn(
-          'overflow-y-scroll snap-y snap-mandatory h-[calc(100dvh-56px)] scroll-smooth',
+          'overflow-y-scroll h-[calc(100dvh-56px)] scroll-smooth',
           hasLocalCoords ? 'pt-8' : ''
         )}
         onTouchStart={handleTouchStart}
@@ -287,16 +288,18 @@ export function Feed() {
           </div>
         )}
 
-        {/* Default: no posts */}
-        {feedMode !== 'following' && feedMode !== 'local' && posts.length === 0 && (
+        {/* Hot feed: empty state */}
+        {feedMode === 'hot' && !isLoading && posts.length === 0 && (
           <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
             <div>
-              <p className="text-4xl mb-4">🌐</p>
-              <p className="font-bold text-text text-xl mb-2">No posts yet</p>
-              <p className="text-sm">Be the first verified human to post.</p>
+              <p className="text-3xl mb-4">🔥</p>
+              <p className="font-bold text-text text-lg mb-2">Nothing hot yet</p>
+              <p className="text-sm">Posts gain heat as they get upvoted. Check back soon!</p>
             </div>
           </div>
         )}
+
+        {/* Hot/Trending: empty state (covered above) — no additional default needed */}
 
         {/* Guest join CTA — shown once per session to unverified users */}
         {!isVerified && posts.length > 0 && (
@@ -322,19 +325,20 @@ export function Feed() {
 
         {/* Infinite scroll sentinel */}
         {hasMore && (
-          <div ref={sentinelRef} className="h-screen flex items-center justify-center">
-            {isLoadingMore && <FeedSkeleton />}
+          <div ref={sentinelRef} className="h-32 flex items-center justify-center">
+            {isLoadingMore && (
+              <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+            )}
           </div>
         )}
 
         {!hasMore && posts.length > 0 && (
-          <div className="h-screen flex items-center justify-center text-text-muted text-sm">
+          <div className="py-10 flex items-center justify-center text-text-muted text-sm">
             You&apos;ve seen it all.
           </div>
         )}
       </div>
 
-      <VerifyHuman />
     </>
   )
 }
