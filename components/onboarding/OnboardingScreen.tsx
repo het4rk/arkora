@@ -48,7 +48,7 @@ const SLIDES = [
 ]
 
 export function OnboardingScreen() {
-  const { hasOnboarded, setHasOnboarded } = useArkoraStore()
+  const { hasOnboarded, setHasOnboarded, setVerifySheetOpen } = useArkoraStore()
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState(1)
 
@@ -67,6 +67,7 @@ export function OnboardingScreen() {
   function finish() {
     haptic('medium')
     setHasOnboarded(true)
+    setVerifySheetOpen(true)
   }
 
   const slide = SLIDES[step]!

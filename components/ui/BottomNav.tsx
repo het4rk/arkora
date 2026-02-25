@@ -11,7 +11,7 @@ import { SearchSheet } from '@/components/search/SearchSheet'
 
 export function BottomNav() {
   const pathname = usePathname()
-  const { setComposerOpen, setDrawerOpen, setSearchOpen, nullifierHash, isVerified, unreadNotificationCount, setUnreadNotificationCount } = useArkoraStore()
+  const { setComposerOpen, setSearchOpen, nullifierHash, isVerified, unreadNotificationCount, setUnreadNotificationCount } = useArkoraStore()
 
   // Fetch the initial unread count on mount, then subscribe to Pusher for
   // real-time DM notification count bumps (replaces 60 s polling interval).
@@ -112,21 +112,31 @@ export function BottomNav() {
               </svg>
             </button>
 
-            {/* Menu (identity, theme, settings) */}
-            <button
-              onClick={() => { haptic('light'); setDrawerOpen(true) }}
-              aria-label="Menu"
-              className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all active:scale-90"
+            {/* Alerts (notifications) */}
+            <Link
+              href="/notifications"
+              onClick={() => haptic('light')}
+              className={cn(
+                'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
+                pathname === '/notifications' ? 'text-white' : 'text-text-muted'
+              )}
             >
-              <svg width="20" height="14" viewBox="0 0 20 14" fill="none"
-                stroke="currentColor" className="text-text-muted"
-                strokeWidth="1.8" strokeLinecap="round">
-                <line x1="0" y1="1"  x2="20" y2="1"  />
-                <line x1="0" y1="7"  x2="20" y2="7"  />
-                <line x1="0" y1="13" x2="20" y2="13" />
-              </svg>
-              <span className="text-[10px] font-medium text-text-muted">Menu</span>
-            </button>
+              <span className="relative">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor"
+                  strokeWidth={pathname === '/notifications' ? 2.5 : 1.8}
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />
+                )}
+              </span>
+              <span className={cn('text-[10px] font-medium', pathname === '/notifications' && 'text-white')}>
+                Alerts
+              </span>
+            </Link>
 
             {/* Profile */}
             <Link
@@ -137,18 +147,13 @@ export function BottomNav() {
                 pathname === '/profile' ? 'text-white' : 'text-text-muted'
               )}
             >
-              <span className="relative">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor"
-                  strokeWidth={pathname === '/profile' ? 2.5 : 1.8}
-                  strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                {unreadNotificationCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />
-                )}
-              </span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor"
+                strokeWidth={pathname === '/profile' ? 2.5 : 1.8}
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
               <span className={cn('text-[10px] font-medium', pathname === '/profile' && 'text-white')}>
                 Profile
               </span>

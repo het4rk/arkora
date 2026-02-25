@@ -9,6 +9,9 @@ import { PostComposer } from '@/components/compose/PostComposer'
 import { VerifyHuman } from '@/components/auth/VerifyHuman'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { SessionHydrator } from '@/components/auth/SessionHydrator'
+import { TopBar } from '@/components/ui/TopBar'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
   title: 'Arkora',
@@ -34,6 +37,7 @@ export default function RootLayout({
       <body className="bg-background text-text min-h-screen">
         <MiniKitProvider>
           <ThemeProvider />
+          <TopBar />
           {/* Auto-triggers walletAuth on mount */}
           <SessionHydrator />
           <WalletConnect />
@@ -41,9 +45,11 @@ export default function RootLayout({
           <PostComposer />
           <VerifyHuman />
           <ErrorBoundary>
-            <main className="pb-20 safe-top">{children}</main>
+            <main className="pb-20 safe-top-bar">{children}</main>
           </ErrorBoundary>
           <BottomNav />
+          <SpeedInsights />
+          <Analytics />
         </MiniKitProvider>
       </body>
     </html>
