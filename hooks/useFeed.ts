@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Post, BoardId } from '@/lib/types'
 
-export type FeedMode = 'forYou' | 'following' | 'local' | 'hot'
+export type FeedMode = 'new' | 'following' | 'local' | 'hot'
 
 const FEED_LIMIT = 10
 
@@ -26,7 +26,7 @@ interface UseFeedReturn {
 
 export function useFeed(
   boardId?: BoardId,
-  feedMode: FeedMode = 'forYou',
+  feedMode: FeedMode = 'new',
   nullifierHash?: string,
   localCoords?: LocalCoords | null
 ): UseFeedReturn {

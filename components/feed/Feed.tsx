@@ -23,7 +23,7 @@ function radiusIndexOf(miles: number): number {
 
 export function Feed() {
   const { activeBoard, nullifierHash, isVerified, locationRadius, setLocationRadius } = useArkoraStore()
-  const [feedMode, setFeedMode] = useState<FeedMode>('hot')
+  const [feedMode, setFeedMode] = useState<FeedMode>('new')
 
   // Local feed — viewer GPS coords (requested on demand)
   const [viewerCoords, setViewerCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -180,9 +180,12 @@ export function Feed() {
 
   return (
     <>
-      {/* Feed mode toggle — shown to all users; Following tab gated to verified */}
-      <div className="fixed top-[max(env(safe-area-inset-top),12px)] left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg">
-        {(['hot', ...(isVerified ? ['following'] : []), 'local'] as FeedMode[]).map((mode) => (
+      {/* Feed mode toggle — positioned below TopBar (56px) + safe area */}
+      <div
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 64px)' }}
+        className="fixed left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg"
+      >
+        {(['new', ...(isVerified ? ['following'] : []), 'local'] as FeedMode[]).map((mode) => (
           <button
             key={mode}
             onClick={() => { haptic('light'); setFeedMode(mode) }}
@@ -191,14 +194,14 @@ export function Feed() {
               feedMode === mode ? 'bg-accent text-white shadow-sm' : 'text-text-muted'
             )}
           >
-            {mode === 'hot' ? 'Trending' : mode === 'following' ? 'Following' : 'Local'}
+            {mode === 'new' ? 'New' : mode === 'following' ? 'Following' : 'Local'}
           </button>
         ))}
       </div>
 
       {/* Radius slider — shown below tab bar when Local is active and location granted */}
       {hasLocalCoords && (
-        <div className="fixed top-[calc(max(env(safe-area-inset-top),12px)+44px)] left-1/2 -translate-x-1/2 z-20 glass rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
+        <div style={{ top: 'calc(env(safe-area-inset-top, 0px) + 112px)' }} className="fixed left-1/2 -translate-x-1/2 z-20 glass rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
           <input
             type="range"
             min={0}
@@ -288,18 +291,15 @@ export function Feed() {
           </div>
         )}
 
-        {/* Hot feed: empty state */}
-        {feedMode === 'hot' && !isLoading && posts.length === 0 && (
+        {/* New feed: empty state */}
+        {feedMode === 'new' && !isLoading && posts.length === 0 && (
           <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
             <div>
-              <p className="text-3xl mb-4">🔥</p>
-              <p className="font-bold text-text text-lg mb-2">Nothing hot yet</p>
-              <p className="text-sm">Posts gain heat as they get upvoted. Check back soon!</p>
+              <p className="font-bold text-text text-lg mb-2">No posts yet</p>
+              <p className="text-sm">Be the first verified human to post.</p>
             </div>
           </div>
         )}
-
-        {/* Hot/Trending: empty state (covered above) — no additional default needed */}
 
         {/* Guest join CTA — shown once per session to unverified users */}
         {!isVerified && posts.length > 0 && (

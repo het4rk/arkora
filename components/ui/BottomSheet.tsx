@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +13,10 @@ interface Props {
 }
 
 export function BottomSheet({ isOpen, onClose, children, title, className }: Props) {
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const startY = useRef(0)
+  const dragY = useRef(0)
+
   // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
@@ -24,6 +28,33 @@ export function BottomSheet({ isOpen, onClose, children, title, className }: Pro
       document.body.style.overflow = ''
     }
   }, [isOpen])
+
+  function onHandleTouchStart(e: React.TouchEvent) {
+    startY.current = e.touches[0]!.clientY
+    dragY.current = 0
+  }
+
+  function onHandleTouchMove(e: React.TouchEvent) {
+    const delta = e.touches[0]!.clientY - startY.current
+    if (delta > 0 && sheetRef.current) {
+      dragY.current = delta
+      sheetRef.current.style.transition = 'none'
+      sheetRef.current.style.transform = `translateY(${delta}px)`
+    }
+  }
+
+  function onHandleTouchEnd() {
+    if (dragY.current > 80) {
+      onClose()
+    } else if (sheetRef.current) {
+      sheetRef.current.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
+      sheetRef.current.style.transform = 'translateY(0px)'
+      setTimeout(() => {
+        if (sheetRef.current) sheetRef.current.style.transition = ''
+      }, 300)
+    }
+    dragY.current = 0
+  }
 
   return (
     <AnimatePresence>
@@ -40,6 +71,7 @@ export function BottomSheet({ isOpen, onClose, children, title, className }: Pro
 
           {/* Sheet */}
           <motion.div
+            ref={sheetRef}
             className={cn(
               'fixed bottom-0 left-0 right-0 z-50',
               'glass-sheet',
@@ -53,8 +85,13 @@ export function BottomSheet({ isOpen, onClose, children, title, className }: Pro
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3.5 pb-1">
+            {/* Drag handle — touch this to swipe away */}
+            <div
+              className="flex justify-center pt-3.5 pb-1 cursor-grab touch-none"
+              onTouchStart={onHandleTouchStart}
+              onTouchMove={onHandleTouchMove}
+              onTouchEnd={onHandleTouchEnd}
+            >
               <div className="w-9 h-[3px] rounded-full bg-white/20" />
             </div>
 

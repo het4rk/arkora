@@ -60,7 +60,7 @@ export function BottomNav() {
       {/* Drawer rendered here so it sits above nav in z-order */}
       <LeftDrawer />
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 safe-bottom" aria-label="Main navigation">
+      <nav className="fixed bottom-0 left-0 right-0 z-30" aria-label="Main navigation">
         {/* Liquid glass bar */}
         <div className="glass-nav">
           <div className="flex items-center justify-around h-14 px-2">
