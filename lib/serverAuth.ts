@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { cookies } from 'next/headers'
 
 /**
@@ -9,4 +10,15 @@ import { cookies } from 'next/headers'
 export async function getCallerNullifier(): Promise<string | null> {
   const cookieStore = await cookies()
   return cookieStore.get('arkora-nh')?.value ?? null
+}
+
+/**
+ * Derives the stable wallet-based nullifier from a wallet address.
+ * Prefixed `wlt_` to distinguish from World ID Orb nullifiers.
+ */
+export function walletToNullifier(walletAddress: string): string {
+  const hash = createHash('sha256')
+    .update(walletAddress.toLowerCase())
+    .digest('hex')
+  return `wlt_${hash}`
 }

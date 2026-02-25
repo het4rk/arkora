@@ -2,12 +2,46 @@ import { NextRequest, NextResponse } from 'next/server'
 import { type ISuccessResult } from '@worldcoin/minikit-js'
 import { verifyWorldIdProof } from '@/lib/worldid'
 import { getOrCreateUser, getUserByNullifier } from '@/lib/db/users'
+import { walletToNullifier } from '@/lib/serverAuth'
 
 interface RequestBody {
   payload: ISuccessResult
   action: string
   walletAddress?: string
   signal?: string
+}
+
+/**
+ * After World ID proof verification, prefer the wallet identity if one exists for this
+ * wallet address. This ensures desktop users (who can't run WalletConnect) see the same
+ * posts, bio, and name as on mobile, where the wallet identity holds all the data.
+ */
+async function resolveIdentity(
+  worldIdNullifier: string,
+  worldIdUser: Awaited<ReturnType<typeof getUserByNullifier>>
+): Promise<{ nullifierHash: string; user: NonNullable<typeof worldIdUser> }> {
+  if (
+    worldIdUser &&
+    worldIdUser.walletAddress &&
+    !worldIdUser.walletAddress.startsWith('idkit_')
+  ) {
+    const wltNullifier = walletToNullifier(worldIdUser.walletAddress)
+    const walletUser = await getUserByNullifier(wltNullifier)
+    if (walletUser) {
+      return { nullifierHash: wltNullifier, user: walletUser }
+    }
+  }
+  return { nullifierHash: worldIdNullifier, user: worldIdUser! }
+}
+
+function setCookieOnResponse(res: ReturnType<typeof NextResponse.json>, nullifierHash: string) {
+  res.cookies.set('arkora-nh', nullifierHash, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -34,18 +68,14 @@ export async function POST(req: NextRequest) {
       if (alreadyVerified && payload.nullifier_hash) {
         const existingUser = await getUserByNullifier(payload.nullifier_hash)
         if (existingUser) {
+          const { nullifierHash: sessionHash, user: sessionUser } =
+            await resolveIdentity(payload.nullifier_hash, existingUser)
           const restored = NextResponse.json({
             success: true,
-            nullifierHash: payload.nullifier_hash,
-            user: existingUser,
+            nullifierHash: sessionHash,
+            user: sessionUser,
           })
-          restored.cookies.set('arkora-nh', payload.nullifier_hash, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'strict',
-            path: '/',
-            maxAge: 60 * 60 * 24 * 30,
-          })
+          setCookieOnResponse(restored, sessionHash)
           return restored
         }
       }
@@ -59,21 +89,17 @@ export async function POST(req: NextRequest) {
     // Upsert user — idempotent, safe to call multiple times
     // Desktop IDKit users may not have a wallet; use nullifier as placeholder
     const effectiveWallet = walletAddress || `idkit_${result.nullifierHash.slice(0, 40)}`
-    const user = await getOrCreateUser(result.nullifierHash, effectiveWallet)
+    const worldIdUser = await getOrCreateUser(result.nullifierHash, effectiveWallet)
+
+    const { nullifierHash: sessionHash, user: sessionUser } =
+      await resolveIdentity(result.nullifierHash, worldIdUser)
 
     const res = NextResponse.json({
       success: true,
-      nullifierHash: result.nullifierHash,
-      user,
+      nullifierHash: sessionHash,
+      user: sessionUser,
     })
-    // Set server-side identity cookie so protected endpoints can verify the caller
-    res.cookies.set('arkora-nh', result.nullifierHash, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-    })
+    setCookieOnResponse(res, sessionHash)
     return res
   } catch (err) {
     console.error('[verify/route]', err)

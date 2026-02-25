@@ -1,24 +1,7 @@
-import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrCreateUser, updateBio, updateIdentityMode } from '@/lib/db/users'
-import { getCallerNullifier } from '@/lib/serverAuth'
+import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
 import { sanitizeText } from '@/lib/sanitize'
-
-/**
- * Derives a stable pseudonymous identity from the wallet address
- * and upserts the human_users record. Called automatically after
- * walletAuth so users are considered verified without a separate
- * World ID ZK proof step.
- *
- * The derived hash is prefixed `wlt_` to distinguish it from real
- * World ID Orb nullifiers — enabling a future upgrade path.
- */
-function walletToNullifier(walletAddress: string): string {
-  const hash = createHash('sha256')
-    .update(walletAddress.toLowerCase())
-    .digest('hex')
-  return `wlt_${hash}`
-}
 
 export async function POST(req: NextRequest) {
   try {

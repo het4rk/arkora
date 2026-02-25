@@ -160,6 +160,24 @@ export function ThreadView({ postId }: Props) {
 
   useEffect(() => { void fetchThread() }, [fetchThread])
 
+  // Must be before early returns — hooks cannot be called conditionally
+  const sortedReplies = useMemo(() => {
+    const sorted = [...(data?.replies ?? [])]
+    switch (replySort) {
+      case 'newest':
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'oldest':
+        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        break
+      case 'top':
+      default:
+        sorted.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes))
+        break
+    }
+    return sorted
+  }, [data?.replies, replySort])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-5 animate-pulse space-y-4">
@@ -180,23 +198,6 @@ export function ThreadView({ postId }: Props) {
   }
 
   const { post, replies, notes } = data
-
-  const sortedReplies = useMemo(() => {
-    const sorted = [...replies]
-    switch (replySort) {
-      case 'newest':
-        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        break
-      case 'oldest':
-        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-        break
-      case 'top':
-      default:
-        sorted.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes))
-        break
-    }
-    return sorted
-  }, [replies, replySort])
 
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
 
