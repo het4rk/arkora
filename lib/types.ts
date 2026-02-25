@@ -1,4 +1,4 @@
-export type BoardId = 'arkora' | 'technology' | 'markets' | 'politics' | 'worldchain'
+export type BoardId = 'arkora' | 'technology' | 'markets' | 'politics' | 'worldchain' | 'confessions'
 
 export const BOARDS: { id: BoardId; label: string; emoji: string }[] = [
   { id: 'arkora', label: 'Arkora', emoji: '🏛️' },
@@ -6,7 +6,11 @@ export const BOARDS: { id: BoardId; label: string; emoji: string }[] = [
   { id: 'markets', label: 'Markets', emoji: '📈' },
   { id: 'politics', label: 'Politics', emoji: '🗳️' },
   { id: 'worldchain', label: 'World Chain', emoji: '🌐' },
+  { id: 'confessions', label: 'Confessions', emoji: '🤫' },
 ]
+
+/** Boards where posts are force-anonymous regardless of the user's identity mode. */
+export const ANONYMOUS_BOARDS: Set<BoardId> = new Set(['confessions'])
 
 export interface Post {
   id: string

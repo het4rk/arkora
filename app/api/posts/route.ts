@@ -9,7 +9,7 @@ import { getCachedFeed, getCachedLocalFeed, getCachedHotFeed, invalidatePosts } 
 import { createNotification } from '@/lib/db/notifications'
 import { pusherServer } from '@/lib/pusher'
 import { worldAppNotify } from '@/lib/worldAppNotify'
-import { BOARDS } from '@/lib/types'
+import { BOARDS, ANONYMOUS_BOARDS } from '@/lib/types'
 import type { BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 
 /** Extract the viewer's country code from standard edge/CDN headers. Falls back to 'US' in dev. */
@@ -148,9 +148,12 @@ export async function POST(req: NextRequest) {
 
     const title = sanitizeLine(rawTitle)
     const postBody = isPoll ? '' : sanitizeText(rawBody ?? '')
-    const pseudoHandle = rawHandle ? sanitizeLine(rawHandle) : undefined
-
     const boardId = rawBoardId as BoardId
+
+    // Force-anonymous on boards like Confessions — strip handle regardless of identity mode
+    const pseudoHandle = ANONYMOUS_BOARDS.has(boardId)
+      ? undefined
+      : rawHandle ? sanitizeLine(rawHandle) : undefined
     if (!VALID_BOARD_IDS.has(boardId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid board' },

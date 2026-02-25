@@ -32,7 +32,9 @@ export default function BoardsPage() {
             <div>
               <div className="text-text font-semibold">#{board.label}</div>
               <div className="text-text-muted text-xs mt-0.5">
-                Tap to browse
+                {board.id === 'confessions'
+                  ? 'Anonymous + verified human — completely unlinkable'
+                  : 'Tap to browse'}
               </div>
             </div>
           </button>

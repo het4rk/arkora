@@ -7,7 +7,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { usePost } from '@/hooks/usePost'
 import { generateAlias } from '@/lib/session'
-import { BOARDS, type BoardId } from '@/lib/types'
+import { BOARDS, ANONYMOUS_BOARDS, type BoardId } from '@/lib/types'
 import { cn, haptic } from '@/lib/utils'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { QuotedPost } from '@/components/ui/QuotedPost'
@@ -174,6 +174,13 @@ export function PostComposer() {
               </button>
             ))}
           </div>
+          {/* Anonymity notice for confession-style boards */}
+          {ANONYMOUS_BOARDS.has(boardId) && (
+            <p className="mt-2.5 text-[11px] text-amber-400/80 flex items-center gap-1">
+              <span>🤫</span>
+              <span>Your identity is completely hidden on this board — no handle, no profile link.</span>
+            </p>
+          )}
         </div>
 
         {/* Quoted post preview */}

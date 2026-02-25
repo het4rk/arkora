@@ -39,6 +39,14 @@ pnpm db:seed          # Seed database (reads .env.local)
 
 ## What's Been Built (Shipped Features)
 
+### Confessions Board (Sprint 9)
+- [x] `'confessions'` added to `BoardId` type + `BOARDS` array (emoji 🤫)
+- [x] `ANONYMOUS_BOARDS` set in `lib/types.ts` — boards where posts are force-anonymous server-side
+- [x] `POST /api/posts` strips `pseudoHandle` for any `ANONYMOUS_BOARDS` board (server-enforced)
+- [x] PostComposer shows anonymity notice when `confessions` board is selected
+- [x] Boards page shows "Anonymous + verified human — completely unlinkable" description
+- [x] All existing post/feed/search/vote logic unchanged — confessions posts just have `pseudoHandle=null`
+
 ### Reputation / Karma (Sprint 8)
 - [x] `karmaScore INTEGER` column on `humanUsers` — updated incrementally on every post/reply vote
 - [x] Karma tiers: Newcomer (0–9) / Contributor (10–99) / Trusted (100–499) / Elder (500+)
@@ -188,7 +196,7 @@ activeRoomId                                             — currently joined ro
 
 ### Database Schema (Key Tables)
 
-- `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode; indexed on `pseudoHandle` for mention autocomplete
+- `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode, **karmaScore** (integer); indexed on `pseudoHandle` for mention autocomplete
 - `posts` — id, title, body, boardId, nullifierHash, pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId, `type` ('text'|'poll'), `pollOptions` (JSONB), `pollEndsAt`
 - `pollVotes` — id, postId (FK→posts cascade), nullifierHash, optionIndex; UNIQUE(postId, nullifierHash) enforces sybil resistance
 - `replies` — id, postId, parentReplyId, content, nullifierHash, pseudoHandle, upvotes, downvotes
@@ -299,6 +307,8 @@ activeRoomId                                             — currently joined ro
 - [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)
 - [x] Sybil-resistant polls — Sprint 7 shipped
 - [x] Reputation/karma score — Sprint 8 shipped
+- [x] Confessions board (force-anonymous verified human posts) — Sprint 9 shipped
+- [ ] WLD tipping leaderboard + tip amount on posts (Sprint 9b)
 - [ ] Admin moderation queue for reports
 - [ ] Upgrade rate limiter to Upstash Redis for cross-instance enforcement
 - [ ] Add `connection_limit` to DATABASE_URL for Neon pooling
