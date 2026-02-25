@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       direction?: number
     }
 
-    if (!replyId || (direction !== 1 && direction !== -1 && direction !== 0)) {
+    if (!replyId || typeof direction !== 'number' || !Number.isInteger(direction) || (direction !== 1 && direction !== -1 && direction !== 0)) {
       return NextResponse.json({ success: false, error: 'Missing or invalid fields' }, { status: 400 })
     }
     if (!rateLimit(`reply-vote:${nullifierHash}`, 30, 60_000)) {

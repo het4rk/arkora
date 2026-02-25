@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrCreateUser, updateBio, updateIdentityMode } from '@/lib/db/users'
 import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
-import { sanitizeText } from '@/lib/sanitize'
+import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
+
+const VALID_IDENTITY_MODES = new Set(['anonymous', 'alias', 'named'])
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,8 +16,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Sanitize and length-cap username before storing
+    const sanitizedUsername = username ? sanitizeLine(username).slice(0, 50) : undefined
+
     const nullifierHash = walletToNullifier(walletAddress)
-    const user = await getOrCreateUser(nullifierHash, walletAddress, username ?? undefined)
+    const user = await getOrCreateUser(nullifierHash, walletAddress, sanitizedUsername)
 
     const res = NextResponse.json({ success: true, nullifierHash, user })
     // Set server-side identity cookie so protected endpoints can verify the caller
@@ -46,14 +51,20 @@ export async function PATCH(req: NextRequest) {
 
     const body = (await req.json()) as {
       bio?: string | null
-      identityMode?: 'anonymous' | 'alias' | 'named'
+      identityMode?: string
     }
     const { bio, identityMode } = body
     let user
     if (bio !== undefined) {
+      if (bio && bio.length > 500) {
+        return NextResponse.json({ success: false, error: 'Bio exceeds 500 characters' }, { status: 400 })
+      }
       user = await updateBio(nullifierHash, bio ? sanitizeText(bio) : null)
     } else if (identityMode !== undefined) {
-      await updateIdentityMode(nullifierHash, identityMode)
+      if (!VALID_IDENTITY_MODES.has(identityMode)) {
+        return NextResponse.json({ success: false, error: 'Invalid identity mode' }, { status: 400 })
+      }
+      await updateIdentityMode(nullifierHash, identityMode as 'anonymous' | 'alias' | 'named')
       return NextResponse.json({ success: true })
     } else {
       return NextResponse.json({ success: false, error: 'Nothing to update' }, { status: 400 })

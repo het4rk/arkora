@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     const { postId, direction } = (await req.json()) as { postId?: string; direction?: number }
 
-    if (!postId || (direction !== 1 && direction !== -1 && direction !== 0)) {
+    if (!postId || typeof direction !== 'number' || !Number.isInteger(direction) || (direction !== 1 && direction !== -1 && direction !== 0)) {
       return NextResponse.json(
         { success: false, error: 'Missing or invalid fields' },
         { status: 400 }

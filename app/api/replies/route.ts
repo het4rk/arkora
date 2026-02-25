@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createReply } from '@/lib/db/replies'
-import { sanitizeText, parseMentions } from '@/lib/sanitize'
+import { createReply, getReplyPostId } from '@/lib/db/replies'
+import { sanitizeLine, sanitizeText, parseMentions } from '@/lib/sanitize'
 import { isVerifiedHuman, getUsersByHandles } from '@/lib/db/users'
 import { getPostNullifier } from '@/lib/db/posts'
 import { createNotification } from '@/lib/db/notifications'
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     const replyBody = sanitizeText(rawBody)
-    const pseudoHandle = rawHandle ? sanitizeText(rawHandle) : undefined
+    const pseudoHandle = rawHandle ? sanitizeLine(rawHandle) : undefined
 
     if (replyBody.length > 10000) {
       return NextResponse.json(
@@ -55,6 +55,14 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'World ID verification required' },
         { status: 403 }
       )
+    }
+
+    // Validate parentReplyId belongs to the same post — prevents cross-post thread injection
+    if (parentReplyId) {
+      const parentPostId = await getReplyPostId(parentReplyId)
+      if (!parentPostId || parentPostId !== postId) {
+        return NextResponse.json({ success: false, error: 'Invalid parent reply' }, { status: 400 })
+      }
     }
 
     const reply = await createReply({ postId, body: replyBody, nullifierHash, parentReplyId, pseudoHandle, imageUrl: imageUrl ?? undefined })

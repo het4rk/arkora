@@ -115,6 +115,16 @@ export async function deleteReplyVote(
   }
 }
 
+/** Fetch the postId a reply belongs to. Used to validate parentReplyId. */
+export async function getReplyPostId(replyId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ postId: replies.postId })
+    .from(replies)
+    .where(eq(replies.id, replyId))
+    .limit(1)
+  return row?.postId ?? null
+}
+
 /** Look up the nullifier hash of a reply's author. */
 export async function getReplyNullifier(replyId: string): Promise<string | null> {
   const [row] = await db
