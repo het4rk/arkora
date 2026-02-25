@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Post, CommunityNote } from '@/lib/types'
 import { HumanBadge } from '@/components/ui/HumanBadge'
@@ -94,6 +94,7 @@ export function ThreadView({ postId }: Props) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [replyingTo, setReplyingTo] = useState<Reply | null>(null)
+  const [replySort, setReplySort] = useState<'top' | 'newest' | 'oldest'>('top')
   const [noteOpen, setNoteOpen] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
   const [noteSubmitting, setNoteSubmitting] = useState(false)
@@ -178,6 +179,24 @@ export function ThreadView({ postId }: Props) {
   }
 
   const { post, replies, notes } = data
+
+  const sortedReplies = useMemo(() => {
+    const sorted = [...replies]
+    switch (replySort) {
+      case 'newest':
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'oldest':
+        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        break
+      case 'top':
+      default:
+        sorted.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes))
+        break
+    }
+    return sorted
+  }, [replies, replySort])
+
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
 
   return (
@@ -332,12 +351,29 @@ export function ThreadView({ postId }: Props) {
         {/* Replies */}
         <div className="px-[5vw] py-5 space-y-3">
           {replies.length > 0 && (
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-4">
-              {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">
+                {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+              </p>
+              <div className="flex items-center gap-1">
+                {(['top', 'newest', 'oldest'] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => setReplySort(opt)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all active:scale-95 ${
+                      replySort === opt
+                        ? 'bg-accent/15 text-accent'
+                        : 'text-text-muted active:bg-white/[0.04]'
+                    }`}
+                  >
+                    {opt === 'top' ? 'Top' : opt === 'newest' ? 'New' : 'Old'}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
-          <ReplyTree replies={replies} onReplyTo={setReplyingTo} onDeleted={() => void fetchThread()} />
+          <ReplyTree replies={sortedReplies} onReplyTo={setReplyingTo} onDeleted={() => void fetchThread()} />
 
           {replies.length === 0 && (
             <p className="text-text-muted text-sm text-center py-12">

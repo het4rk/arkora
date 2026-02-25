@@ -1,6 +1,6 @@
 import { db } from './index'
 import { posts } from './schema'
-import { sql, ilike, or, and, isNull } from 'drizzle-orm'
+import { sql, ilike, or, and, isNull, desc } from 'drizzle-orm'
 import type { Post, BoardId } from '@/lib/types'
 
 function toPost(row: typeof posts.$inferSelect): Post {
@@ -58,27 +58,20 @@ export async function searchPosts(query: string, limit = 20): Promise<Post[]> {
     return rows.map(toPost)
   }
 
-  // Full-text search with relevance ranking
-  const rows = await db.execute<typeof posts.$inferSelect>(sql`
-    SELECT *
-    FROM posts
-    WHERE
-      deleted_at IS NULL
-      AND to_tsvector('english',
-        title || ' ' || body || ' ' ||
-        COALESCE(pseudo_handle, '') || ' ' || board_id
-      ) @@ websearch_to_tsquery('english', ${q})
-    ORDER BY
-      ts_rank(
-        to_tsvector('english',
-          title || ' ' || body || ' ' ||
-          COALESCE(pseudo_handle, '') || ' ' || board_id
-        ),
-        websearch_to_tsquery('english', ${q})
-      ) DESC,
-      created_at DESC
-    LIMIT ${limit}
-  `)
+  // Full-text search with relevance ranking.
+  // Uses db.select() so Drizzle maps snake_case columns to camelCase fields.
+  const tsVector = sql`to_tsvector('english', title || ' ' || body || ' ' || COALESCE(pseudo_handle, '') || ' ' || board_id)`
+  const tsQuery = sql`websearch_to_tsquery('english', ${q})`
 
-  return (rows as unknown as Array<typeof posts.$inferSelect>).map(toPost)
+  const rows = await db
+    .select()
+    .from(posts)
+    .where(and(
+      isNull(posts.deletedAt),
+      sql`${tsVector} @@ ${tsQuery}`
+    ))
+    .orderBy(sql`ts_rank(${tsVector}, ${tsQuery}) DESC`, desc(posts.createdAt))
+    .limit(limit)
+
+  return rows.map(toPost)
 }
