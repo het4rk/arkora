@@ -190,7 +190,10 @@ Two separate auth steps:
 
 1. **walletAuth** (SIWE) — runs automatically after `hasOnboarded=true`. User signs in World App → `POST /api/auth/wallet` verifies signature → sets httpOnly cookies: `arkora-nh` (nullifierHash), `wallet-address`.
 
-2. **World ID verification** — user-triggered. Mobile: MiniKit `verify` command. Desktop: IDKit QR code modal (`hooks/useVerification.ts` + `components/auth/VerifyHuman.tsx`). Sends proof to `POST /api/auth/verify`.
+2. **World ID verification** — user-triggered. Mobile: MiniKit `verify` command. Desktop: IDKit QR code modal (`hooks/useVerification.ts` + `components/auth/VerifyHuman.tsx`). Sends proof to `POST /api/verify`.
+   - **Engine: Onchain.** Proof is validated via viem `readContract` against WorldIDRouter (`0x17B354dD2595411ff79041f930e491A4Df39A278`) on World Chain mainnet (chain 480) — not Worldcoin's cloud API. See `lib/worldid.ts`.
+   - `verifiedBlockNumber` (bigint, nullable) recorded at time of verification. Shown in profile + settings as "Verified on World Chain · block #N".
+   - Worldscan link: `https://worldscan.org/address/{walletAddress}` shown on public profiles and settings.
 
 Cookie names: `arkora-nh`, `wallet-address`, `siwe-nonce`. Server reads identity via `getCallerNullifier()`.
 

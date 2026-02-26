@@ -11,6 +11,7 @@ import {
   primaryKey,
   jsonb,
   unique,
+  bigint,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
@@ -98,6 +99,8 @@ export const humanUsers = pgTable(
     // Wallet-only (SIWE) users start as false and cannot post/reply/vote.
     // DEFAULT true so existing verified users keep access after migration.
     worldIdVerified: boolean('world_id_verified').default(true).notNull(),
+    // World Chain block number at time of proof verification. Null for users verified before Sprint 13.
+    verifiedBlockNumber: bigint('verified_block_number', { mode: 'bigint' }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({

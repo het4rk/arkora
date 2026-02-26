@@ -324,6 +324,25 @@ export function ProfileView() {
                 )}
               </div>
 
+              {/* World Chain identity link */}
+              {user?.walletAddress && !user.walletAddress.startsWith('idkit_') ? (
+                <a
+                  href={`https://worldscan.org/address/${user.walletAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 flex items-center gap-1.5 text-[11px] text-accent/70 hover:text-accent transition-colors w-fit"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg>
+                  Verified on World Chain
+                  {user.verifiedBlockNumber && (
+                    <span className="text-text-muted">· block #{user.verifiedBlockNumber.toLocaleString()}</span>
+                  )}
+                </a>
+              ) : null}
+
               {user?.bio ? (
                 <button onClick={openEdit} className="mt-3 text-left w-full group">
                   <p className="text-text-secondary text-sm leading-relaxed group-active:opacity-70 transition-opacity">

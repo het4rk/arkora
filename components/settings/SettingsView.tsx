@@ -349,6 +349,52 @@ export function SettingsView() {
             )}
           </section>
 
+          {/* ── World Chain ──────────────────────────────────────────── */}
+          {isVerified && (
+            <section className="space-y-3">
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">World Chain Identity</p>
+              <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
+                <div className="px-4 py-3.5">
+                  <p className="text-text text-sm font-semibold mb-0.5">Verified on-chain</p>
+                  <p className="text-text-muted text-xs leading-relaxed">
+                    Your humanity proof was validated by World Chain&apos;s smart contracts — not by a central server.
+                  </p>
+                </div>
+                {walletAddress && !walletAddress.startsWith('idkit_') && (
+                  <div className="px-4 py-3.5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-text-muted text-xs mb-0.5">Wallet</p>
+                      <p className="text-text text-sm font-mono truncate">
+                        {walletAddress.slice(0, 6)}…{walletAddress.slice(-4)}
+                      </p>
+                    </div>
+                    <a
+                      href={`https://worldscan.org/address/${walletAddress}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 flex items-center gap-1 text-accent text-xs font-semibold active:opacity-70 transition-opacity"
+                    >
+                      View
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                      </svg>
+                    </a>
+                  </div>
+                )}
+                {user?.verifiedBlockNumber && (
+                  <div className="px-4 py-3.5 flex items-center justify-between">
+                    <span className="text-text-muted text-xs">Verified at block</span>
+                    <span className="text-text text-xs font-mono tabular-nums">
+                      #{user.verifiedBlockNumber.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* ── Privacy ──────────────────────────────────────────── */}
           <section className="space-y-3">
             <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">Privacy</p>

@@ -65,6 +65,8 @@ export interface HumanUser {
   bio: string | null
   identityMode: 'anonymous' | 'alias' | 'named'
   karmaScore: number
+  worldIdVerified: boolean
+  verifiedBlockNumber: number | null
   createdAt: Date
 }
 

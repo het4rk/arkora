@@ -121,6 +121,28 @@ export function PublicProfileView({ nullifierHash }: Props) {
                 <div className="min-w-0 flex flex-col gap-1">
                   <HumanBadge label={displayName} size="lg" />
                   {data?.user && <KarmaBadge score={data.user.karmaScore} showScore />}
+                  {data?.user?.worldIdVerified && wallet && !wallet.startsWith('idkit_') ? (
+                    <a
+                      href={`https://worldscan.org/address/${wallet}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-[10px] text-accent/70 hover:text-accent transition-colors leading-none"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                      </svg>
+                      Verified on World Chain
+                    </a>
+                  ) : data?.user?.worldIdVerified ? (
+                    <span className="flex items-center gap-1 text-[10px] text-accent/70 leading-none">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                      </svg>
+                      Verified on World Chain
+                    </span>
+                  ) : null}
                 </div>
               </div>
 

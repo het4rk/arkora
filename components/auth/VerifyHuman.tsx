@@ -27,16 +27,16 @@ export function VerifyHuman() {
 
   const subtitles = {
     detecting: 'Detecting your environment…',
-    minikit: 'Arkora uses World ID Orb verification to guarantee every voice is from a real, unique human. No accounts. No tracking. Your identity stays private.',
-    'mobile-browser': "You're in a browser, not the World App. Tap below — World App will open automatically to verify you.",
-    desktop: 'Scan the QR code with World App on your phone to verify your humanity. Your identity stays private.',
+    minikit: 'Arkora uses World ID Orb verification. Your proof is validated directly on World Chain — not on our servers. One scan. Your humanity is permanent on-chain.',
+    'mobile-browser': "You're in a browser, not the World App. Tap below — World App will open automatically to verify you. Your proof is validated on World Chain.",
+    desktop: 'Scan the QR code with World App on your phone. Your proof is validated on World Chain — not on a central server.',
   }
 
   const footers = {
     detecting: 'Powered by World ID',
-    minikit: 'Powered by World ID — Orb verification required',
+    minikit: 'Proof validated on World Chain · Powered by World ID',
     'mobile-browser': 'World App will open on your phone or tablet',
-    desktop: 'Scan the QR code with World App on your phone',
+    desktop: 'Proof validated on World Chain · Scan with World App',
   }
 
   const buttonLabel =

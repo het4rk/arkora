@@ -4,6 +4,8 @@ A provably human anonymous message board. Every voice is verified.
 
 Arkora is a World App miniapp where users post, vote, and converse anonymously — but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities. TikTok-style scroll feed, 4chan anonymity, Reddit boards structure — every voice cryptographically guaranteed real.
 
+World ID Orb proofs are validated directly on World Chain via the WorldIDRouter smart contract — not on Worldcoin's centralized servers. Proof validation is settled by blockchain consensus.
+
 **Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs) · Community Notes · Bookmarks · Boards · Following feed · Local feed (GPS radius) · E2E encrypted DMs · @ mentions · Live ephemeral Rooms · Block / report / moderation (auto-hide at 5 reports) · WLD tips & subscriptions · Light + dark theme · GDPR-compliant account deletion · Privacy Policy + Terms of Service
 
 ---
@@ -19,8 +21,8 @@ Arkora is a World App miniapp where users post, vote, and converse anonymously �
 | File storage | Hippius S3 (decentralized, S3-compatible) |
 | State | Zustand (with localStorage persistence) |
 | Animations | Framer Motion |
-| Blockchain | World Chain (viem) |
-| Identity | Worldcoin World ID (MiniKit) |
+| Blockchain | World Chain (viem, onchain proof verification) |
+| Identity | Worldcoin World ID 4.0 (MiniKit + IDKit, Orb verified) |
 
 ---
 
@@ -132,8 +134,7 @@ World App opens miniapp
   → Zustand store hydrates: isVerified=true, nullifierHash, user
 ```
 
-World ID proof (Orb verification) is a separate step triggered by the user
-tapping "Verify & join" on the onboarding screen or "Verify with World ID" in the drawer.
+World ID proof (Orb verification) is a separate step triggered by the user tapping "Verify & join" on the onboarding screen or "Verify with World ID" in the drawer. The proof is validated onchain via the WorldIDRouter contract on World Chain (no centralized API). The verification block number is stored and displayed in-app on profiles and in settings, with a link to worldscan.org.
 
 ### Identity Modes
 

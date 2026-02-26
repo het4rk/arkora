@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { type ISuccessResult } from '@worldcoin/minikit-js'
-import { verifyWorldIdProof } from '@/lib/worldid'
+import { verifyWorldIdProof, getLatestWorldChainBlock } from '@/lib/worldid'
 import { getOrCreateUser, getUserByNullifier, setWorldIdVerified } from '@/lib/db/users'
 import { walletToNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
@@ -102,13 +102,17 @@ export async function POST(req: NextRequest) {
     const { nullifierHash: sessionHash, user: sessionUser } =
       await resolveIdentity(result.nullifierHash, worldIdUser)
 
-    // Mark the canonical session identity as World ID verified
-    await setWorldIdVerified(sessionHash)
+    // Mark the canonical session identity as World ID verified, recording the block number
+    const blockNumber = await getLatestWorldChainBlock()
+    await setWorldIdVerified(sessionHash, blockNumber > 0n ? blockNumber : undefined)
 
     const res = NextResponse.json({
       success: true,
       nullifierHash: sessionHash,
-      user: sessionUser,
+      user: {
+        ...sessionUser,
+        verifiedBlockNumber: blockNumber > 0n ? Number(blockNumber) : null,
+      },
     })
     setCookieOnResponse(res, sessionHash)
     return res
