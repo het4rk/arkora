@@ -253,6 +253,7 @@ activeRoomId                                             — currently joined ro
 - **Country code** inferred from `x-vercel-ip-country` header. GPS optional, sent only when `locationEnabled=true`.
 - **`ADMIN_NULLIFIER_HASHES` env var** must be set in Vercel Dashboard for `/api/admin/metrics` to be accessible (comma-separated list of admin nullifier hashes).
 - **OG image and PWA icons** (`/og-image.png`, `/icon-192.png`, `/icon-512.png`, `/favicon.ico`, `/apple-touch-icon.png`) must be created and placed in `public/`. See TIER 1 in the grant readiness plan.
+- **Neon DB backups** — Neon Free tier provides 7-day automatic backup retention by default. To manually backup: `pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql`. No additional configuration required for MVP.
 
 ---
 
