@@ -47,6 +47,17 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
         setError(json.error ?? 'Failed to create room')
         return
       }
+      // Auto-join creator as participant so RoomView can find myParticipant
+      const joinRes = await fetch(`/api/rooms/${json.data.id}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayHandle: resolveHostHandle(), identityMode }),
+      })
+      const joinJson = (await joinRes.json()) as { success: boolean; error?: string }
+      if (!joinJson.success) {
+        setError(joinJson.error ?? 'Failed to join room')
+        return
+      }
       setTitle('')
       onCreated(json.data.id)
     } catch {

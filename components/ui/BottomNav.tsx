@@ -72,7 +72,7 @@ export function BottomNav() {
               onClick={() => haptic('light')}
               className={cn(
                 'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
-                pathname === '/' ? 'text-white' : 'text-text-muted'
+                pathname === '/' ? 'text-accent' : 'text-text-muted'
               )}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -81,7 +81,7 @@ export function BottomNav() {
                 strokeLinecap="round" strokeLinejoin="round">
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>
-              <span className={cn('text-[10px] font-medium', pathname === '/' && 'text-white')}>
+              <span className={cn('text-[10px] font-medium', pathname === '/' && 'text-accent')}>
                 Feed
               </span>
             </Link>
@@ -119,7 +119,7 @@ export function BottomNav() {
               onClick={() => haptic('light')}
               className={cn(
                 'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
-                pathname === '/notifications' ? 'text-white' : 'text-text-muted'
+                pathname === '/notifications' ? 'text-accent' : 'text-text-muted'
               )}
             >
               <span className="relative">
@@ -134,7 +134,7 @@ export function BottomNav() {
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />
                 )}
               </span>
-              <span className={cn('text-[10px] font-medium', pathname === '/notifications' && 'text-white')}>
+              <span className={cn('text-[10px] font-medium', pathname === '/notifications' && 'text-accent')}>
                 Alerts
               </span>
             </Link>
@@ -145,7 +145,7 @@ export function BottomNav() {
               onClick={() => haptic('light')}
               className={cn(
                 'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
-                pathname === '/profile' ? 'text-white' : 'text-text-muted'
+                pathname === '/profile' ? 'text-accent' : 'text-text-muted'
               )}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -155,7 +155,7 @@ export function BottomNav() {
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
-              <span className={cn('text-[10px] font-medium', pathname === '/profile' && 'text-white')}>
+              <span className={cn('text-[10px] font-medium', pathname === '/profile' && 'text-accent')}>
                 Profile
               </span>
             </Link>

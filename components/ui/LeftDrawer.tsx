@@ -89,10 +89,10 @@ export function LeftDrawer() {
             }}
           >
             {/* Subtle top specular line */}
-            <div className="absolute inset-x-0 top-0 h-px bg-white/20 pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-px bg-border/20 pointer-events-none" />
 
             {/* ── Identity header ───────────────────────────────────── */}
-            <div className="px-6 pt-[max(env(safe-area-inset-top),48px)] pb-5 border-b border-white/[0.07]">
+            <div className="px-6 pt-[max(env(safe-area-inset-top),48px)] pb-5 border-b border-border/20">
               {isVerified ? (
                 <>
                   <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
@@ -188,7 +188,7 @@ export function LeftDrawer() {
               </div>}
 
               {/* Divider */}
-              <div className="h-px bg-white/[0.07]" />
+              <div className="h-px bg-border/20" />
 
               {/* Appearance */}
               <div>
@@ -221,7 +221,7 @@ export function LeftDrawer() {
             </div>
 
             {/* ── Footer ───────────────────────────────────────────── */}
-            <div className="px-6 pb-[max(env(safe-area-inset-bottom),24px)] pt-4 border-t border-white/[0.07] space-y-3">
+            <div className="px-6 pb-[max(env(safe-area-inset-bottom),24px)] pt-4 border-t border-border/20 space-y-3">
               <button
                 onClick={() => { setDrawerOpen(false); router.push('/rooms') }}
                 className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-text-secondary text-sm active:opacity-70 transition-opacity"

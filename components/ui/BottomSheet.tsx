@@ -92,11 +92,11 @@ export function BottomSheet({ isOpen, onClose, children, title, className }: Pro
               onTouchMove={onHandleTouchMove}
               onTouchEnd={onHandleTouchEnd}
             >
-              <div className="w-9 h-[3px] rounded-full bg-white/20" />
+              <div className="w-9 h-[3px] rounded-full bg-border/60" />
             </div>
 
             {title && (
-              <div className="px-5 pt-2 pb-4 border-b border-white/[0.07]">
+              <div className="px-5 pt-2 pb-4 border-b border-border/20">
                 <h2 className="text-text font-bold text-lg tracking-[-0.02em]">{title}</h2>
               </div>
             )}

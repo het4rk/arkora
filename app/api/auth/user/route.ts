@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getOrCreateUser, updateBio, updateIdentityMode } from '@/lib/db/users'
+import { getOrCreateUser, updateBio, updateIdentityMode, updatePseudoHandle, getUserByWalletAddressNonWlt } from '@/lib/db/users'
 import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
 import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
 import { rateLimit } from '@/lib/rateLimit'
@@ -27,7 +27,16 @@ export async function POST(req: NextRequest) {
 
     const nullifierHash = walletToNullifier(walletAddress)
     // worldIdVerified: false — wallet-auth only, requires World ID verify to unlock actions
-    const user = await getOrCreateUser(nullifierHash, walletAddress, sanitizedUsername, false)
+    let user = await getOrCreateUser(nullifierHash, walletAddress, sanitizedUsername, false)
+
+    // One-time migration: if the wlt_ record has no pseudoHandle but an older World ID
+    // record for the same wallet does, copy it over.
+    if (!user.pseudoHandle) {
+      const worldIdRecord = await getUserByWalletAddressNonWlt(walletAddress)
+      if (worldIdRecord?.pseudoHandle) {
+        user = await updatePseudoHandle(nullifierHash, worldIdRecord.pseudoHandle)
+      }
+    }
 
     const res = NextResponse.json({ success: true, nullifierHash, user })
     // Set server-side identity cookie so protected endpoints can verify the caller
@@ -59,8 +68,9 @@ export async function PATCH(req: NextRequest) {
     const body = (await req.json()) as {
       bio?: string | null
       identityMode?: string
+      pseudoHandle?: string | null
     }
-    const { bio, identityMode } = body
+    const { bio, identityMode, pseudoHandle } = body
     let user
     if (bio !== undefined) {
       if (bio && bio.length > 500) {
@@ -73,6 +83,13 @@ export async function PATCH(req: NextRequest) {
       }
       await updateIdentityMode(nullifierHash, identityMode as 'anonymous' | 'alias' | 'named')
       return NextResponse.json({ success: true })
+    } else if (pseudoHandle !== undefined) {
+      const sanitized = pseudoHandle ? sanitizeLine(pseudoHandle).slice(0, 50) : null
+      if (!sanitized) {
+        return NextResponse.json({ success: false, error: 'Handle cannot be empty' }, { status: 400 })
+      }
+      user = await updatePseudoHandle(nullifierHash, sanitized)
+      return NextResponse.json({ success: true, user })
     } else {
       return NextResponse.json({ success: false, error: 'Nothing to update' }, { status: 400 })
     }

@@ -132,6 +132,18 @@ export async function getUsersByNullifiers(
   return map
 }
 
+export async function getUserByWalletAddressNonWlt(walletAddress: string): Promise<HumanUser | null> {
+  const [row] = await db
+    .select()
+    .from(humanUsers)
+    .where(and(
+      eq(humanUsers.walletAddress, walletAddress),
+      sql`${humanUsers.nullifierHash} NOT LIKE 'wlt_%'`
+    ))
+    .limit(1)
+  return row ? toUser(row) : null
+}
+
 export async function isVerifiedHuman(nullifierHash: string): Promise<boolean> {
   const [row] = await db
     .select({ v: sql<number>`1` })
