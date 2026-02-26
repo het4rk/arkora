@@ -247,25 +247,26 @@ activeRoomId                                             — currently joined ro
 
 ## Known Issues / Gotchas
 
-- **`next-auth` installed but unused.** Custom SIWE flow is used instead. Safe to remove.
 - **Rate limiter is in-process.** Fresh per Vercel cold start / instance. Fine for 20 users; upgrade to Upstash Redis at scale.
 - **Neon 20-connection limit.** Add `?connection_limit=10` to `DATABASE_URL` if connection errors appear.
 - **DM private key in localStorage.** Users lose DM history if they clear browser data. By design for MVP.
 - **Country code** inferred from `x-vercel-ip-country` header. GPS optional, sent only when `locationEnabled=true`.
+- **`ADMIN_NULLIFIER_HASHES` env var** must be set in Vercel Dashboard for `/api/admin/metrics` to be accessible (comma-separated list of admin nullifier hashes).
+- **OG image and PWA icons** (`/og-image.png`, `/icon-192.png`, `/icon-512.png`, `/favicon.ico`, `/apple-touch-icon.png`) must be created and placed in `public/`. See TIER 1 in the grant readiness plan.
 
 ---
 
 ## Deployment Checklist
 
 - [ ] `DATABASE_URL` (Neon, with SSL)
-- [ ] `NEXTAUTH_SECRET` (random 32-char)
-- [ ] `NEXTAUTH_URL` (production domain)
 - [ ] `PUSHER_*` + `NEXT_PUBLIC_PUSHER_*` vars
 - [ ] `HIPPIUS_*` vars
 - [ ] `NEXT_PUBLIC_APP_ID` / `APP_ID` matching Developer Portal
 - [ ] `WORLDCOIN_API_KEY` — World App push notifications (Worldcoin Developer Portal)
+- [ ] `ADMIN_NULLIFIER_HASHES` — comma-separated admin nullifier hashes for `/api/admin/metrics`
 - [ ] Developer Portal redirect URL = production domain
 - [ ] `pnpm db:push` run against production DB
+- [ ] UptimeRobot monitor on `https://arkora.vercel.app/api/health`
 
 ---
 
@@ -324,26 +325,38 @@ activeRoomId                                             — currently joined ro
 
 ## Next Steps / Future Work
 
-- [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)
-- [x] Sybil-resistant polls — Sprint 7 shipped
-- [x] Reputation/karma score — Sprint 8 shipped
-- [x] Confessions board (force-anonymous verified human posts) — Sprint 9 shipped
-- [x] Sign-out persistence fix (hasExplicitlySignedOut flag) — Sprint 10 shipped
-- [x] Report threshold auto-hide at 5 reports — Sprint 10 shipped
-- [x] Like/quote/repost in-app notifications — Sprint 10 shipped
-- [x] Vote reactions panel (who liked/disliked) — Sprint 10 shipped
-- [x] Repost feature (straight repost + quote) — Sprint 10 shipped
-- [ ] WLD tipping leaderboard + tip amount on posts (Sprint 9b)
-- [ ] Admin moderation queue for reports
-- [ ] Upgrade rate limiter to Upstash Redis for cross-instance enforcement
-- [ ] Add `connection_limit` to DATABASE_URL for Neon pooling
-- [ ] Remove unused `next-auth` package
-- [ ] World Chain smart contract for on-chain votes (`contracts/ArkVotes.sol`)
-- [x] Rooms feature — Phase 1 text-only shipped
+### Sprint 12 — Go-Live & Grant Readiness (shipped)
+- [x] `GET /api/health` — health check endpoint (DB ping, returns 503 on failure)
+- [x] `.github/workflows/ci.yml` — CI pipeline (lint + tsc + build on push/PR)
+- [x] OG metadata — `metadataBase`, `openGraph`, `twitter`, `icons` in `app/layout.tsx`
+- [x] DB indexes — `human_users_wallet_idx` (walletAddress), `posts_report_count_idx` (reportCount); both live in Neon
+- [x] Auth rate limiting — `/api/nonce` (10/min/IP), `/api/auth/route` (5/min/IP), `/api/verify` (5/min/IP)
+- [x] Account deletion — `DELETE /api/user` (anonymizes posts/replies, deletes user row, clears cookies); Settings UI with confirmation step
+- [x] Privacy Policy — `/privacy/page.tsx`
+- [x] Terms of Service — `/terms/page.tsx`
+- [x] Legal links in Settings → About section
+- [x] Admin metrics — `GET /api/admin/metrics` (DAU, MAU, total users, verified humans, posts/day, board breakdown, active rooms); gated by `ADMIN_NULLIFIER_HASHES` env var
+- [x] Subscription fix — creator must be both `identityMode === 'named'` AND `worldIdVerified` to accept subscriptions
+
+### Remaining Launch Work (manual / not yet shipped)
+- [ ] **Create brand assets**: `/public/og-image.png` (1200×630), `/public/icon-192.png`, `/public/icon-512.png`, `/public/favicon.ico`, `/public/apple-touch-icon.png`
+- [ ] **Rotate all production secrets**: Neon password, Pusher app, Hippius key (keys were in git history on private repo)
+- [ ] **Set `ADMIN_NULLIFIER_HASHES`** in Vercel Dashboard — your nullifier hash for accessing `/api/admin/metrics`
+- [ ] **UptimeRobot**: monitor `https://arkora.vercel.app/api/health` every 5 minutes
+- [ ] **Upgrade rate limiter** to Upstash Redis for cross-instance enforcement at scale
+- [ ] **Upgrade DB driver** to `@neondatabase/serverless` to eliminate TCP connection limits
+- [ ] **Pusher Starter plan** ($49/mo) for 500 concurrent connections when user base grows
 - [ ] Rooms Phase 2 — audio (WebRTC or LiveKit)
-- [ ] Multi-language support
-- [x] Rooms creator auto-join fix (was showing "Room not found" on creation)
-- [x] Profile display name: pseudoHandle migration from old World ID record on login
-- [x] Profile display name: PATCH /api/auth/user now accepts pseudoHandle
-- [x] Profile display name: "Set display name" inline edit when no handle exists
-- [x] Light theme polish — active nav items text-accent (was invisible text-white), BottomSheet drag handle + LeftDrawer separators use theme-aware border-border tokens
+- [ ] Admin moderation queue for reports
+- [ ] World Chain smart contract for on-chain votes (`contracts/ArkVotes.sol`)
+- [ ] Testing (Vitest unit + Playwright E2E)
+- [ ] Custom domain (`arkora.world` or similar)
+
+### Previous Sprints
+- [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)
+- [x] Sybil-resistant polls — Sprint 7
+- [x] Reputation/karma score — Sprint 8
+- [x] Confessions board — Sprint 9
+- [x] Sign-out persistence, report auto-hide, like/quote/repost notifications, vote reactions, repost feature — Sprint 10
+- [x] Rooms Phase 1 (text-only ephemeral) — Sprint 10
+- [x] Rooms creator auto-join fix, profile display name migration, light theme polish — Sprint 11

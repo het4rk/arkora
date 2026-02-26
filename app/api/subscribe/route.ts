@@ -77,8 +77,8 @@ export async function POST(req: NextRequest) {
     if (!creator) {
       return NextResponse.json({ success: false, error: 'Creator not found' }, { status: 404 })
     }
-    if (creator.identityMode !== 'named') {
-      return NextResponse.json({ success: false, error: 'Subscriptions are only available for named profiles' }, { status: 403 })
+    if (creator.identityMode !== 'named' || !(await isVerifiedHuman(creatorHash))) {
+      return NextResponse.json({ success: false, error: 'Subscriptions are only available for verified named profiles' }, { status: 403 })
     }
 
     const sub = await upsertSubscription(subscriberHash, creatorHash, creator.walletAddress, amountWld, txId)

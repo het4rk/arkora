@@ -51,6 +51,8 @@ export const posts = pgTable(
     nullifierCreatedIdx: index('posts_nullifier_created_idx').on(table.nullifierHash, table.createdAt),
     // Local feed: filter by country then sort by time
     countryCreatedIdx: index('posts_country_created_idx').on(table.countryCode, table.createdAt),
+    // Feed queries filter reportCount < 5 on every request
+    reportCountIdx: index('posts_report_count_idx').on(table.reportCount),
   })
 )
 
@@ -101,6 +103,8 @@ export const humanUsers = pgTable(
   (table) => ({
     // Speeds up @mention autocomplete: pseudoHandle ILIKE prefix% + identityMode filter
     pseudoHandleIdx: index('human_users_pseudo_handle_idx').on(table.pseudoHandle),
+    // Speeds up getUserByWalletAddressNonWlt — runs on every login
+    walletIdx: index('human_users_wallet_idx').on(table.walletAddress),
   })
 )
 

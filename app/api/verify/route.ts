@@ -3,6 +3,7 @@ import { type ISuccessResult } from '@worldcoin/minikit-js'
 import { verifyWorldIdProof } from '@/lib/worldid'
 import { getOrCreateUser, getUserByNullifier, setWorldIdVerified } from '@/lib/db/users'
 import { walletToNullifier } from '@/lib/serverAuth'
+import { rateLimit } from '@/lib/rateLimit'
 
 interface RequestBody {
   payload: ISuccessResult
@@ -46,6 +47,11 @@ function setCookieOnResponse(res: ReturnType<typeof NextResponse.json>, nullifie
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    if (!rateLimit(`verify:${ip}`, 5, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = (await req.json()) as RequestBody
     const { payload, action, walletAddress, signal } = body
 

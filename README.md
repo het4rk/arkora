@@ -4,7 +4,7 @@ A provably human anonymous message board. Every voice is verified.
 
 Arkora is a World App miniapp where users post, vote, and converse anonymously — but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities. TikTok-style scroll feed, 4chan anonymity, Reddit boards structure — every voice cryptographically guaranteed real.
 
-**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs) · Community Notes · Bookmarks · Boards · Following feed · Local feed (GPS radius) · E2E encrypted DMs · @ mentions · Live ephemeral Rooms · Block / report / moderation (auto-hide at 5 reports) · WLD tips & subscriptions · Light + dark theme
+**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs) · Community Notes · Bookmarks · Boards · Following feed · Local feed (GPS radius) · E2E encrypted DMs · @ mentions · Live ephemeral Rooms · Block / report / moderation (auto-hide at 5 reports) · WLD tips & subscriptions · Light + dark theme · GDPR-compliant account deletion · Privacy Policy + Terms of Service
 
 ---
 
@@ -78,6 +78,9 @@ HIPPIUS_SECRET_ACCESS_KEY=your-secret-key
 HIPPIUS_BUCKET=arkora-uploads
 HIPPIUS_S3_ENDPOINT=https://s3.hippius.com
 HIPPIUS_PUBLIC_URL=https://s3.hippius.com
+
+# Admin metrics (comma-separated nullifier hashes that can access /api/admin/metrics)
+ADMIN_NULLIFIER_HASHES=0xabc123...
 ```
 
 ### 3. Push the database schema

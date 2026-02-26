@@ -4,6 +4,7 @@ import {
   verifySiweMessage,
   type MiniAppWalletAuthSuccessPayload,
 } from '@worldcoin/minikit-js'
+import { rateLimit } from '@/lib/rateLimit'
 
 interface RequestBody {
   payload: MiniAppWalletAuthSuccessPayload
@@ -12,6 +13,11 @@ interface RequestBody {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    if (!rateLimit(`walletauth:${ip}`, 5, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = (await req.json()) as RequestBody
     const { payload, nonce } = body
 

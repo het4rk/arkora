@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+      - name: Build
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost/placeholder
+          NEXTAUTH_SECRET: placeholder-secret-32-chars-xxxxxxxxx
+          PUSHER_APP_ID: '1'
+          PUSHER_KEY: placeholder
+          PUSHER_SECRET: placeholder
+          PUSHER_CLUSTER: us2
+          NEXT_PUBLIC_PUSHER_KEY: placeholder
+          NEXT_PUBLIC_PUSHER_CLUSTER: us2
+          NEXT_PUBLIC_APP_ID: app_placeholder
+          NEXT_PUBLIC_ACTION_ID: verifyhuman
+          APP_ID: app_placeholder
+          NEXT_PUBLIC_CHAIN_ID: '480'
+          NEXT_PUBLIC_WC_RPC: https://worldchain-mainnet.g.alchemy.com/public
+          HIPPIUS_ACCESS_KEY_ID: placeholder
+          HIPPIUS_SECRET_ACCESS_KEY: placeholder
+          HIPPIUS_BUCKET: arkora-uploads
+          HIPPIUS_S3_ENDPOINT: https://s3.hippius.com
+          HIPPIUS_PUBLIC_URL: https://s3.hippius.com

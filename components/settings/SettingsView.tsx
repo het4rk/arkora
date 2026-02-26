@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkoraStore'
 import { generateAlias } from '@/lib/session'
@@ -50,6 +51,8 @@ export function SettingsView() {
   } = useArkoraStore()
 
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // ── Subscriptions state ───────────────────────────────────────────────────
   interface SubRow {
@@ -99,6 +102,17 @@ export function SettingsView() {
       const generated = generateAlias(nullifierHash)
       setPersistentAlias(generated)
       setAliasDraft(generated)
+    }
+  }
+
+  async function deleteAccount() {
+    setDeleting(true)
+    try {
+      await fetch('/api/user', { method: 'DELETE' })
+      signOut()
+      window.location.href = '/'
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -295,6 +309,44 @@ export function SettingsView() {
                 <span>Sign in again</span>
               </button>
             )}
+            {isVerified && !deleteConfirm && (
+              <button
+                onClick={() => setDeleteConfirm(true)}
+                className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-downvote/50 text-sm active:opacity-70 transition-opacity"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4h6v2" />
+                </svg>
+                <span>Delete account</span>
+              </button>
+            )}
+            {isVerified && deleteConfirm && (
+              <div className="glass rounded-[var(--r-lg)] px-4 py-4 space-y-3">
+                <p className="text-text text-sm font-semibold">Delete account?</p>
+                <p className="text-text-muted text-xs leading-relaxed">
+                  This permanently removes your profile, anonymizes all your posts, and cannot be undone.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void deleteAccount()}
+                    disabled={deleting}
+                    className="flex-1 py-2.5 bg-downvote text-white text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
+                  >
+                    {deleting ? 'Deleting…' : 'Yes, delete'}
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(false)}
+                    className="flex-1 py-2.5 glass text-text-secondary text-sm font-semibold rounded-[var(--r-md)] active:opacity-70 transition-opacity"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* ── Privacy ──────────────────────────────────────────── */}
@@ -434,6 +486,22 @@ export function SettingsView() {
                 <span className="text-text-muted text-sm">Version</span>
                 <span className="text-text-muted text-sm">1.0.0</span>
               </div>
+              <Link href="/privacy" className="px-4 py-3.5 flex items-center justify-between active:opacity-60 transition-opacity">
+                <span className="text-text-muted text-sm">Privacy Policy</span>
+                <svg width="7" height="12" viewBox="0 0 7 12" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  className="text-text-muted/50 rotate-180">
+                  <path d="M6 1L1 6l5 5" />
+                </svg>
+              </Link>
+              <Link href="/terms" className="px-4 py-3.5 flex items-center justify-between active:opacity-60 transition-opacity">
+                <span className="text-text-muted text-sm">Terms of Service</span>
+                <svg width="7" height="12" viewBox="0 0 7 12" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  className="text-text-muted/50 rotate-180">
+                  <path d="M6 1L1 6l5 5" />
+                </svg>
+              </Link>
               <div className="px-4 py-3.5">
                 <p className="text-text-muted text-xs text-center leading-relaxed">
                   Every voice is a verified human.<br />
