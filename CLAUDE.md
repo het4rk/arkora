@@ -342,4 +342,8 @@ activeRoomId                                             — currently joined ro
 - [x] Rooms feature — Phase 1 text-only shipped
 - [ ] Rooms Phase 2 — audio (WebRTC or LiveKit)
 - [ ] Multi-language support
-- [ ] Light theme polish
+- [x] Rooms creator auto-join fix (was showing "Room not found" on creation)
+- [x] Profile display name: pseudoHandle migration from old World ID record on login
+- [x] Profile display name: PATCH /api/auth/user now accepts pseudoHandle
+- [x] Profile display name: "Set display name" inline edit when no handle exists
+- [x] Light theme polish — active nav items text-accent (was invisible text-white), BottomSheet drag handle + LeftDrawer separators use theme-aware border-border tokens
