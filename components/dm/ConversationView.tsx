@@ -32,6 +32,7 @@ export function ConversationView({ otherHash }: Props) {
   const [isSending, setIsSending] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [noKey, setNoKey] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   // Track the latest message timestamp for the Pusher duplicate-guard
@@ -60,7 +61,9 @@ export function ConversationView({ otherHash }: Props) {
   async function load() {
     if (!nullifierHash) return
     setIsLoading(true)
+    setLoadError(false)
 
+    try {
     const [keyRes, profileRes, msgsRes] = await Promise.all([
       fetch(`/api/dm/keys?nullifierHash=${encodeURIComponent(otherHash)}`),
       fetch(`/api/u/${encodeURIComponent(otherHash)}`),
@@ -110,6 +113,10 @@ export function ConversationView({ otherHash }: Props) {
     }
     setMessages(chronological)
     setIsLoading(false)
+    } catch {
+      setLoadError(true)
+      setIsLoading(false)
+    }
   }
 
   // Subscribe to Pusher for real-time incoming messages (replaces 7s polling)
@@ -241,7 +248,20 @@ export function ConversationView({ otherHash }: Props) {
                 ))}
               </div>
             )}
-            {!isLoading && messages.length === 0 && (
+            {!isLoading && loadError && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <p className="text-text font-semibold mb-2">Could not load messages</p>
+                <p className="text-text-muted text-sm mb-5">Check your connection and try again.</p>
+                <button
+                  type="button"
+                  onClick={() => void load()}
+                  className="px-5 py-2.5 bg-accent text-white text-sm font-semibold rounded-[var(--r-lg)] active:scale-95 transition-all"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+            {!isLoading && !loadError && messages.length === 0 && (
               <p className="text-text-muted text-sm text-center py-12">
                 Send the first message.
               </p>

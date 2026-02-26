@@ -19,12 +19,10 @@ export function InlineFollowButton({ targetHash }: Props) {
   const { nullifierHash, isVerified, setVerifySheetOpen } = useArkoraStore()
   const [isFollowing, setIsFollowing] = useState<boolean | null>(null) // null = loading
   const [isLoading, setIsLoading] = useState(false)
-
-  // Don't render for own posts
-  if (nullifierHash === targetHash) return null
+  const isSelf = nullifierHash === targetHash
 
   useEffect(() => {
-    if (!nullifierHash) return
+    if (!nullifierHash || isSelf) return
     void fetch(
       `/api/follow?nullifierHash=${encodeURIComponent(targetHash)}`
     )
@@ -34,7 +32,10 @@ export function InlineFollowButton({ targetHash }: Props) {
       })
       .catch(() => null)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetHash, nullifierHash])
+  }, [targetHash, nullifierHash, isSelf])
+
+  // Don't render for own posts
+  if (isSelf) return null
 
   // Still loading — render nothing to avoid layout shift
   if (isFollowing === null) return null

@@ -14,12 +14,14 @@ export function RoomsDiscovery() {
   const { isVerified, setActiveRoomId } = useArkoraStore()
   const [rooms, setRooms] = useState<Room[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [selectedBoard, setSelectedBoard] = useState<BoardId | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [joiningRoom, setJoiningRoom] = useState<Room | null>(null)
 
   const load = useCallback(async () => {
     setIsLoading(true)
+    setError(false)
     try {
       const url = selectedBoard
         ? `/api/rooms?boardId=${selectedBoard}`
@@ -27,6 +29,9 @@ export function RoomsDiscovery() {
       const res = await fetch(url)
       const json = (await res.json()) as { success: boolean; data?: Room[] }
       if (json.success && json.data) setRooms(json.data)
+      else if (!json.success) setError(true)
+    } catch {
+      setError(true)
     } finally {
       setIsLoading(false)
     }
@@ -106,7 +111,21 @@ export function RoomsDiscovery() {
           </div>
         )}
 
-        {!isLoading && rooms.length === 0 && (
+        {!isLoading && error && (
+          <div className="flex flex-col items-center justify-center text-center py-20 gap-4">
+            <p className="text-text font-semibold">Could not load rooms</p>
+            <p className="text-text-muted text-sm">Check your connection and try again.</p>
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="bg-accent text-white font-semibold px-5 py-2.5 rounded-[var(--r-lg)] text-sm active:scale-95 transition-all"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!isLoading && !error && rooms.length === 0 && (
           <div className="flex flex-col items-center justify-center text-center py-20 gap-4">
             <p className="text-4xl">🎙️</p>
             <p className="text-text font-semibold">No live rooms</p>
@@ -124,7 +143,7 @@ export function RoomsDiscovery() {
           </div>
         )}
 
-        {!isLoading && rooms.map((room) => (
+        {!isLoading && !error && rooms.map((room) => (
           <RoomCard
             key={room.id}
             room={room}

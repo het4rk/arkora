@@ -34,7 +34,6 @@ jobs:
         run: pnpm build
         env:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost/placeholder
-          NEXTAUTH_SECRET: placeholder-secret-32-chars-xxxxxxxxx
           PUSHER_APP_ID: '1'
           PUSHER_KEY: placeholder
           PUSHER_SECRET: placeholder

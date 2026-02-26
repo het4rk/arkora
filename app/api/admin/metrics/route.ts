@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { db } from '@/lib/db'
-import { humanUsers, posts, replies, postVotes, rooms } from '@/lib/db/schema'
+import { humanUsers, posts, rooms } from '@/lib/db/schema'
 import { sql, and, gte, eq } from 'drizzle-orm'
 
 // Hardcoded admin nullifier hashes (add yours here)

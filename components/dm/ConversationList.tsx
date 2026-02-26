@@ -21,6 +21,7 @@ export function ConversationList() {
   const { nullifierHash, isVerified, dmPrivateKey, setDmPrivateKey, setVerifySheetOpen } = useArkoraStore()
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   // On mount: ensure the user has a DM key pair generated and registered
   useEffect(() => {
@@ -49,10 +50,14 @@ export function ConversationList() {
 
   async function fetchConversations() {
     if (!nullifierHash) return
+    setError(false)
     try {
       const res = await fetch('/api/dm/conversations')
       const json = (await res.json()) as { success: boolean; data?: ConversationSummary[] }
       if (json.success && json.data) setConversations(json.data)
+      else if (!json.success) setError(true)
+    } catch {
+      setError(true)
     } finally {
       setIsLoading(false)
     }
@@ -88,6 +93,22 @@ export function ConversationList() {
             </div>
           </div>
         ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-20 px-8 text-center">
+        <p className="text-text font-semibold mb-2">Could not load messages</p>
+        <p className="text-text-muted text-sm mb-5">Check your connection and try again.</p>
+        <button
+          type="button"
+          onClick={() => { setIsLoading(true); void fetchConversations() }}
+          className="px-5 py-2.5 bg-accent text-white text-sm font-semibold rounded-[var(--r-lg)] active:scale-95 transition-all"
+        >
+          Retry
+        </button>
       </div>
     )
   }
