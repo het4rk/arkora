@@ -1,6 +1,6 @@
 import { db } from './index'
 import { replies, replyVotes, posts } from './schema'
-import { eq, desc, and, isNull, sql } from 'drizzle-orm'
+import { eq, desc, and, isNull, sql, inArray } from 'drizzle-orm'
 import type { Reply, CreateReplyInput } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
 import { incrementReplyCount } from './posts'
@@ -160,6 +160,30 @@ export async function getRepliesByNullifier(
     .from(replies)
     .innerJoin(posts, eq(replies.postId, posts.id))
     .where(and(eq(replies.nullifierHash, nullifierHash), isNull(replies.deletedAt)))
+    .orderBy(desc(replies.createdAt))
+    .limit(Math.min(limit, 50))
+
+  return rows.map(({ reply, postTitle }) => ({
+    ...toReply(reply),
+    postTitle: postTitle ?? null,
+  }))
+}
+
+export async function getRepliesByNullifiers(
+  nullifiers: string[],
+  limit = 30
+): Promise<Array<Reply & { postTitle: string | null }>> {
+  if (nullifiers.length === 0) return []
+  if (nullifiers.length === 1) return getRepliesByNullifier(nullifiers[0]!, limit)
+
+  const rows = await db
+    .select({
+      reply: replies,
+      postTitle: posts.title,
+    })
+    .from(replies)
+    .innerJoin(posts, eq(replies.postId, posts.id))
+    .where(and(inArray(replies.nullifierHash, nullifiers), isNull(replies.deletedAt)))
     .orderBy(desc(replies.createdAt))
     .limit(Math.min(limit, 50))
 

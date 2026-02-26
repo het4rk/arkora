@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getOrCreateUser, updateBio, updateIdentityMode, updatePseudoHandle, getUserByWalletAddressNonWlt } from '@/lib/db/users'
+import { getOrCreateUser, updateBio, updateIdentityMode, updatePseudoHandle, getUserByWalletAddressNonWlt, getUserByNullifier } from '@/lib/db/users'
 import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
 import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
 import { rateLimit } from '@/lib/rateLimit'
 
 const VALID_IDENTITY_MODES = new Set(['anonymous', 'alias', 'named'])
+
+/** Returns the authenticated user from the session cookie. Used by ProfileView to refresh stale store data. */
+export async function GET() {
+  try {
+    const nullifierHash = await getCallerNullifier()
+    if (!nullifierHash) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+    const user = await getUserByNullifier(nullifierHash)
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
+    }
+    return NextResponse.json({ success: true, user })
+  } catch (err) {
+    console.error('[auth/user GET]', err)
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,12 +47,17 @@ export async function POST(req: NextRequest) {
     // worldIdVerified: false — wallet-auth only, requires World ID verify to unlock actions
     let user = await getOrCreateUser(nullifierHash, walletAddress, sanitizedUsername, false)
 
-    // One-time migration: if the wlt_ record has no pseudoHandle but an older World ID
-    // record for the same wallet does, copy it over.
-    if (!user.pseudoHandle) {
+    // One-time migration: copy pseudoHandle and bio from the linked World ID record if
+    // the wlt_ record is missing either (happens when users set data before wallet auth).
+    if (!user.pseudoHandle || !user.bio) {
       const worldIdRecord = await getUserByWalletAddressNonWlt(walletAddress)
-      if (worldIdRecord?.pseudoHandle) {
-        user = await updatePseudoHandle(nullifierHash, worldIdRecord.pseudoHandle)
+      if (worldIdRecord) {
+        if (!user.pseudoHandle && worldIdRecord.pseudoHandle) {
+          user = await updatePseudoHandle(nullifierHash, worldIdRecord.pseudoHandle)
+        }
+        if (!user.bio && worldIdRecord.bio) {
+          user = await updateBio(nullifierHash, worldIdRecord.bio)
+        }
       }
     }
 

@@ -11,7 +11,7 @@ import { KarmaBadge } from '@/components/ui/KarmaBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { ProfilePostCard } from './ProfilePostCard'
 import { ProfileReplyCard } from './ProfileReplyCard'
-import type { Post, Reply } from '@/lib/types'
+import type { Post, Reply, HumanUser } from '@/lib/types'
 
 type Tab = 'posts' | 'replies' | 'votes' | 'saved'
 
@@ -78,6 +78,21 @@ export function ProfileView() {
     setBioDraft(user?.bio ?? '')
     setEditMode(true)
   }
+
+  // Refresh user from server on mount so name/bio are always current
+  useEffect(() => {
+    if (!nullifierHash || !isVerified) return
+    void (async () => {
+      try {
+        const res = await fetch('/api/auth/user')
+        const json = (await res.json()) as { success: boolean; user?: HumanUser }
+        if (json.success && json.user) {
+          setVerified(nullifierHash, json.user)
+        }
+      } catch { /* silent — stale store data is acceptable fallback */ }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nullifierHash, isVerified])
 
   useEffect(() => {
     if (!nullifierHash || !isVerified) return

@@ -1,6 +1,6 @@
 import { db } from './index'
 import { posts, postVotes } from './schema'
-import { eq, desc, lt, and, isNull, sql, aliasedTable } from 'drizzle-orm'
+import { eq, desc, lt, and, isNull, sql, aliasedTable, inArray } from 'drizzle-orm'
 import type { Post, BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
 
@@ -281,6 +281,37 @@ export async function getPostsByNullifier(
 ): Promise<Post[]> {
   const conditions = [
     eq(posts.nullifierHash, nullifierHash),
+    isNull(posts.deletedAt),
+  ]
+  if (cursor) {
+    conditions.push(lt(posts.createdAt, new Date(cursor)))
+  }
+
+  const rows = await db
+    .select({ post: posts, quoted: quotedPosts })
+    .from(posts)
+    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
+    .where(and(...conditions))
+    .orderBy(desc(posts.createdAt))
+    .limit(Math.min(limit, 50)) as PostWithQuoted[]
+
+  return rows.map((r) => toPost(r.post, r.quoted))
+}
+
+/**
+ * Fetch posts authored by any of the given nullifiers (e.g., linked identities).
+ * Used when a user has content split across their World ID nullifier and wlt_ nullifier.
+ */
+export async function getPostsByNullifiers(
+  nullifiers: string[],
+  cursor?: string,
+  limit = 20
+): Promise<Post[]> {
+  if (nullifiers.length === 0) return []
+  if (nullifiers.length === 1) return getPostsByNullifier(nullifiers[0]!, cursor, limit)
+
+  const conditions = [
+    inArray(posts.nullifierHash, nullifiers),
     isNull(posts.deletedAt),
   ]
   if (cursor) {

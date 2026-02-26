@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPostsByNullifier, getVotedPostsByNullifier } from '@/lib/db/posts'
-import { getRepliesByNullifier } from '@/lib/db/replies'
-import { getCallerNullifier } from '@/lib/serverAuth'
+import { getPostsByNullifiers, getVotedPostsByNullifier } from '@/lib/db/posts'
+import { getRepliesByNullifiers } from '@/lib/db/replies'
+import { getUserByNullifier, getUserByWalletAddressNonWlt } from '@/lib/db/users'
+import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
+
+/**
+ * Returns all nullifiers that belong to the same real-world user.
+ * A user can have content under both their World ID nullifier and their
+ * wlt_ wallet nullifier if they verified at different times.
+ */
+async function getLinkedNullifiers(nullifierHash: string): Promise<string[]> {
+  const user = await getUserByNullifier(nullifierHash)
+  if (!user?.walletAddress || user.walletAddress.startsWith('idkit_')) {
+    return [nullifierHash]
+  }
+
+  const all = new Set([nullifierHash])
+
+  if (nullifierHash.startsWith('wlt_')) {
+    // Session is wallet-based — also check for linked World ID nullifier
+    const wiUser = await getUserByWalletAddressNonWlt(user.walletAddress)
+    if (wiUser) all.add(wiUser.nullifierHash)
+  } else {
+    // Session is World ID nullifier — also add linked wlt_ nullifier
+    all.add(walletToNullifier(user.walletAddress))
+  }
+
+  return [...all]
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,14 +47,16 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '20', 10) || 20, 50)
 
     if (tab === 'posts') {
-      const items = await getPostsByNullifier(nullifierHash, cursor, limit)
+      const nullifiers = await getLinkedNullifiers(nullifierHash)
+      const items = await getPostsByNullifiers(nullifiers, cursor, limit)
       const hasMore = items.length === limit
       const nextCursor = hasMore ? items[items.length - 1]?.createdAt.toISOString() : undefined
       return NextResponse.json({ success: true, data: { items, hasMore, nextCursor } })
     }
 
     if (tab === 'replies') {
-      const items = await getRepliesByNullifier(nullifierHash, limit)
+      const nullifiers = await getLinkedNullifiers(nullifierHash)
+      const items = await getRepliesByNullifiers(nullifiers, limit)
       return NextResponse.json({ success: true, data: { items, hasMore: false } })
     }
 
