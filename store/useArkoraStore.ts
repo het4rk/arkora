@@ -89,6 +89,7 @@ interface ArkoraState {
   setHasExplicitlySignedOut: (v: boolean) => void
   setActiveSkin: (skinId: SkinId, customHex?: string | null) => void
   setOwnedSkins: (skins: SkinId[]) => void
+  setUser: (user: HumanUser) => void
   reset: () => void
   signOut: () => void
 }
@@ -190,6 +191,8 @@ export const useArkoraStore = create<ArkoraState>()(
         set({ activeSkinId: skinId, customHex: customHex ?? null }),
 
       setOwnedSkins: (skins) => set({ ownedSkins: skins }),
+
+      setUser: (user) => set({ user }),
 
       reset: () => set(initialState),
 

@@ -8,6 +8,8 @@ import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkora
 import { generateAlias } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { SkinShop } from '@/components/settings/SkinShop'
+import { Avatar } from '@/components/ui/Avatar'
+import { ImagePicker } from '@/components/ui/ImagePicker'
 
 // Discrete radius options in miles; -1 means "entire country"
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
@@ -40,7 +42,7 @@ export function SettingsView() {
     theme, setTheme,
     isVerified, nullifierHash, walletAddress,
     persistentAlias, setPersistentAlias,
-    user,
+    user, setUser,
     locationEnabled, setLocationEnabled,
     locationRadius, setLocationRadius,
     notifyReplies, setNotifyReplies,
@@ -54,6 +56,8 @@ export function SettingsView() {
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [avatarSaving, setAvatarSaving] = useState(false)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
 
   // ── Subscriptions state ───────────────────────────────────────────────────
   interface SubRow {
@@ -121,6 +125,26 @@ export function SettingsView() {
     return MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
   }
 
+  async function saveAvatar(url: string | null) {
+    if (!nullifierHash) return
+    setAvatarSaving(true)
+    setAvatarError(null)
+    try {
+      const res = await fetch('/api/auth/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarUrl: url }),
+      })
+      const json = (await res.json()) as { success: boolean; user?: typeof user; error?: string }
+      if (!json.success) throw new Error(json.error ?? 'Failed to save')
+      if (json.user) setUser(json.user)
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : 'Failed to save avatar')
+    } finally {
+      setAvatarSaving(false)
+    }
+  }
+
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       <div className="flex-1 overflow-y-auto pb-[max(env(safe-area-inset-bottom),80px)]">
@@ -141,6 +165,35 @@ export function SettingsView() {
 
         <div className="px-[5vw] py-4 space-y-6">
           <h1 className="text-xl font-bold text-text">Settings</h1>
+
+          {/* ── Profile Picture ───────────────────────────────────── */}
+          {isVerified && (
+            <section className="space-y-3">
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Profile Picture</p>
+              <div className="glass rounded-[var(--r-lg)] p-4 flex items-center gap-4">
+                <Avatar avatarUrl={user?.avatarUrl ?? null} label={user?.pseudoHandle ?? nullifierHash} size="lg" className="shrink-0 w-16 h-16 text-xl" />
+                <div className="flex-1 min-w-0 space-y-2">
+                  <ImagePicker
+                    previewUrl={null}
+                    onUpload={(url) => void saveAvatar(url)}
+                    onClear={() => void saveAvatar(null)}
+                  />
+                  {user?.avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => void saveAvatar(null)}
+                      disabled={avatarSaving}
+                      className="text-xs text-text-muted active:opacity-60 transition-opacity"
+                    >
+                      Remove photo
+                    </button>
+                  )}
+                  {avatarSaving && <p className="text-xs text-text-muted">Saving…</p>}
+                  {avatarError && <p className="text-xs text-text-secondary">{avatarError}</p>}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* ── Identity ──────────────────────────────────────────── */}
           <section className="space-y-3">

@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { getOrCreateUser, updateBio, updateIdentityMode, updatePseudoHandle, getUserByWalletAddressNonWlt, getUserByNullifier } from '@/lib/db/users'
+import { getOrCreateUser, updateBio, updateIdentityMode, updatePseudoHandle, updateAvatarUrl, getUserByWalletAddressNonWlt, getUserByNullifier } from '@/lib/db/users'
 import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
 import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
 import { rateLimit } from '@/lib/rateLimit'
@@ -111,10 +111,24 @@ export async function PATCH(req: NextRequest) {
       bio?: string | null
       identityMode?: string
       pseudoHandle?: string | null
+      avatarUrl?: string | null
     }
-    const { bio, identityMode, pseudoHandle } = body
+    const { bio, identityMode, pseudoHandle, avatarUrl } = body
     let user
-    if (bio !== undefined) {
+    if (avatarUrl !== undefined) {
+      // null = clear avatar; string = must be a valid URL from our storage domain
+      if (avatarUrl !== null) {
+        let parsed: URL
+        try { parsed = new URL(avatarUrl) } catch {
+          return NextResponse.json({ success: false, error: 'Invalid URL' }, { status: 400 })
+        }
+        if (parsed.hostname !== 's3.hippius.com') {
+          return NextResponse.json({ success: false, error: 'Invalid image host' }, { status: 400 })
+        }
+      }
+      user = await updateAvatarUrl(nullifierHash, avatarUrl)
+      return NextResponse.json({ success: true, user })
+    } else if (bio !== undefined) {
       if (bio && bio.length > 500) {
         return NextResponse.json({ success: false, error: 'Bio exceeds 500 characters' }, { status: 400 })
       }
