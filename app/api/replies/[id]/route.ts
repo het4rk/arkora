@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { softDeleteReply } from '@/lib/db/replies'
+import { deleteReply } from '@/lib/db/replies'
 import { getCallerNullifier } from '@/lib/serverAuth'
 
 interface Params {
@@ -15,7 +15,7 @@ export async function DELETE(_req: Request, { params }: Params) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const deleted = await softDeleteReply(id, nullifierHash)
+    const deleted = await deleteReply(id, nullifierHash)
     if (!deleted) {
       return NextResponse.json(
         { success: false, error: 'Reply not found or not yours' },

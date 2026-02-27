@@ -124,10 +124,14 @@ export function ConversationView({ otherHash }: Props) {
   useEffect(() => {
     if (!nullifierHash || !otherHash || !otherPublicKey || !dmPrivateKey) return
 
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY
+    const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER
+    if (!pusherKey || !pusherCluster) return
+    const pusher = new Pusher(pusherKey, {
+      cluster: pusherCluster,
+      channelAuthorization: { endpoint: '/api/pusher/auth', transport: 'ajax' },
     })
-    const channel = pusher.subscribe(`user-${nullifierHash}`)
+    const channel = pusher.subscribe(`private-user-${nullifierHash}`)
 
     channel.bind('pusher:subscription_error', () => {
       setConnectionLost(true)
@@ -155,7 +159,7 @@ export function ConversationView({ otherHash }: Props) {
 
     return () => {
       channel.unbind_all()
-      pusher.unsubscribe(`user-${nullifierHash}`)
+      pusher.unsubscribe(`private-user-${nullifierHash}`)
       pusher.disconnect()
     }
   }, [nullifierHash, otherHash, otherPublicKey, dmPrivateKey])

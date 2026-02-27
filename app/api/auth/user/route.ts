@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrCreateUser, updateBio, updateIdentityMode, updatePseudoHandle, getUserByWalletAddressNonWlt, getUserByNullifier } from '@/lib/db/users'
 import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
@@ -36,6 +37,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Missing walletAddress' },
         { status: 400 }
+      )
+    }
+
+    // SECURITY: Verify the caller actually owns this wallet.
+    // The wallet-address cookie is set by /api/auth after SIWE signature verification.
+    const cookieStore = await cookies()
+    const verifiedWallet = cookieStore.get('wallet-address')?.value
+    if (!verifiedWallet || verifiedWallet.toLowerCase() !== walletAddress.toLowerCase()) {
+      return NextResponse.json(
+        { success: false, error: 'Wallet not authenticated. Complete SIWE verification first.' },
+        { status: 401 }
       )
     }
 

@@ -32,7 +32,7 @@ export function QuotedPost({ post, interactive = true, className }: Props) {
           <polyline points="7 23 3 19 7 15" />
           <path d="M21 13v2a4 4 0 0 1-4 4H3" />
         </svg>
-        <span className="text-accent text-[10px] font-semibold truncate">{displayName} ✓</span>
+        <span className="text-accent text-[10px] font-semibold truncate">{displayName}</span>
       </div>
       <p className="text-text-secondary text-xs leading-relaxed line-clamp-2">
         {post.title}

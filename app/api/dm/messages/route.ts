@@ -6,6 +6,22 @@ import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { pusherServer } from '@/lib/pusher'
 import { worldAppNotify } from '@/lib/worldAppNotify'
+import { db } from '@/lib/db'
+import { blocks } from '@/lib/db/schema'
+import { or, and, eq } from 'drizzle-orm'
+
+/** Returns true if either user has blocked the other. */
+async function isBlocked(hashA: string, hashB: string): Promise<boolean> {
+  const [row] = await db
+    .select({ blockerHash: blocks.blockerHash })
+    .from(blocks)
+    .where(or(
+      and(eq(blocks.blockerHash, hashA), eq(blocks.blockedHash, hashB)),
+      and(eq(blocks.blockerHash, hashB), eq(blocks.blockedHash, hashA)),
+    ))
+    .limit(1)
+  return !!row
+}
 
 // GET /api/dm/messages?otherHash=&cursor=&since=
 // myHash is derived from the auth cookie — never trusted from query params
@@ -55,6 +71,9 @@ export async function POST(req: NextRequest) {
     if (senderHash === recipientHash) {
       return NextResponse.json({ success: false, error: 'Cannot DM yourself' }, { status: 400 })
     }
+    if (await isBlocked(senderHash, recipientHash)) {
+      return NextResponse.json({ success: false, error: 'Cannot message this user' }, { status: 403 })
+    }
     if (!rateLimit(`dm:${senderHash}`, 30, 60_000)) {
       return NextResponse.json({ success: false, error: 'Too many messages. Slow down.' }, { status: 429 })
     }
@@ -70,7 +89,7 @@ export async function POST(req: NextRequest) {
     // Push the encrypted message to the recipient's personal Pusher channel so
     // their ConversationView receives it instantly without polling.
     // ciphertext + nonce are already encrypted — safe to transmit over Pusher (TLS).
-    void pusherServer.trigger(`user-${recipientHash}`, 'new-dm', {
+    void pusherServer.trigger(`private-user-${recipientHash}`, 'new-dm', {
       id,
       senderHash,
       ciphertext,
@@ -79,7 +98,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Also increment the recipient's unread badge in real-time
-    void pusherServer.trigger(`user-${recipientHash}`, 'notif-count', { delta: 1 })
+    void pusherServer.trigger(`private-user-${recipientHash}`, 'notif-count', { delta: 1 })
 
     // World App push notification — delivered even when app is closed
     void worldAppNotify(recipientHash, 'New message', 'You have a new message on Arkora', '/dm')

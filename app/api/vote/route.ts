@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       void (async () => {
         try {
           await createNotification(postOwner, 'like', postId, nullifierHash)
-          void pusherServer.trigger(`user-${postOwner}`, 'notif-count', { delta: 1 })
+          void pusherServer.trigger(`private-user-${postOwner}`, 'notif-count', { delta: 1 })
         } catch { /* non-critical */ }
       })()
     }

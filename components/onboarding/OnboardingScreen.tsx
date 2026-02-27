@@ -15,8 +15,8 @@ const SLIDES = [
       </svg>
     ),
     heading: 'Arkora',
-    sub: 'Real people. Real conversations.',
-    body: 'Every voice here is Orb-verified by World ID. Real humans only — no bots, no noise, no exceptions.',
+    sub: 'Where verified humans connect.',
+    body: 'Every person here has proven their humanity through World ID. No bots, no fake accounts — just authentic conversations between real people.',
   },
   {
     icon: (
@@ -29,9 +29,9 @@ const SLIDES = [
         <circle cx="32" cy="39" r="2" fill="currentColor" fillOpacity="0.6" />
       </svg>
     ),
-    heading: 'Your voice, your rules.',
-    sub: 'Post anonymously or with your identity.',
-    body: 'Choose how you show up: fully anonymous, a consistent alias, or your World ID handle.',
+    heading: 'Speak freely, on your terms',
+    sub: 'Choose how you show up.',
+    body: 'Post anonymously, use a consistent pseudonym, or verify with your real identity. Switch between modes anytime.',
   },
   {
     icon: (
@@ -41,9 +41,9 @@ const SLIDES = [
         <circle cx="26" cy="10" r="3.5" fill="currentColor" />
       </svg>
     ),
-    heading: 'Verified, not surveilled',
-    sub: 'Powered by World ID.',
-    body: 'One wallet login proves you\'re human. No data collected, no identity exposed.',
+    heading: 'Verified, never exposed',
+    sub: 'Privacy by design.',
+    body: 'Your World ID proof is validated on-chain. We never see your personal data — only that you\'re a unique, verified human.',
   },
 ]
 
@@ -163,7 +163,7 @@ export function OnboardingScreen() {
           onClick={advance}
           className="w-full bg-accent text-white font-semibold py-4 rounded-[var(--r-lg)] text-base tracking-[-0.01em] shadow-lg shadow-accent/25 active:scale-[0.98] active:bg-accent-hover transition-all"
         >
-          {isLast ? 'Verify & join' : 'Continue'}
+          {isLast ? 'Get started' : 'Continue'}
         </button>
 
         {/* Guest option — only on last slide */}
@@ -172,7 +172,7 @@ export function OnboardingScreen() {
             onClick={browseAsGuest}
             className="w-full mt-3 py-3.5 rounded-[var(--r-lg)] text-text-muted text-[15px] font-medium active:opacity-60 transition-opacity"
           >
-            Browse without account →
+            Continue as guest
           </button>
         )}
       </div>

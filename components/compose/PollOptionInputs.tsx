@@ -1,35 +1,34 @@
 'use client'
 
-interface Props {
-  options: string[]
-  onChange: (options: string[]) => void
+export interface PollOption {
+  id: number
+  text: string
 }
 
-export function PollOptionInputs({ options, onChange }: Props) {
-  function updateOption(index: number, value: string) {
-    const next = [...options]
-    next[index] = value.slice(0, 100)
-    onChange(next)
+interface Props {
+  options: PollOption[]
+  onChange: (options: PollOption[]) => void
+  onAdd: () => void
+}
+
+export function PollOptionInputs({ options, onChange, onAdd }: Props) {
+  function updateOption(id: number, value: string) {
+    onChange(options.map((o) => o.id === id ? { ...o, text: value.slice(0, 100) } : o))
   }
 
-  function addOption() {
-    if (options.length >= 4) return
-    onChange([...options, ''])
-  }
-
-  function removeOption(index: number) {
+  function removeOption(id: number) {
     if (options.length <= 2) return
-    onChange(options.filter((_, i) => i !== index))
+    onChange(options.filter((o) => o.id !== id))
   }
 
   return (
     <div className="space-y-2">
       {options.map((opt, i) => (
-        <div key={i} className="flex items-center gap-2">
+        <div key={opt.id} className="flex items-center gap-2">
           <input
             type="text"
-            value={opt}
-            onChange={(e) => updateOption(i, e.target.value)}
+            value={opt.text}
+            onChange={(e) => updateOption(opt.id, e.target.value)}
             placeholder={`Option ${i + 1}`}
             maxLength={100}
             className="glass-input flex-1 rounded-[var(--r-lg)] px-4 py-3 text-sm"
@@ -38,7 +37,7 @@ export function PollOptionInputs({ options, onChange }: Props) {
           {options.length > 2 && (
             <button
               type="button"
-              onClick={() => removeOption(i)}
+              onClick={() => removeOption(opt.id)}
               aria-label={`Remove option ${i + 1}`}
               className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted/50 hover:text-downvote active:scale-90 transition-all"
             >
@@ -54,7 +53,7 @@ export function PollOptionInputs({ options, onChange }: Props) {
       {options.length < 4 && (
         <button
           type="button"
-          onClick={addOption}
+          onClick={onAdd}
           className="flex items-center gap-2 text-accent text-sm font-medium py-2 active:opacity-60 transition-opacity"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"

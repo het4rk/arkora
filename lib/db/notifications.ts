@@ -54,5 +54,5 @@ export async function markAllRead(recipientHash: string): Promise<void> {
   await db
     .update(notifications)
     .set({ read: true })
-    .where(eq(notifications.recipientHash, recipientHash))
+    .where(and(eq(notifications.recipientHash, recipientHash), eq(notifications.read, false)))
 }

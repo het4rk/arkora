@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostById } from '@/lib/db/posts'
 import { castPollVote, getPollResults } from '@/lib/db/polls'
+import { isVerifiedHuman } from '@/lib/db/users'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -17,6 +18,13 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     if (!rateLimit(`poll-vote:${nullifierHash}`, 10, 60_000)) {
       return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429 })
+    }
+
+    if (!(await isVerifiedHuman(nullifierHash))) {
+      return NextResponse.json(
+        { success: false, error: 'World ID verification required' },
+        { status: 403 }
+      )
     }
 
     const { id } = await params

@@ -20,7 +20,6 @@ export interface Post {
   replyCount: number
   quoteCount: number
   createdAt: Date
-  deletedAt: Date | null
   quotedPostId: string | null
   quotedPost: Post | null
   lat: number | null
@@ -50,7 +49,6 @@ export interface Reply {
   upvotes: number
   downvotes: number
   createdAt: Date
-  deletedAt: Date | null
 }
 
 export interface HumanUser {

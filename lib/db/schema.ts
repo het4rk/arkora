@@ -99,8 +99,7 @@ export const humanUsers = pgTable(
     karmaScore: integer('karma_score').default(0).notNull(),
     // True only after successful World ID Orb/Device verification via /api/verify.
     // Wallet-only (SIWE) users start as false and cannot post/reply/vote.
-    // DEFAULT true so existing verified users keep access after migration.
-    worldIdVerified: boolean('world_id_verified').default(true).notNull(),
+    worldIdVerified: boolean('world_id_verified').default(false).notNull(),
     // World Chain block number at time of proof verification. Null for users verified before Sprint 13.
     verifiedBlockNumber: bigint('verified_block_number', { mode: 'bigint' }),
     // Tx hash from ArkoraNullifierRegistry.register() on World Chain. Null until contract is deployed.

@@ -43,9 +43,9 @@ export async function GET() {
       // DAU: unique nullifiers that posted, replied, or voted in last 24h
       db.execute(sql`
         SELECT count(DISTINCT nh) AS count FROM (
-          SELECT nullifier_hash AS nh FROM posts WHERE created_at >= ${oneDayAgo} AND deleted_at IS NULL
+          SELECT nullifier_hash AS nh FROM posts WHERE created_at >= ${oneDayAgo}
           UNION ALL
-          SELECT nullifier_hash AS nh FROM replies WHERE created_at >= ${oneDayAgo} AND deleted_at IS NULL
+          SELECT nullifier_hash AS nh FROM replies WHERE created_at >= ${oneDayAgo}
           UNION ALL
           SELECT nullifier_hash AS nh FROM post_votes WHERE created_at >= ${oneDayAgo}
         ) sub
@@ -54,9 +54,9 @@ export async function GET() {
       // MAU: same but last 30 days
       db.execute(sql`
         SELECT count(DISTINCT nh) AS count FROM (
-          SELECT nullifier_hash AS nh FROM posts WHERE created_at >= ${thirtyDaysAgo} AND deleted_at IS NULL
+          SELECT nullifier_hash AS nh FROM posts WHERE created_at >= ${thirtyDaysAgo}
           UNION ALL
-          SELECT nullifier_hash AS nh FROM replies WHERE created_at >= ${thirtyDaysAgo} AND deleted_at IS NULL
+          SELECT nullifier_hash AS nh FROM replies WHERE created_at >= ${thirtyDaysAgo}
           UNION ALL
           SELECT nullifier_hash AS nh FROM post_votes WHERE created_at >= ${thirtyDaysAgo}
         ) sub
@@ -66,13 +66,13 @@ export async function GET() {
       db
         .select({ count: sql<number>`count(*)` })
         .from(posts)
-        .where(and(gte(posts.createdAt, oneDayAgo), sql`${posts.deletedAt} IS NULL`)),
+        .where(gte(posts.createdAt, oneDayAgo)),
 
       // Posts per day for last 7 days
       db.execute(sql`
         SELECT date_trunc('day', created_at) AS day, count(*) AS count
         FROM posts
-        WHERE created_at >= ${sevenDaysAgo} AND deleted_at IS NULL
+        WHERE created_at >= ${sevenDaysAgo}
         GROUP BY day
         ORDER BY day DESC
       `),
@@ -87,7 +87,7 @@ export async function GET() {
       db.execute(sql`
         SELECT board_id, count(*) AS count
         FROM posts
-        WHERE created_at >= ${thirtyDaysAgo} AND deleted_at IS NULL
+        WHERE created_at >= ${thirtyDaysAgo}
         GROUP BY board_id
         ORDER BY count DESC
       `),

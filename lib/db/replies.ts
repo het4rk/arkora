@@ -1,9 +1,9 @@
 import { db } from './index'
 import { replies, replyVotes, posts } from './schema'
-import { eq, desc, and, isNull, sql, inArray } from 'drizzle-orm'
+import { eq, desc, and, sql, inArray } from 'drizzle-orm'
 import type { Reply, CreateReplyInput } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
-import { incrementReplyCount } from './posts'
+import { incrementReplyCount, decrementReplyCount } from './posts'
 
 function toReply(row: typeof replies.$inferSelect): Reply {
   return {
@@ -18,7 +18,6 @@ function toReply(row: typeof replies.$inferSelect): Reply {
     upvotes: row.upvotes,
     downvotes: row.downvotes,
     createdAt: row.createdAt,
-    deletedAt: row.deletedAt ?? null,
   }
 }
 
@@ -55,13 +54,17 @@ export async function getRepliesByPostId(postId: string): Promise<Reply[]> {
   return rows.map(toReply)
 }
 
-export async function softDeleteReply(replyId: string, nullifierHash: string): Promise<boolean> {
+export async function deleteReply(replyId: string, nullifierHash: string): Promise<boolean> {
   const result = await db
     .delete(replies)
     .where(and(eq(replies.id, replyId), eq(replies.nullifierHash, nullifierHash)))
-    .returning({ id: replies.id })
+    .returning({ id: replies.id, postId: replies.postId })
 
-  return result.length > 0
+  if (result.length > 0 && result[0]) {
+    await decrementReplyCount(result[0].postId)
+    return true
+  }
+  return false
 }
 
 /** Atomic upsert vote + recount. Returns the updated vote counts. */
@@ -90,21 +93,20 @@ export async function upsertReplyVote(
   }
 }
 
-/** Delete a reply vote and recount. Returns the updated vote counts. */
+/** Delete a reply vote and recount atomically in a single statement. */
 export async function deleteReplyVote(
   replyId: string,
   nullifierHash: string
 ): Promise<{ upvotes: number; downvotes: number }> {
-  // Two separate statements so the COUNT(*) sees the post-DELETE state.
-  // (CTE snapshot semantics would return a count that still includes the deleted row.)
-  await db.execute(
-    sql`DELETE FROM reply_votes WHERE reply_id = ${replyId} AND nullifier_hash = ${nullifierHash}`
-  )
   const [row] = await db.execute<{ upvotes: number | string; downvotes: number | string }>(
-    sql`UPDATE replies
+    sql`WITH deleted AS (
+          DELETE FROM reply_votes
+          WHERE reply_id = ${replyId} AND nullifier_hash = ${nullifierHash}
+        )
+        UPDATE replies
         SET
-          upvotes   = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction =  1),
-          downvotes = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction = -1)
+          upvotes   = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND nullifier_hash != ${nullifierHash} AND direction =  1),
+          downvotes = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND nullifier_hash != ${nullifierHash} AND direction = -1)
         WHERE id = ${replyId}
         RETURNING upvotes, downvotes`
   )
@@ -158,7 +160,7 @@ export async function getRepliesByNullifier(
     })
     .from(replies)
     .innerJoin(posts, eq(replies.postId, posts.id))
-    .where(and(eq(replies.nullifierHash, nullifierHash), isNull(replies.deletedAt)))
+    .where(eq(replies.nullifierHash, nullifierHash))
     .orderBy(desc(replies.createdAt))
     .limit(Math.min(limit, 50))
 
@@ -182,7 +184,7 @@ export async function getRepliesByNullifiers(
     })
     .from(replies)
     .innerJoin(posts, eq(replies.postId, posts.id))
-    .where(and(inArray(replies.nullifierHash, nullifiers), isNull(replies.deletedAt)))
+    .where(inArray(replies.nullifierHash, nullifiers))
     .orderBy(desc(replies.createdAt))
     .limit(Math.min(limit, 50))
 

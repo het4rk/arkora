@@ -101,7 +101,8 @@ export async function verifyWorldIdProof(
       return { success: false, error: 'max_verifications_reached' }
     }
 
-    return { success: false, error: message }
+    console.error('[worldid] Verification failed:', message)
+    return { success: false, error: 'Proof verification failed' }
   }
 }
 

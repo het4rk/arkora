@@ -1,6 +1,6 @@
 import { db } from './index'
 import { bookmarks, posts } from './schema'
-import { eq, and, desc, isNull, inArray, sql } from 'drizzle-orm'
+import { eq, and, desc, inArray, sql } from 'drizzle-orm'
 import type { Post, BoardId } from '@/lib/types'
 
 function toPost(row: typeof posts.$inferSelect): Post {
@@ -18,13 +18,12 @@ function toPost(row: typeof posts.$inferSelect): Post {
     replyCount: row.replyCount,
     quoteCount: row.quoteCount,
     createdAt: row.createdAt,
-    deletedAt: row.deletedAt ?? null,
     quotedPostId: row.quotedPostId ?? null,
     quotedPost: null,
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     countryCode: row.countryCode ?? null,
-    type: (row.type as 'text' | 'poll') ?? 'text',
+    type: (row.type as 'text' | 'poll' | 'repost') ?? 'text',
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
     contentHash: row.contentHash ?? null,
@@ -77,7 +76,7 @@ export async function getBookmarksByNullifier(
   const rows = await db
     .select({ post: posts })
     .from(bookmarks)
-    .innerJoin(posts, and(eq(bookmarks.postId, posts.id), isNull(posts.deletedAt)))
+    .innerJoin(posts, eq(bookmarks.postId, posts.id))
     .where(eq(bookmarks.nullifierHash, nullifierHash))
     .orderBy(desc(bookmarks.createdAt))
     .limit(Math.min(limit, 50))

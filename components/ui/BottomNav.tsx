@@ -33,8 +33,8 @@ export function BottomNav() {
 
     let pusher: InstanceType<typeof Pusher> | null = null
     try {
-      pusher = new Pusher(pusherKey, { cluster: pusherCluster })
-      const channel = pusher.subscribe(`user-${nullifierHash}`)
+      pusher = new Pusher(pusherKey, { cluster: pusherCluster, channelAuthorization: { endpoint: '/api/pusher/auth', transport: 'ajax' } })
+      const channel = pusher.subscribe(`private-user-${nullifierHash}`)
       channel.bind('notif-count', (data: { delta: number }) => {
         const current = useArkoraStore.getState().unreadNotificationCount
         setUnreadNotificationCount(Math.max(0, current + data.delta))
@@ -47,7 +47,7 @@ export function BottomNav() {
 
     return () => {
       if (pusher) {
-        pusher.unsubscribe(`user-${nullifierHash}`)
+        pusher.unsubscribe(`private-user-${nullifierHash}`)
         pusher.disconnect()
       }
     }

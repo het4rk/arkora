@@ -2,8 +2,8 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { db } from '@/lib/db'
-import { humanUsers, posts, replies } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { humanUsers, posts, replies, dmKeys, dmMessages, notifications, blocks, follows, bookmarks, postVotes, replyVotes, communityNoteVotes, pollVotes, roomParticipants } from '@/lib/db/schema'
+import { eq, or } from 'drizzle-orm'
 import { rateLimit } from '@/lib/rateLimit'
 
 /**
@@ -38,6 +38,21 @@ export async function DELETE() {
       .update(replies)
       .set({ nullifierHash: deadReplyHash, pseudoHandle: null })
       .where(eq(replies.nullifierHash, nullifierHash))
+
+    // Clean up all user-associated data before deleting the account
+    await Promise.all([
+      db.delete(dmKeys).where(eq(dmKeys.nullifierHash, nullifierHash)),
+      db.delete(dmMessages).where(or(eq(dmMessages.senderHash, nullifierHash), eq(dmMessages.recipientHash, nullifierHash))),
+      db.delete(notifications).where(or(eq(notifications.recipientHash, nullifierHash), eq(notifications.actorHash, nullifierHash))),
+      db.delete(blocks).where(or(eq(blocks.blockerHash, nullifierHash), eq(blocks.blockedHash, nullifierHash))),
+      db.delete(follows).where(or(eq(follows.followerId, nullifierHash), eq(follows.followedId, nullifierHash))),
+      db.delete(bookmarks).where(eq(bookmarks.nullifierHash, nullifierHash)),
+      db.delete(postVotes).where(eq(postVotes.nullifierHash, nullifierHash)),
+      db.delete(replyVotes).where(eq(replyVotes.nullifierHash, nullifierHash)),
+      db.delete(communityNoteVotes).where(eq(communityNoteVotes.nullifierHash, nullifierHash)),
+      db.delete(pollVotes).where(eq(pollVotes.nullifierHash, nullifierHash)),
+      db.delete(roomParticipants).where(eq(roomParticipants.nullifierHash, nullifierHash)),
+    ])
 
     // Delete the user row (profile data, karma, identity prefs)
     await db.delete(humanUsers).where(eq(humanUsers.nullifierHash, nullifierHash))

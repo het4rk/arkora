@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
-import { isNull, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import { FEATURED_BOARDS, boardLabel } from '@/lib/boards'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -23,7 +23,6 @@ export async function GET(req: NextRequest) {
         count: sql<number>`count(*)::int`,
       })
       .from(posts)
-      .where(isNull(posts.deletedAt))
       .groupBy(posts.boardId)
       .orderBy(sql`count(*) desc`)
 

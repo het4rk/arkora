@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         const authorHash = await getPostNullifier(postId)
         if (authorHash && authorHash !== nullifierHash) {
           await createNotification(authorHash, 'reply', postId, pseudoHandle ? nullifierHash : undefined)
-          void pusherServer.trigger(`user-${authorHash}`, 'notif-count', { delta: 1 })
+          void pusherServer.trigger(`private-user-${authorHash}`, 'notif-count', { delta: 1 })
           void worldAppNotify(authorHash, 'New reply', 'Someone replied to your post', `/posts/${postId}`)
         }
 

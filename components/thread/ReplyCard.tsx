@@ -26,7 +26,6 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
   const [downvotes, setDownvotes] = useState(reply.downvotes)
   const [isVoting, setIsVoting] = useState(false)
   const isOwner = !!nullifierHash && reply.nullifierHash === nullifierHash
-  const isDeleted = !!reply.deletedAt
 
   async function handleVote(dir: 1 | -1) {
     if (!nullifierHash || !isVerified || isVoting || isOwner) return
@@ -72,7 +71,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
     }
   }
 
-  const displayName = isDeleted ? 'deleted' : (reply.pseudoHandle ? formatDisplayName(reply.pseudoHandle) : reply.sessionTag)
+  const displayName = reply.pseudoHandle ? formatDisplayName(reply.pseudoHandle) : reply.sessionTag
 
   async function handleDelete() {
     if (!nullifierHash || isDeleting) return
@@ -88,17 +87,6 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
     } finally {
       setIsDeleting(false)
     }
-  }
-
-  if (isDeleted) {
-    return (
-      <div className="glass rounded-[var(--r-lg)] p-4 opacity-50">
-        <div className="flex items-center gap-2">
-          <span className="text-text-muted text-xs italic">[deleted]</span>
-          <TimeAgo date={reply.createdAt} />
-        </div>
-      </div>
-    )
   }
 
   return (

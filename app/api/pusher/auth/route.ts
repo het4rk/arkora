@@ -26,7 +26,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing socket_id or channel_name' }, { status: 400 })
     }
 
-    // Only presence channels are handled here
+    // Private user channels — DM and notification delivery
+    if (channel.startsWith('private-user-')) {
+      const channelHash = channel.replace('private-user-', '')
+      // User can only subscribe to their own private channel
+      if (channelHash !== callerHash) {
+        return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+      }
+      const authResponse = pusherServer.authorizeChannel(socketId, channel)
+      return NextResponse.json(authResponse)
+    }
+
+    // Presence room channels
     if (!channel.startsWith('presence-room-')) {
       return NextResponse.json({ success: false, error: 'Invalid channel' }, { status: 400 })
     }

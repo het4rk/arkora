@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPostById, softDeletePost } from '@/lib/db/posts'
+import { getPostById, deletePost } from '@/lib/db/posts'
 import { getRepliesByPostId } from '@/lib/db/replies'
 import { getNotesByPostId } from '@/lib/db/communityNotes'
 import { getPollResults, getUserVote } from '@/lib/db/polls'
@@ -58,7 +58,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const deleted = await softDeletePost(id, nullifierHash)
+    const deleted = await deletePost(id, nullifierHash)
     if (!deleted) {
       return NextResponse.json(
         { success: false, error: 'Post not found or not yours' },

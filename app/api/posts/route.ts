@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
           if (quotedOwner && quotedOwner !== nullifierHash) {
             const notifType = isRepost ? 'repost' : 'quote'
             await createNotification(quotedOwner, notifType, quotedPostId, nullifierHash)
-            void pusherServer.trigger(`user-${quotedOwner}`, 'notif-count', { delta: 1 })
+            void pusherServer.trigger(`private-user-${quotedOwner}`, 'notif-count', { delta: 1 })
           }
         } catch { /* non-critical */ }
       })()

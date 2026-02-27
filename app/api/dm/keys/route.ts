@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { upsertDmKey, getDmKey } from '@/lib/db/dm'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { rateLimit } from '@/lib/rateLimit'
 
-// GET /api/dm/keys?nullifierHash=xxx — fetch someone's public key
+// GET /api/dm/keys?nullifierHash=xxx — fetch someone's public key (requires auth)
 export async function GET(req: NextRequest) {
+  const callerHash = await getCallerNullifier()
+  if (!callerHash) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+  }
+  if (!rateLimit(`dm-keys-get:${callerHash}`, 60, 60_000)) {
+    return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+  }
   const nullifierHash = new URL(req.url).searchParams.get('nullifierHash')
   if (!nullifierHash) {
     return NextResponse.json({ success: false, error: 'nullifierHash required' }, { status: 400 })

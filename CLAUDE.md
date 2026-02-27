@@ -57,6 +57,25 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] `GET /api/auth/user` added for ProfileView to refresh stale store data on mount
 - [x] WalletConnect bio migration extended — copies bio from World ID record to wlt_ record
 
+### Production Hardening Audit (Sprint 18)
+
+- [x] **Auth bypass fix** — `POST /api/auth/user` now verifies `wallet-address` cookie matches body `walletAddress` (prevents session hijack via forged body params)
+- [x] **worldIdVerified schema default** — changed from `true` to `false` (new users no longer auto-pass verification gate)
+- [x] **validateEnv() wired up** — called on DB module import (`lib/db/index.ts`), fails fast with clear error if any required env var is missing; `APP_ID` added to required vars
+- [x] **Atomic vote operations** — `deletePostVote`, `deleteReplyVote`, `deleteNoteVote` converted from two-statement DELETE+UPDATE to single CTE statements (eliminates race conditions on concurrent unvotes)
+- [x] **Hard delete cleanup** — renamed `softDeletePost` → `deletePost`, `softDeleteReply` → `deleteReply`; removed 40+ dead `isNull(deletedAt)` filters across 7 files; removed `deletedAt` from `Post`/`Reply` TypeScript interfaces and all `toPost()`/`toReply()` mapper functions
+- [x] **Block check on DMs** — `POST /api/dm/messages` checks bidirectional block status before allowing send; returns 403 if either party has blocked the other
+- [x] **Private Pusher channels** — DM + notification channels switched from public `user-${hash}` to `private-user-${hash}` with server-side auth in `/api/pusher/auth`; prevents metadata snooping
+- [x] **CSP hardened** — removed `unsafe-eval` from `script-src` in Content-Security-Policy
+- [x] **DM keys endpoint secured** — `GET /api/dm/keys` now requires auth + rate limiting (was unauthenticated)
+- [x] **Search limit cap** — `searchPosts()` caps `limit` at 50 (prevents abuse via large limit param)
+- [x] **markAllRead optimized** — only updates rows where `read = false` (was updating all notifications including already-read)
+- [x] **Account deletion comprehensive** — `DELETE /api/user` now cleans dmKeys, dmMessages, notifications, blocks, follows, bookmarks, postVotes, replyVotes, communityNoteVotes, pollVotes, roomParticipants before deleting user row (was leaving orphaned data in 11+ tables)
+- [x] **Dead code removed** — deleted `lib/chain.ts` (unused testnet config), `lib/storage/local.ts` (never imported)
+- [x] **DB connection pool** — reduced `max` from 10 to 5, singleton client cached in both dev and production (Neon free tier: 20 connections max)
+- [x] **World ID error leak** — `lib/worldid.ts` returns generic "Proof verification failed" to client, logs detailed error server-side only
+- [x] **toPost() type cast** — fixed repost type from `'text' | 'poll'` to `'text' | 'poll' | 'repost'` in follows.ts, bookmarks.ts, search.ts
+
 ### Confessions Board (Sprint 9)
 - [x] `'confessions'` added to `BoardId` type + `BOARDS` array (emoji 🤫)
 - [x] `ANONYMOUS_BOARDS` set in `lib/types.ts` — boards where posts are force-anonymous server-side
@@ -252,8 +271,9 @@ activeRoomId                                             — currently joined ro
 ### Pusher Setup
 
 - Server triggers via `lib/pusher.ts`
-- BottomNav: subscribes to `user-${nullifierHash}` for `notif-count` events
-- ConversationView: subscribes to `user-${nullifierHash}` for `new-dm` events
+- BottomNav: subscribes to `private-user-${nullifierHash}` for `notif-count` events
+- ConversationView: subscribes to `private-user-${nullifierHash}` for `new-dm` events
+- All user channels are **private** (`private-user-*`) — authorized via `POST /api/pusher/auth` (prevents metadata snooping)
 - Both guarded with null-check on env vars + try/catch (World App crash fix)
 - Rooms: presence channel `presence-room-${roomId}`; auth via `POST /api/pusher/auth`; events: `new-message`, `participant-muted`, `participant-kicked`, `room-ended`
 
@@ -269,7 +289,7 @@ activeRoomId                                             — currently joined ro
 ## Known Issues / Gotchas
 
 - **Rate limiter is in-process.** Fresh per Vercel cold start / instance. Fine for 20 users; upgrade to Upstash Redis at scale.
-- **Neon 20-connection limit.** Add `?connection_limit=10` to `DATABASE_URL` if connection errors appear.
+- **Neon 20-connection limit.** Pool max set to 5 with singleton client caching. Add `?connection_limit=5` to `DATABASE_URL` if connection errors still appear.
 - **DM private key in localStorage.** Users lose DM history if they clear browser data. By design for MVP.
 - **Country code** inferred from `x-vercel-ip-country` header. GPS optional, sent only when `locationEnabled=true`.
 - **`ADMIN_NULLIFIER_HASHES` env var** must be set in Vercel Dashboard for `/api/admin/metrics` to be accessible (comma-separated list of admin nullifier hashes).
@@ -391,3 +411,4 @@ activeRoomId                                             — currently joined ro
 - [x] Sign-out persistence, report auto-hide, like/quote/repost notifications, vote reactions, repost feature — Sprint 10
 - [x] Rooms Phase 1 (text-only ephemeral) — Sprint 10
 - [x] Rooms creator auto-join fix, profile display name migration, light theme polish — Sprint 11
+- [x] Production hardening: auth bypass fix, atomic votes, private Pusher channels, CSP hardened, account deletion cleanup, dead code removal — Sprint 18

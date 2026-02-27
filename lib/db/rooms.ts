@@ -135,7 +135,7 @@ export async function joinRoom(
   if (existing[0]) {
     const [row] = await db
       .update(roomParticipants)
-      .set({ leftAt: null, joinedAt: new Date(), displayHandle, identityMode })
+      .set({ leftAt: null, joinedAt: new Date(), displayHandle, identityMode, isMuted: false })
       .where(eq(roomParticipants.id, existing[0].id))
       .returning()
     if (!row) throw new Error('Failed to rejoin room')

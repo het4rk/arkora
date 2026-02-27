@@ -1,6 +1,6 @@
 import { db } from './index'
 import { posts, postVotes, humanUsers } from './schema'
-import { eq, desc, lt, and, isNull, sql, aliasedTable, inArray } from 'drizzle-orm'
+import { eq, desc, lt, and, sql, aliasedTable, inArray } from 'drizzle-orm'
 import type { Post, BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
 import { createHash } from 'crypto'
@@ -27,7 +27,6 @@ function toPost(
     replyCount: row.replyCount,
     quoteCount: row.quoteCount,
     createdAt: row.createdAt,
-    deletedAt: row.deletedAt ?? null,
     quotedPostId: row.quotedPostId ?? null,
     quotedPost: quoted ? toPost(quoted) : null,
     lat: row.lat ?? null,
@@ -96,9 +95,9 @@ export async function getPostById(id: string): Promise<Post | null> {
   const rows = await db
     .select({ post: posts, quoted: quotedPosts, karmaScore: humanUsers.karmaScore })
     .from(posts)
-    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
     .leftJoin(humanUsers, eq(posts.nullifierHash, humanUsers.nullifierHash))
-    .where(and(eq(posts.id, id), isNull(posts.deletedAt)))
+    .where(eq(posts.id, id))
     .limit(1) as PostWithQuoted[]
 
   const row = rows[0]
@@ -118,7 +117,7 @@ export async function getPostNullifier(id: string): Promise<string | null> {
 export async function getFeed(params: FeedParams): Promise<Post[]> {
   const limit = Math.min(params.limit ?? 20, 50)
 
-  const conditions = [isNull(posts.deletedAt), lt(posts.reportCount, 5)]
+  const conditions = [lt(posts.reportCount, 5)]
   if (params.boardId) {
     conditions.push(eq(posts.boardId, params.boardId))
   }
@@ -129,7 +128,7 @@ export async function getFeed(params: FeedParams): Promise<Post[]> {
   const rows = await db
     .select({ post: posts, quoted: quotedPosts, karmaScore: humanUsers.karmaScore })
     .from(posts)
-    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
     .leftJoin(humanUsers, eq(posts.nullifierHash, humanUsers.nullifierHash))
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
@@ -151,9 +150,8 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
           qp.quoted_post_id as q_quoted_post_id
         FROM posts p
         LEFT JOIN human_users hu ON p.nullifier_hash = hu.nullifier_hash
-        LEFT JOIN posts qp ON p.quoted_post_id = qp.id AND qp.deleted_at IS NULL
-        WHERE p.deleted_at IS NULL
-          AND p.report_count < 5
+        LEFT JOIN posts qp ON p.quoted_post_id = qp.id
+        WHERE p.report_count < 5
           ${boardId ? sql`AND p.board_id = ${boardId}` : sql``}
           AND p.created_at > now() - interval '7 days'
         ORDER BY
@@ -172,7 +170,6 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
       upvotes: r['upvotes'] as number, downvotes: r['downvotes'] as number,
       replyCount: r['reply_count'] as number, quoteCount: r['quote_count'] as number,
       createdAt: new Date(r['created_at'] as string),
-      deletedAt: r['deleted_at'] ? new Date(r['deleted_at'] as string) : null,
       quotedPostId: (r['quoted_post_id'] as string | null) ?? null,
       quotedPost: null,
       lat: (r['lat'] as number | null) ?? null,
@@ -195,7 +192,6 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         upvotes: r['q_upvotes'] as number, downvotes: r['q_downvotes'] as number,
         replyCount: r['q_reply_count'] as number, quoteCount: r['q_quote_count'] as number,
         createdAt: new Date(r['q_created_at'] as string),
-        deletedAt: r['q_deleted_at'] ? new Date(r['q_deleted_at'] as string) : null,
         quotedPostId: (r['q_quoted_post_id'] as string | null) ?? null,
         quotedPost: null,
         lat: null, lng: null, countryCode: null,
@@ -219,6 +215,13 @@ export async function incrementReplyCount(postId: string): Promise<void> {
   await db
     .update(posts)
     .set({ replyCount: sql`${posts.replyCount} + 1` })
+    .where(eq(posts.id, postId))
+}
+
+export async function decrementReplyCount(postId: string): Promise<void> {
+  await db
+    .update(posts)
+    .set({ replyCount: sql`GREATEST(${posts.replyCount} - 1, 0)` })
     .where(eq(posts.id, postId))
 }
 
@@ -271,21 +274,22 @@ export async function upsertVote(
   )
 }
 
-/** Delete a post vote and recount. Two statements so COUNT(*) sees the post-DELETE state. */
+/** Delete a post vote and recount atomically in a single statement. */
 export async function deletePostVote(postId: string, nullifierHash: string): Promise<void> {
   await db.execute(
-    sql`DELETE FROM post_votes WHERE post_id = ${postId} AND nullifier_hash = ${nullifierHash}`
-  )
-  await db.execute(
-    sql`UPDATE posts
+    sql`WITH deleted AS (
+          DELETE FROM post_votes
+          WHERE post_id = ${postId} AND nullifier_hash = ${nullifierHash}
+        )
+        UPDATE posts
         SET
-          upvotes   = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction =  1),
-          downvotes = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction = -1)
+          upvotes   = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND nullifier_hash != ${nullifierHash} AND direction =  1),
+          downvotes = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND nullifier_hash != ${nullifierHash} AND direction = -1)
         WHERE id = ${postId}`
   )
 }
 
-export async function softDeletePost(postId: string, nullifierHash: string): Promise<boolean> {
+export async function deletePost(postId: string, nullifierHash: string): Promise<boolean> {
   const result = await db
     .delete(posts)
     .where(and(eq(posts.id, postId), eq(posts.nullifierHash, nullifierHash)))
@@ -301,7 +305,6 @@ export async function getPostsByNullifier(
 ): Promise<Post[]> {
   const conditions = [
     eq(posts.nullifierHash, nullifierHash),
-    isNull(posts.deletedAt),
   ]
   if (cursor) {
     conditions.push(lt(posts.createdAt, new Date(cursor)))
@@ -310,7 +313,7 @@ export async function getPostsByNullifier(
   const rows = await db
     .select({ post: posts, quoted: quotedPosts })
     .from(posts)
-    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
     .limit(Math.min(limit, 50)) as PostWithQuoted[]
@@ -332,7 +335,6 @@ export async function getPostsByNullifiers(
 
   const conditions = [
     inArray(posts.nullifierHash, nullifiers),
-    isNull(posts.deletedAt),
   ]
   if (cursor) {
     conditions.push(lt(posts.createdAt, new Date(cursor)))
@@ -341,7 +343,7 @@ export async function getPostsByNullifiers(
   const rows = await db
     .select({ post: posts, quoted: quotedPosts })
     .from(posts)
-    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
     .limit(Math.min(limit, 50)) as PostWithQuoted[]
@@ -360,8 +362,8 @@ export async function getVotedPostsByNullifier(
       direction: postVotes.direction,
     })
     .from(postVotes)
-    .innerJoin(posts, and(eq(postVotes.postId, posts.id), isNull(posts.deletedAt)))
-    .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
+    .innerJoin(posts, eq(postVotes.postId, posts.id))
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
     .where(eq(postVotes.nullifierHash, nullifierHash))
     .orderBy(desc(postVotes.createdAt))
     .limit(Math.min(limit, 50)) as Array<PostWithQuoted & { direction: number }>
@@ -400,9 +402,8 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
           qp.lat as q_lat, qp.lng as q_lng, qp.country_code as q_country_code
         FROM posts p
         LEFT JOIN human_users hu ON p.nullifier_hash = hu.nullifier_hash
-        LEFT JOIN posts qp ON p.quoted_post_id = qp.id AND qp.deleted_at IS NULL
-        WHERE p.deleted_at IS NULL
-          AND p.report_count < 5
+        LEFT JOIN posts qp ON p.quoted_post_id = qp.id
+        WHERE p.report_count < 5
           AND p.country_code = ${params.countryCode}
           ${params.boardId ? sql`AND p.board_id = ${params.boardId}` : sql``}
           ${params.cursor ? sql`AND p.created_at < ${new Date(params.cursor)}` : sql``}
@@ -429,7 +430,6 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
       upvotes: r['upvotes'] as number, downvotes: r['downvotes'] as number,
       replyCount: r['reply_count'] as number, quoteCount: r['quote_count'] as number,
       createdAt: new Date(r['created_at'] as string),
-      deletedAt: r['deleted_at'] ? new Date(r['deleted_at'] as string) : null,
       quotedPostId: (r['quoted_post_id'] as string | null) ?? null,
       quotedPost: null,
       lat: (r['lat'] as number | null) ?? null,
@@ -452,7 +452,6 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
         upvotes: r['q_upvotes'] as number, downvotes: r['q_downvotes'] as number,
         replyCount: r['q_reply_count'] as number, quoteCount: r['q_quote_count'] as number,
         createdAt: new Date(r['q_created_at'] as string),
-        deletedAt: r['q_deleted_at'] ? new Date(r['q_deleted_at'] as string) : null,
         quotedPostId: (r['q_quoted_post_id'] as string | null) ?? null,
         quotedPost: null,
         lat: (r['q_lat'] as number | null) ?? null,

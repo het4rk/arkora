@@ -1,6 +1,10 @@
+import { validateEnv } from '@/lib/env'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from './schema'
+
+// Validate all required env vars on first import — fail fast with clear errors
+validateEnv()
 
 // Singleton pattern — prevents multiple connections in dev (Next.js hot reload)
 declare global {
@@ -14,13 +18,13 @@ function getClient(): postgres.Sql {
   }
   if (globalThis._pgClient) return globalThis._pgClient
   const client = postgres(process.env.DATABASE_URL, {
-    max: 10,
+    max: 5,
     idle_timeout: 20,
     connect_timeout: 10,
   })
-  if (process.env.NODE_ENV !== 'production') {
-    globalThis._pgClient = client
-  }
+  // Cache the client in both dev and production to prevent connection exhaustion
+  // on serverless warm instances (Neon free tier: 20 connections max)
+  globalThis._pgClient = client
   return client
 }
 

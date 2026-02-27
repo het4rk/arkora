@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",  // Next.js requires these
+              "script-src 'self' 'unsafe-inline'",  // unsafe-inline required by Next.js; unsafe-eval removed for XSS hardening
               "style-src 'self' 'unsafe-inline'",                  // Tailwind injects inline styles
               "img-src 'self' data: blob: https:",                 // Allow images from HTTPS origins
               "font-src 'self'",

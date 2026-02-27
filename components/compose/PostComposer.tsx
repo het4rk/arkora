@@ -12,7 +12,7 @@ import { ANONYMOUS_BOARDS } from '@/lib/types'
 import { cn, haptic } from '@/lib/utils'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { QuotedPost } from '@/components/ui/QuotedPost'
-import { PollOptionInputs } from '@/components/compose/PollOptionInputs'
+import { PollOptionInputs, type PollOption } from '@/components/compose/PollOptionInputs'
 
 export function PostComposer() {
   const router = useRouter()
@@ -35,7 +35,8 @@ export function PostComposer() {
   const [body, setBody] = useState('')
   const [boardId, setBoardId] = useState('arkora')
   const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [pollOptions, setPollOptions] = useState<string[]>(['', ''])
+  const pollIdCounter = useRef(2)
+  const [pollOptions, setPollOptions] = useState<PollOption[]>([{ id: 0, text: '' }, { id: 1, text: '' }])
   const [pollDuration, setPollDuration] = useState<24 | 72 | 168>(72)
   // Custom board input state
   const [showCustomBoard, setShowCustomBoard] = useState(false)
@@ -98,14 +99,15 @@ export function PostComposer() {
 
   function removePoll() {
     setIsPoll(false)
-    setPollOptions(['', ''])
+    pollIdCounter.current = 2
+    setPollOptions([{ id: 0, text: '' }, { id: 1, text: '' }])
     setPollDuration(72)
   }
 
   async function handleSubmit() {
     if (!title.trim()) return
     if (!isPoll && !body.trim()) return
-    if (isPoll && pollOptions.filter((o) => o.trim()).length < 2) return
+    if (isPoll && pollOptions.filter((o) => o.text.trim()).length < 2) return
 
     let lat: number | undefined
     let lng: number | undefined
@@ -130,7 +132,7 @@ export function PostComposer() {
       lng,
       ...(isPoll && {
         type: 'poll',
-        pollOptions: pollOptions.filter((o) => o.trim()),
+        pollOptions: pollOptions.map((o) => o.text).filter((t) => t.trim()),
         pollDuration,
       }),
     })
@@ -138,7 +140,8 @@ export function PostComposer() {
       setTitle('')
       setBody('')
       setImageUrl(null)
-      setPollOptions(['', ''])
+      pollIdCounter.current = 2
+      setPollOptions([{ id: 0, text: '' }, { id: 1, text: '' }])
       setPollDuration(72)
       setIsPoll(false)
       setBoardId('arkora')
@@ -313,7 +316,14 @@ export function PostComposer() {
                 × Remove poll
               </button>
             </div>
-            <PollOptionInputs options={pollOptions} onChange={setPollOptions} />
+            <PollOptionInputs
+              options={pollOptions}
+              onChange={setPollOptions}
+              onAdd={() => {
+                if (pollOptions.length >= 4) return
+                setPollOptions([...pollOptions, { id: pollIdCounter.current++, text: '' }])
+              }}
+            />
             <div>
               <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">Duration</p>
               <div className="flex gap-2">
@@ -383,7 +393,7 @@ export function PostComposer() {
             isSubmitting ||
             !title.trim() ||
             (!isPoll && !body.trim()) ||
-            (isPoll && pollOptions.filter((o) => o.trim()).length < 2)
+            (isPoll && pollOptions.filter((o) => o.text.trim()).length < 2)
           }
           className="w-full bg-accent disabled:opacity-30 text-white font-semibold py-4 rounded-[var(--r-lg)] transition-all active:scale-[0.98] active:bg-accent-hover text-base tracking-[-0.01em] shadow-lg shadow-accent/25"
         >

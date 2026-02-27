@@ -101,26 +101,25 @@ type NoteRow = {
   helpful_votes: number; not_helpful_votes: number; is_promoted: boolean; created_at: string
 }
 
-/** Delete a note vote, recount, and auto-promote/demote. */
+/** Delete a note vote, recount, and auto-promote/demote atomically. */
 export async function deleteNoteVote(
   noteId: string,
   nullifierHash: string
 ): Promise<CommunityNote> {
-  // Two separate statements so the COUNT(*) sees the post-DELETE state.
-  await db.execute(
-    sql`DELETE FROM community_note_votes WHERE note_id = ${noteId} AND nullifier_hash = ${nullifierHash}`
-  )
-
   const [updated] = await db.execute<NoteRow>(
-    sql`UPDATE community_notes
+    sql`WITH deleted AS (
+          DELETE FROM community_note_votes
+          WHERE note_id = ${noteId} AND nullifier_hash = ${nullifierHash}
+        )
+        UPDATE community_notes
         SET
-          helpful_votes     = (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND helpful = true),
-          not_helpful_votes = (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND helpful = false),
+          helpful_votes     = (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND nullifier_hash != ${nullifierHash} AND helpful = true),
+          not_helpful_votes = (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND nullifier_hash != ${nullifierHash} AND helpful = false),
           is_promoted = (
-            (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND helpful = true) >= 3
+            (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND nullifier_hash != ${nullifierHash} AND helpful = true) >= 3
             AND
-            (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND helpful = true)
-              > (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND helpful = false) * 2
+            (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND nullifier_hash != ${nullifierHash} AND helpful = true)
+              > (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND nullifier_hash != ${nullifierHash} AND helpful = false) * 2
           )
         WHERE id = ${noteId}
         RETURNING id, post_id, body, submitter_nullifier_hash,

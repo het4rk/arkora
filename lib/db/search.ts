@@ -1,6 +1,6 @@
 import { db } from './index'
 import { posts } from './schema'
-import { sql, ilike, or, and, isNull, desc } from 'drizzle-orm'
+import { sql, ilike, or, desc } from 'drizzle-orm'
 import type { Post, BoardId } from '@/lib/types'
 
 function toPost(row: typeof posts.$inferSelect): Post {
@@ -18,13 +18,12 @@ function toPost(row: typeof posts.$inferSelect): Post {
     replyCount: row.replyCount,
     quoteCount: row.quoteCount,
     createdAt: row.createdAt,
-    deletedAt: row.deletedAt ?? null,
     quotedPostId: row.quotedPostId ?? null,
     quotedPost: null,
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     countryCode: row.countryCode ?? null,
-    type: (row.type as 'text' | 'poll') ?? 'text',
+    type: (row.type as 'text' | 'poll' | 'repost') ?? 'text',
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
     contentHash: row.contentHash ?? null,
@@ -39,6 +38,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
  * still get results — tsquery needs at least one lexeme.
  */
 export async function searchPosts(query: string, limit = 20): Promise<Post[]> {
+  limit = Math.min(limit, 50)
   const q = query.trim().slice(0, 200)
   if (!q) return []
 
@@ -49,13 +49,10 @@ export async function searchPosts(query: string, limit = 20): Promise<Post[]> {
       .select()
       .from(posts)
       .where(
-        and(
-          isNull(posts.deletedAt),
-          or(
-            ilike(posts.title, pattern),
-            ilike(posts.pseudoHandle, pattern),
-            ilike(posts.boardId, pattern)
-          )
+        or(
+          ilike(posts.title, pattern),
+          ilike(posts.pseudoHandle, pattern),
+          ilike(posts.boardId, pattern)
         )
       )
       .limit(limit)
@@ -70,10 +67,7 @@ export async function searchPosts(query: string, limit = 20): Promise<Post[]> {
   const rows = await db
     .select()
     .from(posts)
-    .where(and(
-      isNull(posts.deletedAt),
-      sql`${tsVector} @@ ${tsQuery}`
-    ))
+    .where(sql`${tsVector} @@ ${tsQuery}`)
     .orderBy(sql`ts_rank(${tsVector}, ${tsQuery}) DESC`, desc(posts.createdAt))
     .limit(limit)
 

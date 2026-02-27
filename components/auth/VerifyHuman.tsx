@@ -27,15 +27,15 @@ export function VerifyHuman() {
 
   const subtitles = {
     detecting: 'Detecting your environment…',
-    minikit: 'Arkora uses World ID Orb verification. Your proof is validated directly on World Chain — not on our servers. One scan. Your humanity is permanent on-chain.',
-    'mobile-browser': "You're in a browser, not the World App. Tap below — World App will open automatically to verify you. Your proof is validated on World Chain.",
+    minikit: 'Your proof is validated directly on World Chain — not on our servers. One verification, permanently on-chain.',
+    'mobile-browser': "You're browsing outside of World App. Tap below to verify with a QR code — open your World App camera to scan it. For one-tap verification, open Arkora directly in World App.",
     desktop: 'Scan the QR code with World App on your phone. Your proof is validated on World Chain — not on a central server.',
   }
 
   const footers = {
     detecting: 'Powered by World ID',
     minikit: 'Proof validated on World Chain · Powered by World ID',
-    'mobile-browser': 'World App will open on your phone or tablet',
+    'mobile-browser': 'For best results, open Arkora directly in World App',
     desktop: 'Proof validated on World Chain · Scan with World App',
   }
 
@@ -43,12 +43,11 @@ export function VerifyHuman() {
     status === 'pending' ? 'Verifying…'
     : env === 'detecting' ? 'Loading…'
     : env === 'minikit' ? 'Verify with World ID'
-    : env === 'mobile-browser' ? 'Open World App to Verify'
-    : 'Scan QR with World App'
+    : 'Verify with QR Code'
 
   const envBadge =
     env === 'minikit' ? { color: 'bg-green-400', label: 'World App detected' }
-    : env === 'mobile-browser' ? { color: 'bg-yellow-400', label: 'Browser detected — not in World App' }
+    : env === 'mobile-browser' ? { color: 'bg-yellow-400', label: 'Mobile browser' }
     : env === 'desktop' ? { color: 'bg-blue-400', label: 'Desktop browser' }
     : null
 

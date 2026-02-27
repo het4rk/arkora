@@ -1,6 +1,6 @@
 import { db } from './index'
 import { follows, posts, humanUsers } from './schema'
-import { eq, and, desc, lt, isNull, sql } from 'drizzle-orm'
+import { eq, and, desc, lt, sql } from 'drizzle-orm'
 import type { Post, BoardId } from '@/lib/types'
 
 function toPost(row: typeof posts.$inferSelect): Post {
@@ -18,13 +18,12 @@ function toPost(row: typeof posts.$inferSelect): Post {
     replyCount: row.replyCount,
     quoteCount: row.quoteCount,
     createdAt: row.createdAt,
-    deletedAt: row.deletedAt ?? null,
     quotedPostId: row.quotedPostId ?? null,
     quotedPost: null,
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     countryCode: row.countryCode ?? null,
-    type: (row.type as 'text' | 'poll') ?? 'text',
+    type: (row.type as 'text' | 'poll' | 'repost') ?? 'text',
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
     contentHash: row.contentHash ?? null,
@@ -87,7 +86,7 @@ export async function getFeedFollowing(
   // Single JOIN query — no separate getFollowingIds round-trip.
   const conditions = [
     eq(follows.followerId, nullifierHash),
-    isNull(posts.deletedAt),
+    lt(posts.reportCount, 5),
   ]
   if (cursor) conditions.push(lt(posts.createdAt, new Date(cursor)))
 
@@ -111,7 +110,7 @@ export async function getPublicProfileData(
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(posts)
-      .where(and(eq(posts.nullifierHash, nullifierHash), isNull(posts.deletedAt))),
+      .where(eq(posts.nullifierHash, nullifierHash)),
   ])
   return {
     followerCount,

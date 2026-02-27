@@ -136,12 +136,13 @@ export function ThreadView({ postId }: Props) {
     const next = prev === helpful ? null : helpful
     noteVotesRef.current.set(noteId, next)
     try {
-      await fetch('/api/community-notes/vote', {
+      const res = await fetch('/api/community-notes/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // next === null → toggle-off, send helpful: null to delete the vote in DB
         body: JSON.stringify({ noteId, helpful: next }),
       })
+      if (!res.ok) noteVotesRef.current.set(noteId, prev)
     } catch {
       noteVotesRef.current.set(noteId, prev)
     }

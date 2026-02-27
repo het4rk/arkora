@@ -8,7 +8,7 @@ Arkora is a World App miniapp where users post, vote, and converse anonymously �
 
 World ID Orb proofs are validated directly on World Chain via the WorldIDRouter smart contract — not on Worldcoin's centralized servers. Proof validation is settled by blockchain consensus.
 
-**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers (shown in feed cards + profiles) · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs, tips) · Community Notes · Bookmarks · Dynamic boards (synonym dedup, typo-tolerant matching) · Following feed · Local feed (GPS radius) · E2E encrypted DMs · @ mentions · Live ephemeral Rooms (auto-close when last person leaves) · Block / report / moderation (auto-hide at 5 reports) · WLD tips (with push notification to recipient) & subscriptions · Light + dark theme · GDPR-compliant account deletion · Privacy Policy + Terms of Service
+**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers (shown in feed cards + profiles) · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs, tips) · Community Notes · Bookmarks · Dynamic boards (synonym dedup, typo-tolerant matching) · Following feed · Local feed (GPS radius) · E2E encrypted DMs (with block enforcement) · @ mentions · Live ephemeral Rooms (auto-close when last person leaves) · Block / report / moderation (auto-hide at 5 reports) · WLD tips (with push notification to recipient) & subscriptions · Private Pusher channels (server-authorized) · Light + dark theme · GDPR-compliant account deletion (comprehensive data cleanup) · Privacy Policy + Terms of Service
 
 ---
 
@@ -158,7 +158,17 @@ Users choose how to appear:
 
 ### DMs
 
-End-to-end encrypted. Key exchange uses ECDH (Curve25519); messages encrypted with AES-256-GCM. Public keys stored server-side. Private keys live only in Zustand / localStorage — the server never sees them.
+End-to-end encrypted. Key exchange uses ECDH (Curve25519); messages encrypted with AES-256-GCM. Public keys stored server-side. Private keys live only in Zustand / localStorage — the server never sees them. Block checks enforced server-side — blocked users cannot send or receive DMs. All DM Pusher channels are private (server-authorized).
+
+### Security
+
+- Auth: server-side cookie verification on all identity-sensitive endpoints (SIWE wallet cookie cross-checked)
+- All user channels use Pusher private channels (`private-user-*`) with server-side authorization
+- CSP headers with no `unsafe-eval` — only `unsafe-inline` (required by Next.js)
+- World ID verification errors return generic messages to client (detailed errors logged server-side only)
+- Vote operations use atomic CTEs to prevent race conditions
+- Account deletion is comprehensive — cleans all user-associated data across 11+ tables before removing the account
+- Environment validation fails fast on startup if any required variable is missing
 
 ### Rate Limiting
 
