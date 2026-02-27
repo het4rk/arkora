@@ -8,9 +8,10 @@ import { RoomMessageRow } from '@/components/rooms/RoomMessage'
 import { RoomComposer } from '@/components/rooms/RoomComposer'
 import { RoomParticipants } from '@/components/rooms/RoomParticipants'
 import { BoardTag } from '@/components/ui/BoardTag'
+import { cn } from '@/lib/utils'
 import type { Room, RoomParticipant, RoomMessage } from '@/lib/types'
 
-// Animated equalizer bars — pulses faster when recently active
+// Equalizer bars - pulses faster when speaking
 function SoundWaveBars({ active, className = '' }: { active?: boolean; className?: string }) {
   return (
     <div className={`flex items-end gap-[2.5px] ${active ? 'sound-wave-active' : ''} ${className}`}>
@@ -19,6 +20,83 @@ function SoundWaveBars({ active, className = '' }: { active?: boolean; className
       <span className="sound-bar sound-bar-3" />
       <span className="sound-bar sound-bar-4" />
       <span className="sound-bar sound-bar-5" />
+    </div>
+  )
+}
+
+function getInitials(handle: string): string {
+  return handle
+    .split(/[\s.#_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('') || '?'
+}
+
+// Participant bubble in the voice-room grid
+function ParticipantBubble({
+  participant,
+  isSpeaking,
+  isHost,
+  isSelf,
+  selfMuted,
+}: {
+  participant: RoomParticipant
+  isSpeaking: boolean
+  isHost: boolean
+  isSelf: boolean
+  selfMuted: boolean
+}) {
+  const muted = participant.isMuted || (isSelf && selfMuted)
+  return (
+    <div className="flex flex-col items-center gap-2 py-2 px-2 min-w-[72px]">
+      <div className="relative">
+        {/* Avatar */}
+        <div
+          className={cn(
+            'w-14 h-14 rounded-full flex items-center justify-center text-sm font-bold select-none transition-all duration-300',
+            isSpeaking
+              ? 'bg-accent text-background shadow-lg shadow-accent/40 scale-105'
+              : 'glass text-text-secondary'
+          )}
+        >
+          {getInitials(participant.displayHandle)}
+        </div>
+
+        {/* Sound waves below avatar when speaking */}
+        {isSpeaking && !muted && (
+          <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2">
+            <SoundWaveBars active className="text-accent" />
+          </div>
+        )}
+
+        {/* Host crown */}
+        {isHost && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center shadow-sm">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" className="text-background">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+          </div>
+        )}
+
+        {/* Muted indicator */}
+        {muted && (
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-surface-up border border-border rounded-full flex items-center justify-center">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+              <line x1="1" y1="1" x2="23" y2="23" />
+              <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+              <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
+          </div>
+        )}
+      </div>
+
+      {/* Handle */}
+      <p className="text-[10px] font-medium text-text-secondary text-center leading-tight max-w-[72px] truncate mt-0.5">
+        {isSelf ? 'You' : participant.displayHandle.split('#')[0]}
+      </p>
     </div>
   )
 }
@@ -39,8 +117,11 @@ export function RoomView({ roomId }: RoomViewProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasEnded, setHasEnded] = useState(false)
   const [connectionLost, setConnectionLost] = useState(false)
-  const [recentActivity, setRecentActivity] = useState(false)
-  const activityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [selfMuted, setSelfMuted] = useState(false)
+
+  // Per-participant speaking state: Set of nullifierHashes currently "speaking"
+  const [speakingSet, setSpeakingSet] = useState<Set<string>>(new Set())
+  const speakingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pusherRef = useRef<InstanceType<typeof Pusher> | null>(null)
@@ -49,13 +130,27 @@ export function RoomView({ roomId }: RoomViewProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
-  const flashActivity = useCallback(() => {
-    setRecentActivity(true)
-    if (activityTimerRef.current) clearTimeout(activityTimerRef.current)
-    activityTimerRef.current = setTimeout(() => setRecentActivity(false), 3000)
+  // Mark a participant as speaking for 4 seconds
+  const markSpeaking = useCallback((hash: string) => {
+    setSpeakingSet((prev) => {
+      const next = new Set(prev)
+      next.add(hash)
+      return next
+    })
+    const existing = speakingTimersRef.current.get(hash)
+    if (existing) clearTimeout(existing)
+    const timer = setTimeout(() => {
+      setSpeakingSet((prev) => {
+        const next = new Set(prev)
+        next.delete(hash)
+        return next
+      })
+      speakingTimersRef.current.delete(hash)
+    }, 4000)
+    speakingTimersRef.current.set(hash, timer)
   }, [])
 
-  // Load room details + check if we're already a participant
+  // Load room details
   useEffect(() => {
     void (async () => {
       try {
@@ -76,6 +171,15 @@ export function RoomView({ roomId }: RoomViewProps) {
       }
     })()
   }, [roomId, nullifierHash, router])
+
+  // Cleanup speaking timers on unmount
+  useEffect(() => {
+    const timers = speakingTimersRef.current
+    return () => {
+      timers.forEach((t) => clearTimeout(t))
+      timers.clear()
+    }
+  }, [])
 
   // Subscribe to Pusher presence channel
   useEffect(() => {
@@ -103,7 +207,7 @@ export function RoomView({ roomId }: RoomViewProps) {
           if (prev.some((m) => m.id === msg.id)) return prev
           return [...prev, msg]
         })
-        flashActivity()
+        markSpeaking(msg.senderHash)
         setTimeout(scrollToBottom, 50)
       })
 
@@ -131,7 +235,6 @@ export function RoomView({ roomId }: RoomViewProps) {
         setHasEnded(true)
       })
 
-      // Presence: member joined
       channel.bind('pusher:member_added', (member: { id: string; info: { displayHandle: string; identityMode: string; isMuted: boolean; isCoHost: boolean } }) => {
         setParticipants((prev) => {
           if (prev.some((p) => p.nullifierHash === member.id)) return prev
@@ -149,7 +252,6 @@ export function RoomView({ roomId }: RoomViewProps) {
         })
       })
 
-      // Presence: member left
       channel.bind('pusher:member_removed', (member: { id: string }) => {
         setParticipants((prev) => prev.filter((p) => p.nullifierHash !== member.id))
       })
@@ -163,9 +265,8 @@ export function RoomView({ roomId }: RoomViewProps) {
         pusher.disconnect()
         pusherRef.current = null
       }
-      if (activityTimerRef.current) clearTimeout(activityTimerRef.current)
     }
-  }, [nullifierHash, room, roomId, router, scrollToBottom, flashActivity])
+  }, [nullifierHash, room, roomId, router, scrollToBottom, markSpeaking])
 
   async function handleMute(targetHash: string) {
     await fetch(`/api/rooms/${roomId}/mute`, {
@@ -208,6 +309,7 @@ export function RoomView({ roomId }: RoomViewProps) {
         <p className="text-text font-bold text-lg">Room Ended</p>
         <p className="text-text-muted text-sm">This room is no longer live.</p>
         <button
+          type="button"
           onClick={() => router.push('/rooms')}
           className="bg-accent text-background font-semibold px-6 py-3 rounded-[var(--r-lg)] text-sm active:scale-95 transition-all"
         >
@@ -226,12 +328,14 @@ export function RoomView({ roomId }: RoomViewProps) {
   }
 
   const isHost = nullifierHash === room.hostHash
+  const effectivelyMuted = myParticipant.isMuted || selfMuted
 
   return (
     <div className="flex flex-col h-dvh">
       {/* Header */}
       <div className="px-4 pt-[max(env(safe-area-inset-top),16px)] pb-3 border-b border-border/25 flex items-center gap-3">
         <button
+          type="button"
           onClick={() => void handleLeave()}
           className="text-text-muted active:opacity-70 transition-opacity shrink-0"
           aria-label="Leave room"
@@ -244,14 +348,11 @@ export function RoomView({ roomId }: RoomViewProps) {
         <div className="flex-1 min-w-0">
           <p className="text-text font-semibold text-sm truncate">{room.title}</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <SoundWaveBars active={recentActivity} className="text-accent shrink-0" />
             <BoardTag boardId={room.boardId} />
-            <span className="text-text-muted text-[10px] truncate">
-              {myParticipant.displayHandle}
-            </span>
           </div>
         </div>
         <button
+          type="button"
           onClick={() => setShowParticipants(true)}
           className="flex items-center gap-1.5 text-text-secondary text-xs glass px-3 py-1.5 rounded-[var(--r-full)] shrink-0 active:opacity-70 transition-opacity"
         >
@@ -266,6 +367,7 @@ export function RoomView({ roomId }: RoomViewProps) {
         </button>
         {isHost && (
           <button
+            type="button"
             onClick={() => void handleEndRoom()}
             className="text-text-muted text-xs glass px-3 py-1.5 rounded-[var(--r-full)] shrink-0 active:opacity-70 transition-opacity"
           >
@@ -277,16 +379,30 @@ export function RoomView({ roomId }: RoomViewProps) {
       {/* Pusher connection lost banner */}
       {connectionLost && (
         <div className="px-4 py-2 bg-surface-up border-b border-border text-center">
-          <p className="text-text-secondary text-xs">Connection lost — new messages may not arrive. Refresh to reconnect.</p>
+          <p className="text-text-secondary text-xs">Connection lost - new messages may not arrive. Refresh to reconnect.</p>
         </div>
       )}
+
+      {/* Participant grid */}
+      <div className="px-4 pt-4 pb-3 border-b border-border/25">
+        <div className="flex flex-wrap gap-1 justify-start">
+          {participants.map((p) => (
+            <ParticipantBubble
+              key={p.nullifierHash}
+              participant={p}
+              isSpeaking={speakingSet.has(p.nullifierHash)}
+              isHost={p.nullifierHash === room.hostHash}
+              isSelf={p.nullifierHash === nullifierHash}
+              selfMuted={selfMuted}
+            />
+          ))}
+        </div>
+      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-16">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
-            <p className="text-text font-semibold">Room is live</p>
+          <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-10">
             <p className="text-text-muted text-sm">Start the conversation</p>
           </div>
         )}
@@ -300,11 +416,51 @@ export function RoomView({ roomId }: RoomViewProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Composer */}
+      {/* Bottom bar: self-mute + composer */}
       <div className="border-t border-border/25 pb-[max(env(safe-area-inset-bottom),8px)]">
+        {/* Self-mute toggle */}
+        <div className="px-4 pt-2.5 pb-1 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSelfMuted((m) => !m)}
+            disabled={myParticipant.isMuted}
+            className={cn(
+              'flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--r-full)] text-xs font-semibold transition-all active:scale-95 disabled:opacity-40',
+              effectivelyMuted
+                ? 'glass text-text-muted'
+                : 'bg-accent/10 text-accent border border-accent/20'
+            )}
+          >
+            {effectivelyMuted ? (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                  <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+                  <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+                {myParticipant.isMuted ? 'Muted by host' : 'Unmute'}
+              </>
+            ) : (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+                Mute
+              </>
+            )}
+          </button>
+          {speakingSet.has(nullifierHash ?? '') && !effectivelyMuted && (
+            <SoundWaveBars active className="text-accent" />
+          )}
+        </div>
         <RoomComposer
           roomId={roomId}
-          isMuted={myParticipant.isMuted}
+          isMuted={effectivelyMuted}
           onSent={scrollToBottom}
         />
       </div>

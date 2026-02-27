@@ -5,6 +5,7 @@ import { useFeed, type FeedMode } from '@/hooks/useFeed'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { ThreadCard } from './ThreadCard'
 import { FeedSkeleton } from './FeedSkeleton'
+import { LiveRoomsStrip } from './LiveRoomsStrip'
 import { haptic } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import type { PollResult } from '@/lib/types'
@@ -258,6 +259,9 @@ export function Feed() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Live rooms strip - auto-refreshes every 30s */}
+        <LiveRoomsStrip boardId={activeBoard ?? undefined} />
+
         {/* Pull-to-refresh indicator */}
         {(pullDistance > 0 || isRefreshing) && (
           <div

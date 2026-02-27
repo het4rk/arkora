@@ -17,7 +17,6 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
   const { nullifierHash, identityMode, persistentAlias, user } = useArkoraStore()
   const [title, setTitle] = useState('')
   const [boardId, setBoardId] = useState<BoardId>('arkora')
-  const [maxParticipants, setMaxParticipants] = useState(50)
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,7 +38,6 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
         body: JSON.stringify({
           title: title.trim(),
           boardId,
-          maxParticipants,
           hostHandle: resolveHostHandle(),
         }),
       })
@@ -48,7 +46,6 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
         setError(json.error ?? 'Failed to create room')
         return
       }
-      // Auto-join creator as participant so RoomView can find myParticipant
       const joinRes = await fetch(`/api/rooms/${json.data.id}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,35 +105,11 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
               </div>
 
               {/* Board */}
-              <div className="mb-4">
+              <div className="mb-5">
                 <label className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] block mb-2">
                   Board
                 </label>
                 <BoardPicker selected={boardId} allBoards={FEATURED_BOARDS} onChange={setBoardId} />
-              </div>
-
-              {/* Max participants */}
-              <div className="mb-5">
-                <label
-                  htmlFor="max-participants"
-                  className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] block mb-2"
-                >
-                  Max participants: {maxParticipants}
-                </label>
-                <input
-                  id="max-participants"
-                  type="range"
-                  min={2}
-                  max={200}
-                  step={10}
-                  value={maxParticipants}
-                  onChange={(e) => setMaxParticipants(Number(e.target.value))}
-                  className="w-full accent-accent"
-                  aria-label={`Max participants: ${maxParticipants}`}
-                />
-                <div className="flex justify-between text-[10px] text-text-muted mt-0.5">
-                  <span>2</span><span>200</span>
-                </div>
               </div>
 
               {error && (

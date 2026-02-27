@@ -47,11 +47,10 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as {
       title?: string
       boardId?: string
-      maxParticipants?: number
       hostHandle?: string
     }
 
-    const { title: rawTitle, boardId: rawBoardId, maxParticipants: rawMax, hostHandle: rawHandle } = body
+    const { title: rawTitle, boardId: rawBoardId, hostHandle: rawHandle } = body
 
     if (!rawTitle?.trim() || !rawBoardId || !rawHandle?.trim()) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 })
@@ -63,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     const title = sanitizeLine(rawTitle).slice(0, 100)
     const hostHandle = sanitizeLine(rawHandle).slice(0, 50)
-    const maxParticipants = Math.min(Math.max(rawMax ?? 50, 2), 200)
+    const maxParticipants = 100 // fixed default; no longer user-configurable
 
     const room = await createRoom(callerHash, hostHandle, title, rawBoardId as BoardId, maxParticipants)
     return NextResponse.json({ success: true, data: room }, { status: 201 })
