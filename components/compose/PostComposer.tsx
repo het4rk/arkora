@@ -154,7 +154,7 @@ export function PostComposer() {
   if (!isComposerOpen) return null
 
   const isAnonymousBoard = ANONYMOUS_BOARDS.has(boardId)
-  // Board not in featured list — user created it
+  // Board not in featured list - user created it
   const isCustomBoardActive = !FEATURED_BOARDS.some((b) => b.id === boardId)
 
   return (
@@ -177,22 +177,20 @@ export function PostComposer() {
                 className={cn(
                   'flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--r-full)] text-sm font-medium transition-all active:scale-95',
                   boardId === board.id
-                    ? 'bg-accent text-white shadow-sm shadow-accent/30'
+                    ? 'bg-accent text-background shadow-sm shadow-accent/30'
                     : 'glass text-text-secondary'
                 )}
               >
-                <span className="text-xs">{board.emoji}</span>
                 <span>#{board.label ?? boardLabel(board.id)}</span>
               </button>
             ))}
 
-            {/* Custom board chip — shown when user selected a custom board */}
+            {/* Custom board chip - shown when user selected a custom board */}
             {isCustomBoardActive && (
               <button
                 type="button"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--r-full)] text-sm font-medium bg-accent text-white shadow-sm shadow-accent/30"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--r-full)] text-sm font-medium bg-accent text-background shadow-sm shadow-accent/30"
               >
-                <span className="text-xs">💬</span>
                 <span>#{boardLabel(boardId)}</span>
               </button>
             )}
@@ -226,7 +224,7 @@ export function PostComposer() {
                 type="button"
                 onClick={commitCustomBoard}
                 disabled={!customBoardInput.trim()}
-                className="px-3 py-2 bg-accent text-white text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40 shrink-0"
+                className="px-3 py-2 bg-accent text-background text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40 shrink-0"
               >
                 Add
               </button>
@@ -241,9 +239,9 @@ export function PostComposer() {
           )}
 
           {isAnonymousBoard && (
-            <p className="mt-2.5 text-[11px] text-amber-400/80 flex items-center gap-1">
-              <span>🤫</span>
-              <span>Your identity is completely hidden on this board — no handle, no profile link.</span>
+            <p className="mt-2.5 text-[11px] text-text-muted flex items-center gap-1">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+              <span>Your identity is completely hidden on this board - no handle, no profile link.</span>
             </p>
           )}
         </div>
@@ -287,10 +285,10 @@ export function PostComposer() {
                 onChange={(e) => setBody(e.target.value.slice(0, 10000))}
                 placeholder="Say more…"
                 rows={4}
-                className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed"
+                className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed max-h-96 overflow-y-auto"
               />
             </div>
-            {/* Add poll — only when not quoting */}
+            {/* Add poll - only when not quoting */}
             {!composerQuotedPost && (
               <button
                 type="button"
@@ -311,7 +309,7 @@ export function PostComposer() {
               <button
                 type="button"
                 onClick={removePoll}
-                className="text-[11px] text-downvote/60 hover:text-downvote transition-colors active:opacity-60"
+                className="text-[11px] text-text-muted/60 hover:text-text-muted transition-colors active:opacity-60"
               >
                 × Remove poll
               </button>
@@ -334,7 +332,7 @@ export function PostComposer() {
                     onClick={() => setPollDuration(d)}
                     className={cn(
                       'flex-1 py-2 rounded-[var(--r-full)] text-sm font-medium transition-all active:scale-95',
-                      pollDuration === d ? 'bg-accent text-white shadow-sm shadow-accent/30' : 'glass text-text-secondary'
+                      pollDuration === d ? 'bg-accent text-background shadow-sm shadow-accent/30' : 'glass text-text-secondary'
                     )}
                   >
                     {d === 24 ? '24h' : d === 72 ? '3 days' : '7 days'}
@@ -360,18 +358,17 @@ export function PostComposer() {
               <span className="text-accent text-xs font-semibold">{getPreviewName()} ✓</span>
             </div>
             <span className="text-text-muted text-[11px]">
-              {identityMode === 'anonymous' ? '🎲' : identityMode === 'alias' ? '👤' : '📛'}
-              {' '}Change →
+              Change →
             </span>
           </button>
         ) : (
           <div className="w-full flex items-center gap-3 px-4 py-3.5 glass rounded-[var(--r-lg)]">
-            <span className="text-base">🔒</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted shrink-0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
             <span className="text-text-secondary text-sm">World ID verification required to post</span>
           </div>
         )}
 
-        {/* Image attachment — text post only */}
+        {/* Image attachment - text post only */}
         {!isPoll && (
           <ImagePicker
             previewUrl={imageUrl}
@@ -381,7 +378,7 @@ export function PostComposer() {
         )}
 
         {error && (
-          <p className="text-downvote text-sm rounded-[var(--r-md)] px-4 py-3 bg-downvote/10 border border-downvote/20">
+          <p className="text-text-secondary text-sm rounded-[var(--r-md)] px-4 py-3 bg-surface-up border border-border">
             {error}
           </p>
         )}
@@ -395,7 +392,7 @@ export function PostComposer() {
             (!isPoll && !body.trim()) ||
             (isPoll && pollOptions.filter((o) => o.text.trim()).length < 2)
           }
-          className="w-full bg-accent disabled:opacity-30 text-white font-semibold py-4 rounded-[var(--r-lg)] transition-all active:scale-[0.98] active:bg-accent-hover text-base tracking-[-0.01em] shadow-lg shadow-accent/25"
+          className="w-full bg-accent disabled:opacity-30 text-background font-semibold py-4 rounded-[var(--r-lg)] transition-all active:scale-[0.98] active:bg-accent-hover text-base tracking-[-0.01em] shadow-lg shadow-accent/25"
         >
           {isSubmitting
             ? (isPoll ? 'Creating poll…' : 'Posting…')

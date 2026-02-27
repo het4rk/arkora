@@ -16,17 +16,17 @@
   --clr-text-sec:   158 158 168;
   --clr-text-muted: 88 88 96;
 
-  /* Brand */
-  --accent-rgb:   108 59 255;
-  --accent-hex:   #6C3BFF;
-  --accent-hover: #7C4FFF;
+  /* Brand — monochrome (white accent on dark) */
+  --accent-rgb:   255 255 255;
+  --accent-hex:   #FFFFFF;
+  --accent-hover: #E0E0E0;
 
   /* iOS 26 Liquid Glass tokens */
-  --glass-bg:     rgba(255,255,255,0.055);
-  --glass-border: rgba(255,255,255,0.10);
-  --glass-shine:  rgba(255,255,255,0.15);
-  --glass-shadow: rgba(0,0,0,0.55);
-  --glass-blur:   52px;
+  --glass-bg:     rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.13);
+  --glass-shine:  rgba(255,255,255,0.20);
+  --glass-shadow: rgba(0,0,0,0.60);
+  --glass-blur:   58px;
   --glass-sat:    190%;
 
   /* Spatial system */
@@ -45,11 +45,16 @@
   --clr-text-sec:   88 88 100;
   --clr-text-muted: 150 150 162;
 
+  /* Brand — monochrome (near-black accent on light) */
+  --accent-rgb:   18 18 20;
+  --accent-hex:   #121214;
+  --accent-hover: #2A2A2E;
+
   --glass-bg:     rgba(255,255,255,0.62);
   --glass-border: rgba(255,255,255,0.88);
   --glass-shine:  rgba(255,255,255,0.96);
   --glass-shadow: rgba(0,0,0,0.10);
-  --glass-blur:   40px;
+  --glass-blur:   44px;
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
@@ -112,7 +117,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::selection {
-  background: rgba(108, 59, 255, 0.35);
+  background: rgba(var(--accent-rgb), 0.25);
   color: #fff;
 }
 
@@ -157,16 +162,16 @@ h1, h2, h3, h4, h5, h6 {
 .glass-liquid {
   background: linear-gradient(
     160deg,
-    rgba(255,255,255,0.07)   0%,
-    rgba(108,59,255,0.055)  35%,
-    rgba(255,255,255,0.04)  65%,
-    rgba(30,160,255,0.035) 100%
+    rgba(255,255,255,0.09)   0%,
+    rgba(255,255,255,0.075) 35%,
+    rgba(255,255,255,0.055) 65%,
+    rgba(255,255,255,0.045) 100%
   );
-  backdrop-filter: blur(56px) saturate(200%);
-  -webkit-backdrop-filter: blur(56px) saturate(200%);
-  border: 1px solid rgba(255,255,255,0.11);
+  backdrop-filter: blur(62px) saturate(200%);
+  -webkit-backdrop-filter: blur(62px) saturate(200%);
+  border: 1px solid rgba(255,255,255,0.13);
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.16),
+    inset 0 1.5px 0 rgba(255,255,255,0.20),
     inset 0 -1px 0  rgba(0,0,0,0.18),
     0 8px 48px var(--glass-shadow);
 }
@@ -175,14 +180,14 @@ h1, h2, h3, h4, h5, h6 {
 .glass-nav {
   background: linear-gradient(
     to top,
-    rgba(10,10,10,0.82)     0%,
-    rgba(255,255,255,0.055) 100%
+    rgba(10,10,10,0.82)    0%,
+    rgba(255,255,255,0.07) 100%
   );
-  backdrop-filter: blur(56px) saturate(180%);
-  -webkit-backdrop-filter: blur(56px) saturate(180%);
-  border-top: 1px solid rgba(255,255,255,0.09);
+  backdrop-filter: blur(62px) saturate(180%);
+  -webkit-backdrop-filter: blur(62px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,0.12);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.13),
     0 -4px 30px rgba(0,0,0,0.28);
   /* Extend background into the home indicator safe area so no gap shows */
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -203,14 +208,14 @@ h1, h2, h3, h4, h5, h6 {
 .glass-nav-top {
   background: linear-gradient(
     to bottom,
-    rgba(10,10,10,0.82)     0%,
-    rgba(255,255,255,0.055) 100%
+    rgba(10,10,10,0.82)    0%,
+    rgba(255,255,255,0.07) 100%
   );
-  backdrop-filter: blur(56px) saturate(180%);
-  -webkit-backdrop-filter: blur(56px) saturate(180%);
-  border-bottom: 1px solid rgba(255,255,255,0.09);
+  backdrop-filter: blur(62px) saturate(180%);
+  -webkit-backdrop-filter: blur(62px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
   box-shadow:
-    inset 0 -1px 0 rgba(255,255,255,0.10),
+    inset 0 -1px 0 rgba(255,255,255,0.13),
     0 4px 30px rgba(0,0,0,0.28);
 }
 
@@ -231,16 +236,16 @@ h1, h2, h3, h4, h5, h6 {
 .glass-sidebar {
   background: linear-gradient(
     175deg,
-    rgba(255,255,255,0.075)  0%,
-    rgba(108,59,255,0.045)  40%,
-    rgba(255,255,255,0.055) 100%
+    rgba(255,255,255,0.09)  0%,
+    rgba(255,255,255,0.075) 40%,
+    rgba(255,255,255,0.07)  100%
   );
-  backdrop-filter: blur(64px) saturate(200%);
-  -webkit-backdrop-filter: blur(64px) saturate(200%);
-  border-right: 1px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(72px) saturate(200%);
+  -webkit-backdrop-filter: blur(72px) saturate(200%);
+  border-right: 1px solid rgba(255,255,255,0.13);
   box-shadow:
-    inset -1px 0 0 rgba(255,255,255,0.05),
-    inset  0 1px 0 rgba(255,255,255,0.12),
+    inset -1px 0 0 rgba(255,255,255,0.06),
+    inset  0 1px 0 rgba(255,255,255,0.16),
     6px 0 48px rgba(0,0,0,0.42);
 }
 
@@ -256,14 +261,14 @@ h1, h2, h3, h4, h5, h6 {
 .glass-sheet {
   background: linear-gradient(
     to bottom,
-    rgba(255,255,255,0.075) 0%,
-    rgba(18,18,18,0.93)     72%
+    rgba(255,255,255,0.09) 0%,
+    rgba(18,18,18,0.93)    72%
   );
-  backdrop-filter: blur(56px) saturate(180%);
-  -webkit-backdrop-filter: blur(56px) saturate(180%);
-  border-top: 1px solid rgba(255,255,255,0.11);
+  backdrop-filter: blur(62px) saturate(180%);
+  -webkit-backdrop-filter: blur(62px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,0.13);
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.14),
+    inset 0 1.5px 0 rgba(255,255,255,0.18),
     0 -8px 64px rgba(0,0,0,0.52);
 }
 [data-theme="light"] .glass-sheet {
@@ -276,14 +281,14 @@ h1, h2, h3, h4, h5, h6 {
 .glass-compose {
   background: linear-gradient(
     to top,
-    rgba(8,8,8,0.92)         0%,
-    rgba(255,255,255,0.062) 100%
+    rgba(8,8,8,0.92)       0%,
+    rgba(255,255,255,0.08) 100%
   );
-  backdrop-filter: blur(48px) saturate(180%);
-  -webkit-backdrop-filter: blur(48px) saturate(180%);
-  border-top: 1px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(54px) saturate(180%);
+  -webkit-backdrop-filter: blur(54px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,0.12);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.15),
     0 -4px 24px rgba(0,0,0,0.28);
 }
 [data-theme="light"] .glass-compose {
@@ -301,7 +306,7 @@ h1, h2, h3, h4, h5, h6 {
 .glass-input::placeholder { color: rgb(var(--clr-text-muted)); }
 .glass-input:focus {
   background: rgba(255,255,255,0.08);
-  border-color: rgba(108,59,255,0.55);
+  border-color: rgba(var(--accent-rgb), 0.45);
   outline: none;
 }
 [data-theme="light"] .glass-input {
@@ -310,5 +315,5 @@ h1, h2, h3, h4, h5, h6 {
 }
 [data-theme="light"] .glass-input:focus {
   background: #fff;
-  border-color: rgba(108,59,255,0.50);
+  border-color: rgba(var(--accent-rgb), 0.45);
 }

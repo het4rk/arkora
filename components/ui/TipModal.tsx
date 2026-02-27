@@ -10,7 +10,7 @@ import { haptic } from '@/lib/utils'
 interface Props {
   recipientHash: string
   recipientName: string
-  /** Pre-fetched wallet — skips extra /api/u round-trip when available. */
+  /** Pre-fetched wallet - skips extra /api/u round-trip when available. */
   recipientWallet?: string | undefined
   onClose: () => void
 }
@@ -54,16 +54,16 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
       }
       if (!wallet) throw new Error('Could not find recipient wallet')
 
-      const txId = await sendWld(wallet, amount)
-      // null means user cancelled or transaction failed — don't record
-      if (!txId) {
+      const result = await sendWld(wallet, amount, `Tip to ${recipientName}`)
+      // null means user cancelled or transaction failed - don't record
+      if (!result) {
         setState('pick')
         return
       }
       await fetch('/api/tip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientHash, amountWld: amount.toString(), txId }),
+        body: JSON.stringify({ recipientHash, amountWld: amount.toString(), txId: result.txId }),
       })
       haptic('heavy')
       setState('success')
@@ -98,8 +98,8 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
 
         {state === 'success' ? (
           <div className="text-center space-y-3 py-4">
-            <div className="w-16 h-16 rounded-full bg-accent/15 flex items-center justify-center mx-auto">
-              <span className="text-3xl">⚡</span>
+            <div className="w-16 h-16 rounded-full bg-surface-up flex items-center justify-center mx-auto">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
             </div>
             <p className="font-bold text-text text-xl">Sent!</p>
             <p className="text-text-secondary text-sm">
@@ -107,7 +107,7 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
             </p>
             <button
               onClick={onClose}
-              className="mt-2 px-8 py-3 bg-accent text-white rounded-[var(--r-full)] font-semibold active:scale-95 transition-all"
+              className="mt-2 px-8 py-3 bg-accent text-background rounded-[var(--r-full)] font-semibold active:scale-95 transition-all"
             >
               Done
             </button>
@@ -115,8 +115,8 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
         ) : (
           <>
             <div>
-              <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center mb-3">
-                <span className="text-xl">⚡</span>
+              <div className="w-12 h-12 rounded-full bg-surface-up flex items-center justify-center mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
               </div>
               <p className="font-bold text-text text-xl">Tip {recipientName}</p>
               <p className="text-text-muted text-xs mt-0.5">WLD sent directly onchain</p>
@@ -130,7 +130,7 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
                   onClick={() => { setCustom(''); setSelected(a) }}
                   className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 ${
                     !custom && selected === a
-                      ? 'bg-accent text-white shadow-sm shadow-accent/30'
+                      ? 'bg-accent text-background shadow-sm shadow-accent/30'
                       : 'glass border border-border text-text-muted'
                   }`}
                 >
@@ -157,13 +157,13 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
             </div>
 
             {state === 'error' && (
-              <p className="text-downvote text-xs">{errorMsg || 'Transaction failed. Try again.'}</p>
+              <p className="text-text-secondary text-xs">{errorMsg || 'Transaction failed. Try again.'}</p>
             )}
 
             <button
               onClick={() => void handleSend()}
               disabled={state === 'sending' || !amountValid}
-              className="w-full py-3 bg-accent text-white rounded-[var(--r-full)] font-semibold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
+              className="w-full py-3 bg-accent text-background rounded-[var(--r-full)] font-semibold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
             >
               {state === 'sending'
                 ? 'Confirming in World App…'

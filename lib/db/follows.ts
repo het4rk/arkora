@@ -83,7 +83,7 @@ export async function getFeedFollowing(
   cursor?: string,
   limit = 20
 ): Promise<Post[]> {
-  // Single JOIN query — no separate getFollowingIds round-trip.
+  // Single JOIN query - no separate getFollowingIds round-trip.
   const conditions = [
     eq(follows.followerId, nullifierHash),
     lt(posts.reportCount, 5),

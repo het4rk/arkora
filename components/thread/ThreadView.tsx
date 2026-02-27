@@ -47,7 +47,7 @@ function NoteCard({
     if (helpful) setHelpfulVotes((v) => v + delta)
     else setNotHelpfulVotes((v) => v + delta)
     if (myVote !== null && myVote !== helpful) {
-      // switching side — undo previous
+      // switching side - undo previous
       if (myVote) setHelpfulVotes((v) => v - 1)
       else setNotHelpfulVotes((v) => v - 1)
     }
@@ -57,15 +57,15 @@ function NoteCard({
 
   return (
     <div className={`glass rounded-[var(--r-lg)] p-4 border-l-2 ${note.isPromoted ? 'border-amber-400/60' : 'border-border/40'}`}>
-      <p className={`text-[10px] font-bold uppercase tracking-[0.12em] mb-2 ${note.isPromoted ? 'text-amber-400' : 'text-text-muted'}`}>
-        {note.isPromoted ? '📝 Community Note' : '📝 Proposed Note'}
+      <p className={`text-[11px] font-semibold uppercase tracking-[0.12em] mb-2 ${note.isPromoted ? 'text-text-secondary' : 'text-text-muted'}`}>
+        {note.isPromoted ? 'Community Note' : 'Proposed Note'}
       </p>
       <p className="text-text-secondary text-sm leading-relaxed">{note.body}</p>
       {isVerified && (
         <div className="flex items-center gap-3 mt-3">
           <button
             onClick={() => handleVote(true)}
-            className={`flex items-center gap-1 text-xs transition-all active:scale-90 ${myVote === true ? 'text-upvote font-semibold' : 'text-text-muted'}`}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 ${myVote === true ? 'text-accent font-semibold' : 'text-text-muted'}`}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
@@ -75,7 +75,7 @@ function NoteCard({
           </button>
           <button
             onClick={() => handleVote(false)}
-            className={`flex items-center gap-1 text-xs transition-all active:scale-90 ${myVote === false ? 'text-downvote font-semibold' : 'text-text-muted'}`}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 ${myVote === false ? 'text-accent font-semibold' : 'text-text-muted'}`}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z" />
@@ -166,7 +166,7 @@ export function ThreadView({ postId }: Props) {
 
   useEffect(() => { void fetchThread() }, [fetchThread])
 
-  // Must be before early returns — hooks cannot be called conditionally
+  // Must be before early returns - hooks cannot be called conditionally
   const sortedReplies = useMemo(() => {
     const sorted = [...(data?.replies ?? [])]
     switch (replySort) {
@@ -209,7 +209,7 @@ export function ThreadView({ postId }: Props) {
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
-      {/* Scrollable content — pb must clear the fixed composer (which covers the nav bar) */}
+      {/* Scrollable content - pb must clear the fixed composer (which covers the nav bar) */}
       <div className="flex-1 overflow-y-auto pb-72">
 
         {/* Back button */}
@@ -310,12 +310,12 @@ export function ThreadView({ postId }: Props) {
                 </svg>
                 <span>{post.quoteCount > 0 ? post.quoteCount : 'Quote'}</span>
               </button>
-              {/* Community Note button — only for verified users */}
+              {/* Community Note button - only for verified users */}
               {isVerified && (
                 <button
                   onClick={() => { haptic('light'); setNoteOpen((o) => !o) }}
                   aria-label="Submit community note"
-                  className={`flex items-center gap-1 text-xs active:scale-90 transition-all ${noteOpen ? 'text-amber-400' : 'text-text-muted'}`}
+                  className={`flex items-center gap-1 text-xs active:scale-90 transition-all ${noteOpen ? 'text-text-secondary' : 'text-text-muted'}`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -346,7 +346,7 @@ export function ThreadView({ postId }: Props) {
               />
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-text-muted/60 flex-1">{noteDraft.length}/500</span>
-                {noteError && <span className="text-downvote text-[10px]">{noteError}</span>}
+                {noteError && <span className="text-text-secondary text-[10px]">{noteError}</span>}
                 <button
                   onClick={() => { setNoteOpen(false); setNoteDraft(''); setNoteError(null) }}
                   className="px-3 py-1.5 text-xs text-text-muted glass rounded-[var(--r-md)] active:opacity-70"
@@ -356,7 +356,7 @@ export function ThreadView({ postId }: Props) {
                 <button
                   onClick={() => void submitNote()}
                   disabled={noteSubmitting || !noteDraft.trim()}
-                  className="px-3 py-1.5 text-xs font-semibold bg-amber-500 text-white rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
+                  className="px-3 py-1.5 text-xs font-semibold bg-accent text-background rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
                 >
                   {noteSubmitting ? 'Submitting…' : 'Submit'}
                 </button>
@@ -400,7 +400,7 @@ export function ThreadView({ postId }: Props) {
         </div>
       </div>
 
-      {/* Fixed reply composer — z-40 sits above BottomNav (z-30) */}
+      {/* Fixed reply composer - z-40 sits above BottomNav (z-30) */}
       <div className="fixed bottom-0 left-0 right-0 z-40">
         <ReplyComposer
           postId={postId}

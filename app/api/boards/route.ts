@@ -39,7 +39,6 @@ export async function GET(req: NextRequest) {
       .map((r) => ({
         id: r.id,
         label: boardLabel(r.id),
-        emoji: '💬',
         postCount: r.count,
       }))
 

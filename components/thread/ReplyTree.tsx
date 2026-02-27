@@ -5,7 +5,7 @@ import { ReplyCard } from './ReplyCard'
 
 interface Props {
   replies: Reply[]
-  /** The reply being replied to — highlight its subtree */
+  /** The reply being replied to - highlight its subtree */
   onReplyTo: (reply: Reply) => void
   onDeleted?: (() => void) | undefined
   depth?: number | undefined

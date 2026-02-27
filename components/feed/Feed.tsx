@@ -26,7 +26,7 @@ export function Feed() {
   const { activeBoard, nullifierHash, isVerified, locationRadius, setLocationRadius } = useArkoraStore()
   const [feedMode, setFeedMode] = useState<FeedMode>('new')
 
-  // Local feed — viewer GPS coords (requested on demand)
+  // Local feed - viewer GPS coords (requested on demand)
   const [viewerCoords, setViewerCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [locationDenied, setLocationDenied] = useState(false)
   const [locationRequesting, setLocationRequesting] = useState(false)
@@ -37,7 +37,7 @@ export function Feed() {
     if (viewerCoords || locationDenied) return
     setLocationRequesting(true)
     // Secondary timeout: if user leaves permission prompt open indefinitely,
-    // the geolocation `timeout` option only fires post-grant — so we need our own timer.
+    // the geolocation `timeout` option only fires post-grant - so we need our own timer.
     const fallbackTimer = setTimeout(() => {
       setLocationDenied(true)
       setLocationRequesting(false)
@@ -77,7 +77,7 @@ export function Feed() {
   const fetchPollData = useCallback((pollPostIds: string[]) => {
     if (pollPostIds.length === 0) return
     const ids = pollPostIds.join(',')
-    void fetch(`/api/polls/batch?postIds=${encodeURIComponent(ids)}`)
+    void fetch(`/api/polls/batch?postIds=${encodeURIComponent(ids)}`, { signal: AbortSignal.timeout(10000) })
       .then((r) => r.json())
       .then((j: { success: boolean; data?: Record<string, { results: PollResult[]; userVote: number | null }> }) => {
         if (j.success && j.data) {
@@ -128,7 +128,7 @@ export function Feed() {
   const fetchBookmarks = useCallback((postIds: string[], userHash: string) => {
     if (postIds.length === 0 || !userHash) return
     const ids = postIds.join(',')
-    void fetch(`/api/bookmarks?postIds=${encodeURIComponent(ids)}`)
+    void fetch(`/api/bookmarks?postIds=${encodeURIComponent(ids)}`, { signal: AbortSignal.timeout(10000) })
       .then((r) => r.json())
       .then((j: { success: boolean; data?: { bookmarkedIds: string[] } }) => {
         if (j.success && j.data) {
@@ -194,7 +194,7 @@ export function Feed() {
     return (
       <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
         <div>
-          <p className="text-2xl mb-2">⚡</p>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
           <p className="font-semibold text-text mb-1">Failed to load feed</p>
           <p className="text-sm">{error}</p>
         </div>
@@ -209,7 +209,7 @@ export function Feed() {
 
   return (
     <>
-      {/* Feed mode toggle — positioned below TopBar (56px) + safe area */}
+      {/* Feed mode toggle - positioned below TopBar (56px) + safe area */}
       <div
         style={{ top: 'calc(env(safe-area-inset-top, 0px) + 64px)' }}
         className="fixed left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg"
@@ -220,7 +220,7 @@ export function Feed() {
             onClick={() => { haptic('light'); setFeedMode(mode) }}
             className={cn(
               'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all',
-              feedMode === mode ? 'bg-accent text-white shadow-sm' : 'text-text-muted'
+              feedMode === mode ? 'bg-accent text-background shadow-sm' : 'text-text-muted'
             )}
           >
             {mode === 'new' ? 'New' : mode === 'following' ? 'Following' : 'Local'}
@@ -228,7 +228,7 @@ export function Feed() {
         ))}
       </div>
 
-      {/* Radius slider — shown below tab bar when Local is active and location granted */}
+      {/* Radius slider - shown below tab bar when Local is active and location granted */}
       {hasLocalCoords && (
         <div style={{ top: 'calc(env(safe-area-inset-top, 0px) + 112px)' }} className="fixed left-1/2 -translate-x-1/2 z-20 glass rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
           <input
@@ -277,7 +277,7 @@ export function Feed() {
         {showLocalLoading && (
           <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
             <div>
-              <p className="text-3xl mb-4 animate-pulse">📍</p>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4 animate-pulse"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
               <p className="font-semibold text-text text-lg mb-1">Finding your location…</p>
             </div>
           </div>
@@ -287,7 +287,7 @@ export function Feed() {
         {showLocalPrompt && (
           <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
             <div>
-              <p className="text-3xl mb-4">🚫</p>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg>
               <p className="font-bold text-text text-lg mb-2">Location access denied</p>
               <p className="text-sm">Allow location access in your browser settings to see nearby posts.</p>
             </div>
@@ -298,7 +298,7 @@ export function Feed() {
         {feedMode === 'following' && !isLoading && posts.length === 0 && (
           <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
             <div>
-              <p className="text-3xl mb-4">👥</p>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
               <p className="font-bold text-text text-lg mb-2">No posts yet</p>
               <p className="text-sm">Follow people to see their posts here.</p>
             </div>
@@ -309,7 +309,7 @@ export function Feed() {
         {feedMode === 'local' && viewerCoords && !isLoading && posts.length === 0 && (
           <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
             <div>
-              <p className="text-3xl mb-4">🗺️</p>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" /></svg>
               <p className="font-bold text-text text-lg mb-2">Nothing nearby yet</p>
               <p className="text-sm">
                 {locationRadius === -1
@@ -330,7 +330,7 @@ export function Feed() {
           </div>
         )}
 
-        {/* Guest join CTA — shown once per session to unverified users */}
+        {/* Guest join CTA - shown once per session to unverified users */}
         {!isVerified && posts.length > 0 && (
           <div className="px-4 pt-4 pb-2">
             <div className="glass rounded-[var(--r-lg)] px-4 py-3.5 flex items-center justify-between gap-3">
@@ -340,7 +340,7 @@ export function Feed() {
               </div>
               <button
                 onClick={() => useArkoraStore.getState().setVerifySheetOpen(true)}
-                className="bg-accent text-white text-xs font-semibold px-3.5 py-2.5 rounded-[var(--r-md)] active:scale-95 active:bg-accent-hover transition-all shrink-0"
+                className="bg-accent text-background text-xs font-semibold px-3.5 py-2.5 rounded-[var(--r-md)] active:scale-95 active:bg-accent-hover transition-all shrink-0"
               >
                 Verify →
               </button>

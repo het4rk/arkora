@@ -26,7 +26,7 @@ export function RoomsDiscovery() {
       const url = selectedBoard
         ? `/api/rooms?boardId=${selectedBoard}`
         : '/api/rooms'
-      const res = await fetch(url)
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
       const json = (await res.json()) as { success: boolean; data?: Room[] }
       if (json.success && json.data) setRooms(json.data)
       else if (!json.success) setError(true)
@@ -66,7 +66,7 @@ export function RoomsDiscovery() {
         {isVerified && (
           <button
             onClick={() => setShowCreate(true)}
-            className="bg-accent text-white font-semibold text-sm px-4 py-2 rounded-[var(--r-full)] active:scale-95 transition-all"
+            className="bg-accent text-background font-semibold text-sm px-4 py-2 rounded-[var(--r-full)] active:scale-95 transition-all"
           >
             + Start
           </button>
@@ -95,7 +95,6 @@ export function RoomsDiscovery() {
                 : 'glass text-text-secondary'
             }`}
           >
-            <span>{b.emoji}</span>
             <span>#{b.id}</span>
           </button>
         ))}
@@ -118,7 +117,7 @@ export function RoomsDiscovery() {
             <button
               type="button"
               onClick={() => void load()}
-              className="bg-accent text-white font-semibold px-5 py-2.5 rounded-[var(--r-lg)] text-sm active:scale-95 transition-all"
+              className="bg-accent text-background font-semibold px-5 py-2.5 rounded-[var(--r-lg)] text-sm active:scale-95 transition-all"
             >
               Retry
             </button>
@@ -127,7 +126,7 @@ export function RoomsDiscovery() {
 
         {!isLoading && !error && rooms.length === 0 && (
           <div className="flex flex-col items-center justify-center text-center py-20 gap-4">
-            <p className="text-4xl">🎙️</p>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mx-auto"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
             <p className="text-text font-semibold">No live rooms</p>
             <p className="text-text-muted text-sm">
               {isVerified ? 'Start the first one.' : 'Verify with World ID to start a room.'}
@@ -135,7 +134,7 @@ export function RoomsDiscovery() {
             {isVerified && (
               <button
                 onClick={() => setShowCreate(true)}
-                className="bg-accent text-white font-semibold px-6 py-3 rounded-[var(--r-lg)] text-sm active:scale-95 transition-all"
+                className="bg-accent text-background font-semibold px-6 py-3 rounded-[var(--r-lg)] text-sm active:scale-95 transition-all"
               >
                 Start a Room
               </button>

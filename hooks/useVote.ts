@@ -43,6 +43,7 @@ export function useVote(): UseVoteReturn {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ postId, direction: isToggleOff ? 0 : direction }),
+          signal: AbortSignal.timeout(10000),
         })
         if (!res.ok) throw new Error('Vote rejected')
       } catch {

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/rooms — create a room
+// POST /api/rooms - create a room
 export async function POST(req: NextRequest) {
   try {
     const callerHash = await getCallerNullifier()

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Arkora',
+  title: 'Privacy Policy - Arkora',
   description: 'How Arkora collects, uses, and protects your data.',
 }
 
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
       </Link>
 
       <h1 className="text-2xl font-bold text-text mb-2">Privacy Policy</h1>
-      <p className="text-text-muted text-sm mb-8">Last updated: February 2025</p>
+      <p className="text-text-muted text-sm mb-8">Last updated: February 2026</p>
 
       <div className="space-y-8 text-text-secondary text-sm leading-relaxed">
 
@@ -38,33 +38,33 @@ export default function PrivacyPage() {
           <h2 className="text-base font-semibold text-text">2. Data We Collect</h2>
           <ul className="list-disc list-inside space-y-2 pl-2">
             <li>
-              <strong className="text-text">World ID nullifier hash</strong> — A one-way cryptographic identifier
+              <strong className="text-text">World ID nullifier hash</strong> - A one-way cryptographic identifier
               derived from your World ID proof. It cannot be reversed to reveal your biometric or personal data.
               We use it to enforce one-account-per-human and to associate your posts, votes, and preferences.
             </li>
             <li>
-              <strong className="text-text">Wallet address</strong> — Your EVM wallet address, used for
+              <strong className="text-text">Wallet address</strong> - Your EVM wallet address, used for
               signing in via SIWE and for receiving WLD tips and subscriptions.
             </li>
             <li>
-              <strong className="text-text">Content you create</strong> — Posts, replies, polls, and direct
+              <strong className="text-text">Content you create</strong> - Posts, replies, polls, and direct
               messages you send on Arkora. DMs are end-to-end encrypted; we store ciphertext only and cannot
               read their contents.
             </li>
             <li>
-              <strong className="text-text">IP country code</strong> — Inferred from your IP at post creation
+              <strong className="text-text">IP country code</strong> - Inferred from your IP at post creation
               time, used to power the Local feed feature. We do not store raw IP addresses.
             </li>
             <li>
-              <strong className="text-text">Optional profile data</strong> — Display name (pseudoHandle),
+              <strong className="text-text">Optional profile data</strong> - Display name (pseudoHandle),
               bio, and avatar image, if you choose to set them.
             </li>
             <li>
-              <strong className="text-text">Optional GPS coordinates</strong> — Only if you enable location
+              <strong className="text-text">Optional GPS coordinates</strong> - Only if you enable location
               sharing in Settings. Stored per-post, not continuously tracked.
             </li>
             <li>
-              <strong className="text-text">Session cookies</strong> — httpOnly cookies ({'"arkora-nh"'} and
+              <strong className="text-text">Session cookies</strong> - httpOnly cookies ({'"arkora-nh"'} and
               {' "wallet-address"'}) used to authenticate your session. They expire after 30 days of inactivity.
             </li>
           </ul>
@@ -74,9 +74,9 @@ export default function PrivacyPage() {
           <h2 className="text-base font-semibold text-text">3. Data We Do Not Collect</h2>
           <ul className="list-disc list-inside space-y-2 pl-2">
             <li>Your name, email address, or phone number</li>
-            <li>Biometric data — World ID proofs are verified by Worldcoin and we only receive a nullifier hash</li>
+            <li>Biometric data - World ID proofs are verified by Worldcoin and we only receive a nullifier hash</li>
             <li>Raw IP addresses (only country code is inferred and stored)</li>
-            <li>DM plaintext content — all DMs are E2E encrypted client-side</li>
+            <li>DM plaintext content - all DMs are E2E encrypted client-side</li>
           </ul>
         </section>
 
@@ -94,16 +94,33 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-base font-semibold text-text">5. Third-Party Processors</h2>
           <ul className="list-disc list-inside space-y-2 pl-2">
-            <li><strong className="text-text">Vercel</strong> — Hosting and serverless compute. Processes requests and stores logs for up to 7 days.</li>
-            <li><strong className="text-text">Neon (Postgres)</strong> — Database. All data is stored encrypted at rest with 7-day automated backups.</li>
-            <li><strong className="text-text">Pusher</strong> — Real-time notifications and room messaging.</li>
-            <li><strong className="text-text">Hippius S3</strong> — Decentralized file storage for uploaded images.</li>
-            <li><strong className="text-text">Worldcoin</strong> — World ID proof verification. Worldcoin&apos;s own privacy policy governs how your biometric data is handled by them.</li>
+            <li><strong className="text-text">Vercel</strong> - Hosting and serverless compute. Processes requests and stores logs for up to 7 days.</li>
+            <li><strong className="text-text">Neon (Postgres)</strong> - Database. All data is stored encrypted at rest with 7-day automated backups.</li>
+            <li><strong className="text-text">Pusher</strong> - Real-time notifications and room messaging.</li>
+            <li><strong className="text-text">Hippius S3</strong> - Decentralized file storage for uploaded images.</li>
+            <li><strong className="text-text">Worldcoin</strong> - World ID proof verification and push notifications. Worldcoin&apos;s own privacy policy governs how your biometric data is handled by them. Notification content (e.g. &quot;You received a tip&quot;) is transmitted through Worldcoin&apos;s push notification infrastructure.</li>
           </ul>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-text">6. Data Retention</h2>
+          <h2 className="text-base font-semibold text-text">6. On-Chain Data</h2>
+          <p>
+            Certain data associated with your activity is recorded on World Chain (a public blockchain) and is
+            therefore permanent and publicly visible. This includes:
+          </p>
+          <ul className="list-disc list-inside space-y-2 pl-2">
+            <li>Your nullifier hash may be registered on-chain for Sybil resistance</li>
+            <li>WLD tip, subscription, and skin purchase transactions are recorded on-chain with sender and recipient wallet addresses</li>
+            <li>World ID verification proofs are validated against on-chain smart contracts</li>
+          </ul>
+          <p>
+            On-chain data cannot be deleted or modified. This is inherent to blockchain technology and persists
+            even if you delete your Arkora account.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-base font-semibold text-text">7. Data Retention</h2>
           <p>
             We retain your data for as long as your account exists. If you delete your account, your profile data
             is immediately removed and all your posts and replies are anonymized (the link between your nullifier
@@ -112,13 +129,13 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-text">7. Your Rights (GDPR / CCPA)</h2>
+          <h2 className="text-base font-semibold text-text">8. Your Rights (GDPR / CCPA)</h2>
           <p>You have the right to:</p>
           <ul className="list-disc list-inside space-y-2 pl-2">
-            <li><strong className="text-text">Access</strong> — request a copy of the data we hold about you</li>
-            <li><strong className="text-text">Rectification</strong> — update your display name or bio in the app</li>
-            <li><strong className="text-text">Erasure</strong> — delete your account via Settings &rarr; Delete account</li>
-            <li><strong className="text-text">Portability</strong> — contact us to request an export of your data</li>
+            <li><strong className="text-text">Access</strong> - request a copy of the data we hold about you</li>
+            <li><strong className="text-text">Rectification</strong> - update your display name or bio in the app</li>
+            <li><strong className="text-text">Erasure</strong> - delete your account via Settings &rarr; Delete account</li>
+            <li><strong className="text-text">Portability</strong> - contact us to request an export of your data</li>
           </ul>
           <p>
             To exercise these rights, delete your account in-app or contact us at the address below. We will
@@ -127,14 +144,14 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-text">8. Children</h2>
+          <h2 className="text-base font-semibold text-text">9. Children</h2>
           <p>
             Arkora is not directed at children under 13. We do not knowingly collect data from children.
           </p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-text">9. Changes to This Policy</h2>
+          <h2 className="text-base font-semibold text-text">10. Changes to This Policy</h2>
           <p>
             We may update this policy. The {"\"Last updated\""} date at the top reflects the most recent revision.
             Continued use of Arkora after changes constitutes acceptance.
@@ -142,10 +159,13 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-text">10. Contact</h2>
+          <h2 className="text-base font-semibold text-text">11. Contact</h2>
           <p>
-            For privacy inquiries or data requests, open an issue at our public repository or contact the
-            Arkora team directly.
+            For privacy inquiries or data requests, email us at{' '}
+            <a href="mailto:privacy@arkora.app" className="text-accent hover:underline">privacy@arkora.app</a>.
+            You may also open an issue at our{' '}
+            <a href="https://github.com/het4rk/arkora" className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">public repository</a>.
+            We will respond within 30 days.
           </p>
         </section>
 

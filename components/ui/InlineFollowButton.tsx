@@ -10,7 +10,7 @@ interface Props {
 
 /**
  * Small inline "Follow / Following" pill shown next to a HumanBadge
- * in thread views and reply cards — follows the X pattern.
+ * in thread views and reply cards - follows the X pattern.
  *
  * Lazily fetches follow status on mount so it doesn't block rendering.
  * Hidden while loading and hidden on own posts.
@@ -37,7 +37,7 @@ export function InlineFollowButton({ targetHash }: Props) {
   // Don't render for own posts
   if (isSelf) return null
 
-  // Still loading — render nothing to avoid layout shift
+  // Still loading - render nothing to avoid layout shift
   if (isFollowing === null) return null
 
   async function handleFollow(e: React.MouseEvent) {
@@ -73,7 +73,7 @@ export function InlineFollowButton({ targetHash }: Props) {
       className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-semibold transition-all active:scale-95 disabled:opacity-50 ${
         isFollowing
           ? 'border border-accent/40 text-accent bg-accent/5'
-          : 'bg-accent text-white shadow-sm shadow-accent/20'
+          : 'bg-accent text-background shadow-sm shadow-accent/20'
       }`}
     >
       {isFollowing ? 'Following' : 'Follow'}

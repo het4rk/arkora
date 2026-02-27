@@ -7,6 +7,7 @@ import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkoraStore'
 import { generateAlias } from '@/lib/session'
 import { cn } from '@/lib/utils'
+import { SkinShop } from '@/components/settings/SkinShop'
 
 // Discrete radius options in miles; -1 means "entire country"
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
@@ -21,15 +22,15 @@ function radiusIndexOf(miles: number): number {
   return idx >= 0 ? idx : 4  // default 50mi
 }
 
-const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: string }[] = [
-  { mode: 'anonymous', label: 'Random',  sub: 'New Human # each post',    icon: '🎲' },
-  { mode: 'alias',     label: 'Alias',   sub: 'Consistent handle',        icon: '👤' },
-  { mode: 'named',     label: 'Named',   sub: 'Your World ID username',   icon: '📛' },
+const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: JSX.Element }[] = [
+  { mode: 'anonymous', label: 'Random',  sub: 'New Human # each post',    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /></svg> },
+  { mode: 'alias',     label: 'Alias',   sub: 'Consistent handle',        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> },
+  { mode: 'named',     label: 'Named',   sub: 'Your World ID username',   icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 15h4M7 11h6M7 9h10" /></svg> },
 ]
 
-const THEMES: { value: Theme; label: string; icon: string }[] = [
-  { value: 'dark',  label: 'Dark',  icon: '🌙' },
-  { value: 'light', label: 'Light', icon: '☀️' },
+const THEMES: { value: Theme; label: string; icon: JSX.Element }[] = [
+  { value: 'dark',  label: 'Dark',  icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg> },
+  { value: 'light', label: 'Light', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg> },
 ]
 
 export function SettingsView() {
@@ -143,7 +144,7 @@ export function SettingsView() {
 
           {/* ── Identity ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">Identity</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Identity</p>
             <div className="space-y-2">
               {PRIVACY.map((opt) => (
                 <div key={opt.mode}>
@@ -170,7 +171,7 @@ export function SettingsView() {
                         : 'glass'
                     )}
                   >
-                    <span className="text-lg leading-none flex-shrink-0">{opt.icon}</span>
+                    <div className="flex-shrink-0">{opt.icon}</div>
                     <div className="text-left min-w-0">
                       <p className={cn(
                         'text-sm font-semibold leading-tight',
@@ -202,7 +203,7 @@ export function SettingsView() {
                       />
                       <button
                         onClick={commitAlias}
-                        className="px-3 py-2.5 bg-accent text-white text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all shrink-0"
+                        className="px-3 py-2.5 bg-accent text-background text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all shrink-0"
                       >
                         Set
                       </button>
@@ -215,7 +216,7 @@ export function SettingsView() {
 
           {/* ── Appearance ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">Appearance</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Appearance</p>
             <div className="flex gap-2">
               {THEMES.map((t) => (
                 <button
@@ -228,7 +229,7 @@ export function SettingsView() {
                       : 'glass'
                   )}
                 >
-                  <span className="text-xl leading-none">{t.icon}</span>
+                  <div>{t.icon}</div>
                   <span className={cn(
                     'text-xs font-semibold',
                     theme === t.value ? 'text-accent' : 'text-text-secondary'
@@ -240,9 +241,12 @@ export function SettingsView() {
             </div>
           </section>
 
+          {/* ── Accent Color (Skin Shop) ─────────────────────────── */}
+          <SkinShop />
+
           {/* ── Account ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">Account</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Account</p>
             <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
               {worldUsername() && (
                 <div className="px-4 py-3.5 flex items-center justify-between">
@@ -268,7 +272,7 @@ export function SettingsView() {
                 <span className="text-text-muted text-sm">Verification</span>
                 <span className={cn(
                   'text-xs font-semibold px-2 py-0.5 rounded-full',
-                  isVerified ? 'bg-accent/15 text-accent' : 'bg-downvote/15 text-downvote'
+                  isVerified ? 'bg-accent/15 text-accent' : 'bg-surface-up text-text-muted'
                 )}>
                   {isVerified ? '✓ Verified human' : 'Unverified'}
                 </span>
@@ -281,7 +285,7 @@ export function SettingsView() {
                   signOut()
                   window.location.href = '/'
                 }}
-                className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-downvote/80 text-sm active:opacity-70 transition-opacity"
+                className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-text-muted text-sm active:opacity-70 transition-opacity"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -312,7 +316,7 @@ export function SettingsView() {
             {isVerified && !deleteConfirm && (
               <button
                 onClick={() => setDeleteConfirm(true)}
-                className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-downvote/50 text-sm active:opacity-70 transition-opacity"
+                className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-text-muted/50 text-sm active:opacity-70 transition-opacity"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -334,7 +338,7 @@ export function SettingsView() {
                   <button
                     onClick={() => void deleteAccount()}
                     disabled={deleting}
-                    className="flex-1 py-2.5 bg-downvote text-white text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
+                    className="flex-1 py-2.5 bg-text-muted text-background text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
                   >
                     {deleting ? 'Deleting…' : 'Yes, delete'}
                   </button>
@@ -352,12 +356,12 @@ export function SettingsView() {
           {/* ── World Chain ──────────────────────────────────────────── */}
           {isVerified && (
             <section className="space-y-3">
-              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">World Chain Identity</p>
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">World Chain Identity</p>
               <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
                 <div className="px-4 py-3.5">
                   <p className="text-text text-sm font-semibold mb-0.5">Verified on-chain</p>
                   <p className="text-text-muted text-xs leading-relaxed">
-                    Your humanity proof was validated by World Chain&apos;s smart contracts — not by a central server.
+                    Your humanity proof was validated by World Chain&apos;s smart contracts - not by a central server.
                   </p>
                 </div>
                 {walletAddress && !walletAddress.startsWith('idkit_') && (
@@ -415,17 +419,17 @@ export function SettingsView() {
 
           {/* ── Privacy ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">Privacy</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Privacy</p>
             <div className="glass rounded-[var(--r-lg)] px-4 py-4">
               <p className="text-text-secondary text-sm leading-relaxed">
-                Your identity is never stored. Only a cryptographic proof of humanity is used to verify your account — your personal data stays on your device.
+                Your identity is never stored. Only a cryptographic proof of humanity is used to verify your account - your personal data stays on your device.
               </p>
             </div>
           </section>
 
           {/* ── Location ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">Location</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Location</p>
             <div className="glass rounded-[var(--r-lg)] px-4 py-4 space-y-4">
               {/* Toggle */}
               <div className="flex items-center justify-between gap-3">
@@ -436,19 +440,19 @@ export function SettingsView() {
                 <button
                   onClick={() => setLocationEnabled(!locationEnabled)}
                   className={cn(
-                    'relative w-11 h-6 rounded-full transition-colors shrink-0',
-                    locationEnabled ? 'bg-accent' : 'bg-white/10'
+                    'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
+                    locationEnabled ? 'bg-accent' : 'bg-white/[0.20]'
                   )}
                   aria-label="Toggle location sharing"
                 >
                   <span className={cn(
-                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200',
                     locationEnabled ? 'translate-x-5' : 'translate-x-0'
                   )} />
                 </button>
               </div>
 
-              {/* Radius slider — shown whether or not tagging is on (users still pick their feed radius) */}
+              {/* Radius slider - shown whether or not tagging is on (users still pick their feed radius) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-text-muted text-xs">Local feed radius</p>
@@ -465,6 +469,7 @@ export function SettingsView() {
                     const opt = RADIUS_OPTIONS[parseInt(e.target.value)]
                     if (opt !== undefined) setLocationRadius(opt)
                   }}
+                  aria-label="Local feed radius"
                   className="w-full accent-[var(--accent)] cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-text-muted/60 px-0.5">
@@ -477,7 +482,7 @@ export function SettingsView() {
 
           {/* ── Notifications ──────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">Notifications</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Notifications</p>
             <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
               {([
                 { label: 'Replies', sub: 'When someone replies to your post', value: notifyReplies, setter: setNotifyReplies },
@@ -493,13 +498,13 @@ export function SettingsView() {
                   <button
                     onClick={() => opt.setter(!opt.value)}
                     className={cn(
-                      'relative w-11 h-6 rounded-full transition-colors shrink-0',
-                      opt.value ? 'bg-accent' : 'bg-white/10'
+                      'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
+                      opt.value ? 'bg-accent' : 'bg-white/[0.20]'
                     )}
                     aria-label={`Toggle ${opt.label.toLowerCase()} notifications`}
                   >
                     <span className={cn(
-                      'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                      'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200',
                       opt.value ? 'translate-x-5' : 'translate-x-0'
                     )} />
                   </button>
@@ -511,7 +516,7 @@ export function SettingsView() {
           {/* ── Subscriptions ──────────────────────────────────── */}
           {isVerified && (
             <section className="space-y-3">
-              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">My Subscriptions</p>
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">My Subscriptions</p>
               {subsLoading ? (
                 <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm animate-pulse">Loading…</div>
               ) : subs.length === 0 ? (
@@ -531,7 +536,7 @@ export function SettingsView() {
                       <button
                         onClick={() => void cancelSub(sub.creatorHash)}
                         disabled={cancellingHash === sub.creatorHash}
-                        className="shrink-0 px-3 py-1.5 glass rounded-[var(--r-full)] text-xs text-downvote font-semibold active:scale-95 transition-all disabled:opacity-40"
+                        className="shrink-0 px-3 py-1.5 glass rounded-[var(--r-full)] text-xs text-text-muted font-semibold active:scale-95 transition-all disabled:opacity-40"
                       >
                         {cancellingHash === sub.creatorHash ? '…' : 'Cancel'}
                       </button>
@@ -544,7 +549,7 @@ export function SettingsView() {
 
           {/* ── About ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.14em]">About</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">About</p>
             <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
               <div className="px-4 py-3.5 flex items-center justify-between">
                 <span className="text-text-muted text-sm">Version</span>

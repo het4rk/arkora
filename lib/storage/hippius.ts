@@ -1,5 +1,5 @@
 /**
- * Hippius Bittensor subnet — S3-compatible adapter
+ * Hippius Bittensor subnet - S3-compatible adapter
  * ─────────────────────────────────────────────────────────────────────────────
  * Hippius runs S3-compatible object storage on top of the Bittensor network.
  *

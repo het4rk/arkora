@@ -55,7 +55,7 @@ export function ProfileReplyCard({ reply, onDeleted }: Props) {
             onClick={handleDelete}
             disabled={isDeleting}
             aria-label="Delete reply"
-            className="text-text-muted/40 hover:text-downvote active:scale-90 transition-all disabled:opacity-30"
+            className="text-text-muted/40 hover:text-text-muted active:scale-90 transition-all disabled:opacity-30"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

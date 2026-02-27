@@ -21,11 +21,9 @@ const config: Config = {
         'text-secondary':'rgb(var(--clr-text-sec) / <alpha-value>)',
         'text-muted':    'rgb(var(--clr-text-muted) / <alpha-value>)',
 
-        // Fixed brand / semantic colors (no theming needed)
-        accent:        '#6C3BFF',
-        'accent-hover':'#7C4FFF',
-        upvote:        '#22C55E',
-        downvote:      '#EF4444',
+        // Theme-aware brand accent (monochrome)
+        accent:        'rgb(var(--accent-rgb) / <alpha-value>)',
+        'accent-hover':'var(--accent-hover)',
       },
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],

@@ -24,7 +24,7 @@ export async function GET(
   }
 }
 
-// DELETE /api/rooms/[id] — host ends the room
+// DELETE /api/rooms/[id] - host ends the room
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

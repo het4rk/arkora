@@ -1,6 +1,6 @@
 /**
  * Client-safe karma tier utilities.
- * No DB imports — safe to use in 'use client' components.
+ * No DB imports - safe to use in 'use client' components.
  */
 
 export type KarmaTier = 'newcomer' | 'contributor' | 'trusted' | 'elder'
@@ -14,10 +14,10 @@ export interface KarmaTierConfig {
 }
 
 export const KARMA_TIERS: KarmaTierConfig[] = [
-  { tier: 'newcomer',    label: 'Newcomer',    minScore: 0,   color: 'text-text-muted',  bg: 'bg-surface-up' },
-  { tier: 'contributor', label: 'Contributor', minScore: 10,  color: 'text-emerald-400', bg: 'bg-emerald-400/15' },
-  { tier: 'trusted',     label: 'Trusted',     minScore: 100, color: 'text-accent',       bg: 'bg-accent/15' },
-  { tier: 'elder',       label: 'Elder',       minScore: 500, color: 'text-amber-400',    bg: 'bg-amber-400/15' },
+  { tier: 'newcomer',    label: 'Newcomer',    minScore: 0,   color: 'text-text-muted',     bg: 'bg-surface-up' },
+  { tier: 'contributor', label: 'Contributor', minScore: 10,  color: 'text-text-secondary', bg: 'bg-text-secondary/10' },
+  { tier: 'trusted',     label: 'Trusted',     minScore: 100, color: 'text-accent',          bg: 'bg-accent/12' },
+  { tier: 'elder',       label: 'Elder',       minScore: 500, color: 'text-text',             bg: 'bg-text/10' },
 ]
 
 export function getKarmaTier(score: number): KarmaTierConfig {

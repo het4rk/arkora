@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — Arkora',
-  description: 'Arkora Terms of Service — rules for using the platform.',
+  title: 'Terms of Service - Arkora',
+  description: 'Arkora Terms of Service - rules for using the platform.',
 }
 
 export default function TermsPage() {
@@ -21,7 +21,7 @@ export default function TermsPage() {
       </Link>
 
       <h1 className="text-2xl font-bold text-text mb-2">Terms of Service</h1>
-      <p className="text-text-muted text-sm mb-8">Last updated: February 2025</p>
+      <p className="text-text-muted text-sm mb-8">Last updated: February 2026</p>
 
       <div className="space-y-8 text-text-secondary text-sm leading-relaxed">
 
@@ -118,10 +118,28 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-text">11. Governing Law</h2>
+          <h2 className="text-base font-semibold text-text">11. Indemnification</h2>
           <p>
-            These terms are governed by the laws of the jurisdiction in which Arkora operates, without regard
-            to conflict-of-law principles.
+            You agree to indemnify and hold harmless Arkora and its operators from any claims, damages, losses,
+            or expenses (including reasonable legal fees) arising from your use of the Service, your content,
+            or your violation of these terms.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-base font-semibold text-text">12. Governing Law</h2>
+          <p>
+            These terms are governed by the laws of the State of Delaware, United States, without regard
+            to conflict-of-law principles. Any disputes arising under these terms shall be resolved in the
+            courts of Delaware.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-base font-semibold text-text">13. Contact</h2>
+          <p>
+            For questions about these terms, email us at{' '}
+            <a href="mailto:legal@arkora.app" className="text-accent hover:underline">legal@arkora.app</a>.
           </p>
         </section>
 

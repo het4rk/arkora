@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing socket_id or channel_name' }, { status: 400 })
     }
 
-    // Private user channels — DM and notification delivery
+    // Private user channels - DM and notification delivery
     if (channel.startsWith('private-user-')) {
       const channelHash = channel.replace('private-user-', '')
       // User can only subscribe to their own private channel

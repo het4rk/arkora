@@ -43,8 +43,8 @@ export function VoteButtons({ post, className }: Props) {
           isOwnPost
             ? 'bg-surface-up text-text-muted/30 border border-border/30 cursor-not-allowed'
             : myDirection === 1
-              ? 'bg-upvote text-white'
-              : 'bg-surface-up text-text-muted border border-border active:border-upvote/50'
+              ? 'bg-accent/15 text-accent'
+              : 'bg-surface-up text-text-muted border border-border active:border-accent/50'
         )}
       >
         <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
@@ -63,8 +63,8 @@ export function VoteButtons({ post, className }: Props) {
           isOwnPost
             ? 'bg-surface-up text-text-muted/30 border border-border/30 cursor-not-allowed'
             : myDirection === -1
-              ? 'bg-downvote text-white'
-              : 'bg-surface-up text-text-muted border border-border active:border-downvote/50'
+              ? 'bg-accent/15 text-accent'
+              : 'bg-surface-up text-text-muted border border-border active:border-accent/50'
         )}
       >
         <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">

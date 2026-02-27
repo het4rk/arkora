@@ -99,7 +99,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
         </div>
         <div className="flex items-center gap-2.5">
           {isTopReply && (
-            <span className="text-[10px] text-accent font-bold uppercase tracking-[0.10em]">
+            <span className="text-[11px] text-accent font-semibold uppercase tracking-[0.12em]">
               Top
             </span>
           )}
@@ -109,7 +109,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
               onClick={handleDelete}
               disabled={isDeleting}
               aria-label="Delete reply"
-              className="text-text-muted/50 hover:text-downvote active:scale-90 transition-all disabled:opacity-30"
+              className="text-text-muted/50 hover:text-text-muted active:scale-90 transition-all disabled:opacity-30"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -146,7 +146,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
             onClick={() => { if (!isOwner) void handleVote(1) }}
             disabled={isVoting || !isVerified || isOwner}
             title={isOwner ? "Can't vote on your own reply" : undefined}
-            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${isOwner ? 'text-text-muted/40 cursor-not-allowed' : myVote === 1 ? 'text-upvote font-semibold' : 'text-text-muted'}`}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${isOwner ? 'text-text-muted/40 cursor-not-allowed' : myVote === 1 ? 'text-accent font-semibold' : 'text-text-muted'}`}
           >
             <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
               <path d="M6 1L11.196 9.5H0.804L6 1Z" />
@@ -157,7 +157,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
             onClick={() => { if (!isOwner) void handleVote(-1) }}
             disabled={isVoting || !isVerified || isOwner}
             title={isOwner ? "Can't vote on your own reply" : undefined}
-            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${isOwner ? 'text-text-muted/40 cursor-not-allowed' : myVote === -1 ? 'text-downvote font-semibold' : 'text-text-muted'}`}
+            className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${isOwner ? 'text-text-muted/40 cursor-not-allowed' : myVote === -1 ? 'text-accent font-semibold' : 'text-text-muted'}`}
           >
             <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
               <path d="M6 11L0.804 2.5H11.196L6 11Z" />

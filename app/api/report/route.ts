@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       details: body.details ? sanitizeText(body.details).slice(0, 500) : null,
     })
 
-    // Auto-hide posts after 5 unique reports — fire-and-forget
+    // Auto-hide posts after 5 unique reports - fire-and-forget
     if (body.targetType === 'post') {
       void incrementReportCount(body.targetId).catch(() => { /* non-critical */ })
     }

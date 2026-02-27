@@ -36,6 +36,7 @@ export function usePost(): UsePostReturn {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(input),
+          signal: AbortSignal.timeout(15000),
         })
 
         const json = (await res.json()) as { success: boolean; data?: Post; error?: string }

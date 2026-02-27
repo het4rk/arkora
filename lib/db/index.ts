@@ -3,10 +3,12 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from './schema'
 
-// Validate all required env vars on first import — fail fast with clear errors
-validateEnv()
+// Validate all required env vars - skip during build (env vars aren't available)
+if (process.env.NEXT_PHASE !== 'phase-production-build') {
+  validateEnv()
+}
 
-// Singleton pattern — prevents multiple connections in dev (Next.js hot reload)
+// Singleton pattern - prevents multiple connections in dev (Next.js hot reload)
 declare global {
   // eslint-disable-next-line no-var
   var _pgClient: postgres.Sql | undefined

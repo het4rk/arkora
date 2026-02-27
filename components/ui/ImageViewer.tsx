@@ -38,7 +38,7 @@ export function ImageViewer({ src, isOpen, onClose }: Props) {
         >
           {imgError ? (
             <div className="flex flex-col items-center gap-3 text-white/60 px-8 text-center">
-              <p className="text-4xl">🖼️</p>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
               <p className="text-sm">Image could not be loaded.</p>
             </div>
           ) : (

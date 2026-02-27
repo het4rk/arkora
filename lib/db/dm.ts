@@ -138,7 +138,7 @@ export async function getConversations(myHash: string): Promise<ConversationSumm
 
   const userMap = new Map(users.map((u) => [u.nullifierHash, u]))
 
-  // DB already sorted by last_message_at DESC — no in-app sort needed
+  // DB already sorted by last_message_at DESC - no in-app sort needed
   return rawRows.map((r) => {
     const u = userMap.get(r.other_hash)
     return {

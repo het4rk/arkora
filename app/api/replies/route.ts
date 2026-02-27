@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate imageUrl if provided — reject non-http(s) schemes and overly long URLs
+    // Validate imageUrl if provided - reject non-http(s) schemes and overly long URLs
     if (imageUrl !== undefined && imageUrl !== null) {
       try {
         const parsed = new URL(String(imageUrl))
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Validate parentReplyId belongs to the same post — prevents cross-post thread injection
+    // Validate parentReplyId belongs to the same post - prevents cross-post thread injection
     if (parentReplyId) {
       const parentPostId = await getReplyPostId(parentReplyId)
       if (!parentPostId || parentPostId !== postId) {
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     const reply = await createReply({ postId, body: replyBody, nullifierHash, parentReplyId, pseudoHandle, imageUrl: imageUrl ?? undefined })
 
-    // Notify post author + process @mentions — fire-and-forget
+    // Notify post author + process @mentions - fire-and-forget
     void (async () => {
       try {
         const authorHash = await getPostNullifier(postId)

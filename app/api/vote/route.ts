@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     const oldVote = await getVoteByNullifier(postId, nullifierHash)
     const oldDir = oldVote?.direction ?? 0
 
-    // direction=0 means un-vote — no self-vote check needed
+    // direction=0 means un-vote - no self-vote check needed
     if (direction === 0) {
       await deletePostVote(postId, nullifierHash)
       // Karma delta: reverse the old vote effect
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       })()
     }
 
-    // Client uses optimistic updates — no need to re-fetch the post
+    // Client uses optimistic updates - no need to re-fetch the post
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[vote POST]', err instanceof Error ? err.message : String(err))

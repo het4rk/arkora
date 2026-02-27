@@ -6,7 +6,7 @@ import { sanitizeText } from '@/lib/sanitize'
 import { pusherServer } from '@/lib/pusher'
 import { randomUUID } from 'crypto'
 
-// POST /api/rooms/[id]/message — broadcast a message via Pusher (not stored in DB)
+// POST /api/rooms/[id]/message - broadcast a message via Pusher (not stored in DB)
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

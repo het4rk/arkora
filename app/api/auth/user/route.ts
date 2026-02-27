@@ -14,8 +14,7 @@ export async function GET(req: NextRequest) {
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
-    const ip = req.headers.get('x-forwarded-for') ?? 'anon'
-    if (!rateLimit(`auth-user-get:${ip}`, 60, 60_000)) {
+    if (!rateLimit(`auth-user-get:${nullifierHash}`, 60, 60_000)) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
     const user = await getUserByNullifier(nullifierHash)
@@ -51,8 +50,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Rate limit: 10 registrations per 60s per wallet prefix
-    if (!rateLimit(`auth-user:${walletAddress.slice(0, 10)}`, 10, 60_000)) {
+    // Rate limit: 10 registrations per 60s per wallet
+    if (!rateLimit(`auth-user:${walletAddress.toLowerCase()}`, 10, 60_000)) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
@@ -60,7 +59,7 @@ export async function POST(req: NextRequest) {
     const sanitizedUsername = username ? sanitizeLine(username).slice(0, 50) : undefined
 
     const nullifierHash = walletToNullifier(walletAddress)
-    // worldIdVerified: false — wallet-auth only, requires World ID verify to unlock actions
+    // worldIdVerified: false - wallet-auth only, requires World ID verify to unlock actions
     let user = await getOrCreateUser(nullifierHash, walletAddress, sanitizedUsername, false)
 
     // One-time migration: copy pseudoHandle and bio from the linked World ID record if

@@ -12,7 +12,7 @@ interface Props {
 export function KarmaBadge({ score, className, showScore = false }: Props) {
   const tierConfig = getKarmaTier(score)
 
-  // Don't render badge for newcomers — no badge is cleaner than a gray "Newcomer" label
+  // Don't render badge for newcomers - no badge is cleaner than a gray "Newcomer" label
   if (tierConfig.tier === 'newcomer') return null
 
   return (

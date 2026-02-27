@@ -16,7 +16,7 @@ export const getCachedFeed = unstable_cache(
 
 /**
  * Cached version of the local (country-scoped) feed.
- * Same behaviour as getCachedFeed — revalidates on new/deleted posts.
+ * Same behaviour as getCachedFeed - revalidates on new/deleted posts.
  */
 export const getCachedLocalFeed = unstable_cache(
   (params: LocalFeedParams) => getLocalFeed(params),
@@ -26,7 +26,7 @@ export const getCachedLocalFeed = unstable_cache(
 
 /**
  * Cached version of the hot feed (Wilson-score time-decay ranking).
- * Revalidates every 60 s (or on new/deleted post) — longer TTL is fine since
+ * Revalidates every 60 s (or on new/deleted post) - longer TTL is fine since
  * the ranking changes slowly and the query is more expensive.
  */
 export const getCachedHotFeed = unstable_cache(

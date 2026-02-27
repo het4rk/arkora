@@ -75,7 +75,7 @@ export function VoteReactionsSheet({ isOpen, onClose, postId, upvoteCount, downv
                 <button
                   onClick={() => { haptic('light'); setTab('up') }}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                    tab === 'up' ? 'bg-upvote text-white' : 'glass text-text-muted'
+                    tab === 'up' ? 'bg-accent text-background' : 'glass text-text-muted'
                   }`}
                 >
                   <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
@@ -86,7 +86,7 @@ export function VoteReactionsSheet({ isOpen, onClose, postId, upvoteCount, downv
                 <button
                   onClick={() => { haptic('light'); setTab('down') }}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                    tab === 'down' ? 'bg-downvote text-white' : 'glass text-text-muted'
+                    tab === 'down' ? 'bg-accent text-background' : 'glass text-text-muted'
                   }`}
                 >
                   <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">

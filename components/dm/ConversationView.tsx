@@ -34,6 +34,7 @@ export function ConversationView({ otherHash }: Props) {
   const [noKey, setNoKey] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [connectionLost, setConnectionLost] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   // Track the latest message timestamp for the Pusher duplicate-guard
@@ -65,10 +66,11 @@ export function ConversationView({ otherHash }: Props) {
     setLoadError(false)
 
     try {
+    const initSignal = AbortSignal.timeout(10000)
     const [keyRes, profileRes, msgsRes] = await Promise.all([
-      fetch(`/api/dm/keys?nullifierHash=${encodeURIComponent(otherHash)}`),
-      fetch(`/api/u/${encodeURIComponent(otherHash)}`),
-      fetch(`/api/dm/messages?otherHash=${encodeURIComponent(otherHash)}`),
+      fetch(`/api/dm/keys?nullifierHash=${encodeURIComponent(otherHash)}`, { signal: initSignal }),
+      fetch(`/api/u/${encodeURIComponent(otherHash)}`, { signal: initSignal }),
+      fetch(`/api/dm/messages?otherHash=${encodeURIComponent(otherHash)}`, { signal: initSignal }),
     ])
 
     const keyJson = (await keyRes.json()) as { success: boolean; data?: { publicKey: string } }
@@ -90,7 +92,7 @@ export function ConversationView({ otherHash }: Props) {
 
     const myPrivateKey = await ensureOwnKey()
 
-    // Decrypt all messages in parallel — ECDH is symmetric so both sides
+    // Decrypt all messages in parallel - ECDH is symmetric so both sides
     // derive the same shared secret (own private key + other's public key).
     const rawMsgs = msgsJson.data ?? []
     const results = await Promise.allSettled(
@@ -154,7 +156,7 @@ export function ConversationView({ otherHash }: Props) {
           return [...prev, msg]
         })
         latestMsgAt.current = data.createdAt
-      } catch { /* decryption failure — silently ignore */ }
+      } catch { /* decryption failure - silently ignore */ }
     })
 
     return () => {
@@ -177,6 +179,7 @@ export function ConversationView({ otherHash }: Props) {
     const myPrivateKey = await ensureOwnKey()
     if (!myPrivateKey) return
 
+    setSendError(null)
     setIsSending(true)
     try {
       const encrypted = await encryptDm(myPrivateKey, otherPublicKey, text)
@@ -188,6 +191,7 @@ export function ConversationView({ otherHash }: Props) {
           ciphertext: encrypted.ciphertext,
           nonce: encrypted.nonce,
         }),
+        signal: AbortSignal.timeout(10000),
       })
       const json = (await res.json()) as { success: boolean; data?: { id: string } }
       if (json.success && json.data) {
@@ -197,7 +201,13 @@ export function ConversationView({ otherHash }: Props) {
           text,
           createdAt: new Date(),
         }])
+      } else {
+        setDraft(text)
+        setSendError('Message failed to send. Try again.')
       }
+    } catch {
+      setDraft(text)
+      setSendError('Message failed to send. Check your connection.')
     } finally {
       setIsSending(false)
     }
@@ -246,8 +256,8 @@ export function ConversationView({ otherHash }: Props) {
 
       {/* Pusher connection lost banner */}
       {connectionLost && !noKey && (
-        <div className="px-[5vw] py-2 bg-downvote/10 border-b border-downvote/20 text-center">
-          <p className="text-downvote text-xs">Connection lost — new messages may not arrive. Refresh to reconnect.</p>
+        <div className="px-[5vw] py-2 bg-surface-up border-b border-border text-center">
+          <p className="text-text-secondary text-xs">Connection lost - new messages may not arrive. Refresh to reconnect.</p>
         </div>
       )}
 
@@ -271,7 +281,7 @@ export function ConversationView({ otherHash }: Props) {
                 <button
                   type="button"
                   onClick={() => void load()}
-                  className="px-5 py-2.5 bg-accent text-white text-sm font-semibold rounded-[var(--r-lg)] active:scale-95 transition-all"
+                  className="px-5 py-2.5 bg-accent text-background text-sm font-semibold rounded-[var(--r-lg)] active:scale-95 transition-all"
                 >
                   Retry
                 </button>
@@ -279,7 +289,7 @@ export function ConversationView({ otherHash }: Props) {
             )}
             {!isLoading && !loadError && messages.length === 0 && (
               <p className="text-text-muted text-sm text-center py-12">
-                Send the first message.
+                No messages yet. Start the conversation.
               </p>
             )}
             {!isLoading && !loadError && messages.some((m) => m.failed) && (
@@ -299,7 +309,7 @@ export function ConversationView({ otherHash }: Props) {
                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                     isMe
-                      ? 'bg-accent text-white rounded-br-md'
+                      ? 'bg-accent text-background rounded-br-md'
                       : 'glass rounded-bl-md text-text'
                   } ${msg.failed ? 'opacity-40 italic' : ''}`}>
                     {msg.failed ? 'Unable to decrypt' : msg.text}
@@ -312,6 +322,9 @@ export function ConversationView({ otherHash }: Props) {
 
           {/* Input bar */}
           <div className="fixed bottom-0 left-0 right-0 px-[5vw] pb-[max(env(safe-area-inset-bottom),16px)] pt-3 bg-background/80 backdrop-blur-xl border-t border-border/25">
+            {sendError && (
+              <p className="text-[11px] text-text-secondary mb-2 text-center">{sendError}</p>
+            )}
             <div className="flex items-end gap-2">
               <textarea
                 ref={inputRef}

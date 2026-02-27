@@ -43,7 +43,7 @@ export function useSearch(): UseSearchReturn {
       return
     }
 
-    // 350ms debounce — fast enough to feel instant, slow enough to batch keystrokes
+    // 350ms debounce - fast enough to feel instant, slow enough to batch keystrokes
     debounceRef.current = setTimeout(() => {
       void runSearch(query.trim())
     }, 350)

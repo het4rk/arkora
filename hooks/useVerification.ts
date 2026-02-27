@@ -7,12 +7,30 @@ import type { HumanUser } from '@/lib/types'
 
 type VerificationStatus = 'idle' | 'pending' | 'success' | 'error'
 
+/** Maps server error codes to user-facing messages */
+function friendlyVerifyError(serverError: string | undefined): string {
+  switch (serverError) {
+    case 'max_verifications_reached':
+      return 'You have already verified. Your session will be restored.'
+    case 'expired_root':
+      return 'Verification expired. Please close and try again.'
+    case 'network_error':
+      return 'Could not reach the blockchain. Please try again in a moment.'
+    case 'invalid_proof':
+      return 'Verification failed. Please try again.'
+    case 'Too many requests':
+      return 'Too many attempts. Please wait a minute and try again.'
+    default:
+      return serverError ?? 'Verification failed. Please try again.'
+  }
+}
+
 /**
  * Three-way environment:
- *  'detecting'      — polling for MiniKit, UI should show neutral loading state
- *  'minikit'        — running inside World App WebView (MiniKit available)
- *  'mobile-browser' — mobile device (phone/tablet/iPad) but NOT inside World App
- *  'desktop'        — desktop / laptop browser
+ *  'detecting'      - polling for MiniKit, UI should show neutral loading state
+ *  'minikit'        - running inside World App WebView (MiniKit available)
+ *  'mobile-browser' - mobile device (phone/tablet/iPad) but NOT inside World App
+ *  'desktop'        - desktop / laptop browser
  */
 export type VerifyEnvironment = 'detecting' | 'minikit' | 'mobile-browser' | 'desktop'
 
@@ -28,6 +46,7 @@ function isMobileDevice(): boolean {
 interface UseVerificationReturn {
   status: VerificationStatus
   error: string | null
+  setError: (err: string | null) => void
   env: VerifyEnvironment
   /** @deprecated use env === 'minikit' */
   isMiniKit: boolean
@@ -47,7 +66,7 @@ export function useVerification(): UseVerificationReturn {
   // Detect environment after mount.
   // MiniKit requires the World App WebView to inject window.WorldApp, which can
   // take 300–600 ms. We poll up to ~3 s (15 × 200 ms) before concluding
-  // MiniKit is unavailable — same strategy as WalletConnect.tsx.
+  // MiniKit is unavailable - same strategy as WalletConnect.tsx.
   useEffect(() => {
     let retries = 0
     const MAX_RETRIES = 15
@@ -148,14 +167,24 @@ export function useVerification(): UseVerificationReturn {
       setStatus('pending')
       setError(null)
 
-      const res = await fetch('/api/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payload: proof,
-          action: process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman',
-        }),
-      })
+      let res: Response
+      try {
+        res = await fetch('/api/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payload: proof,
+            action: process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman',
+          }),
+          signal: AbortSignal.timeout(15000),
+        })
+      } catch {
+        const msg = 'Network error. Please check your connection and try again.'
+        console.error('[handleVerify] Fetch failed:', msg)
+        setStatus('error')
+        setError(msg)
+        throw new Error(msg)
+      }
 
       const json = (await res.json()) as {
         success: boolean
@@ -165,11 +194,11 @@ export function useVerification(): UseVerificationReturn {
       }
 
       if (!res.ok || !json.success) {
+        const friendly = friendlyVerifyError(json.error)
         setStatus('error')
-        setError(json.error ?? 'Verification failed on server.')
-        throw new Error(json.error ?? 'Verification failed')
+        setError(friendly)
+        throw new Error(friendly)
       }
-
       if (json.nullifierHash && json.user) {
         setVerified(json.nullifierHash, json.user)
       }
@@ -186,6 +215,7 @@ export function useVerification(): UseVerificationReturn {
   return {
     status,
     error,
+    setError,
     env,
     isMiniKit: env === 'minikit',
     verify,

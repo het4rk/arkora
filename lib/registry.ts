@@ -1,17 +1,17 @@
 /**
- * ArkoraNullifierRegistry — server-side integration.
+ * ArkoraNullifierRegistry - server-side integration.
  *
  * After a successful World ID proof verification, the server calls register()
  * on the deployed ArkoraNullifierRegistry contract. This creates an immutable
  * onchain record: "this nullifier was verified by Arkora at block N".
  *
- * This is fire-and-forget — a registration failure never blocks the verify flow.
+ * This is fire-and-forget - a registration failure never blocks the verify flow.
  * The tx hash is stored in humanUsers.registrationTxHash if successful.
  *
  * Required env vars (set in Vercel Dashboard after deploying the contract):
- *   REGISTRY_ADDRESS            — deployed ArkoraNullifierRegistry address
- *   REGISTRY_DEPLOYER_PRIVATE_KEY — the wallet that owns the contract (for signing)
- *   WORLD_CHAIN_RPC             — already required for WorldID verification
+ *   REGISTRY_ADDRESS            - deployed ArkoraNullifierRegistry address
+ *   REGISTRY_DEPLOYER_PRIVATE_KEY - the wallet that owns the contract (for signing)
+ *   WORLD_CHAIN_RPC             - already required for WorldID verification
  */
 
 import { createWalletClient, createPublicClient, http, type Hex, type Address } from 'viem'
@@ -74,11 +74,11 @@ function getClients() {
  * Returns the transaction hash if successful, null if the registry is not
  * configured or if the nullifier is already registered.
  *
- * Never throws — safe to call fire-and-forget from the verify route.
+ * Never throws - safe to call fire-and-forget from the verify route.
  */
 export async function registerNullifierOnchain(nullifierHash: string): Promise<string | null> {
   const clients = getClients()
-  if (!clients) return null // registry not configured yet — silent skip
+  if (!clients) return null // registry not configured yet - silent skip
 
   const { walletClient, publicClient, account, registryAddress } = clients
 

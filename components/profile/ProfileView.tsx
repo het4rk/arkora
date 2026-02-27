@@ -89,7 +89,7 @@ export function ProfileView() {
         if (json.success && json.user) {
           setVerified(nullifierHash, json.user)
         }
-      } catch { /* silent — stale store data is acceptable fallback */ }
+      } catch { /* silent - stale store data is acceptable fallback */ }
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nullifierHash, isVerified])
@@ -173,12 +173,12 @@ export function ProfileView() {
   if (!isVerified || !nullifierHash) {
     return (
       <div className="min-h-dvh bg-background flex flex-col items-center justify-center px-8 text-center">
-        <div className="text-4xl mb-5">👤</div>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
         <p className="font-bold text-text text-xl mb-2">Your profile</p>
         <p className="text-text-secondary text-sm mb-6 max-w-[260px]">Verify with World ID to see your posts, bookmarks, and activity.</p>
         <button
           onClick={() => useArkoraStore.getState().setVerifySheetOpen(true)}
-          className="bg-accent text-white font-semibold py-3.5 px-6 rounded-[var(--r-lg)] text-sm active:scale-[0.98] active:bg-accent-hover transition-all shadow-lg shadow-accent/25"
+          className="bg-accent text-background font-semibold py-3.5 px-6 rounded-[var(--r-lg)] text-sm active:scale-[0.98] active:bg-accent-hover transition-all shadow-lg shadow-accent/25"
         >
           Verify with World ID
         </button>
@@ -256,7 +256,7 @@ export function ProfileView() {
             /* ── Edit bio mode ── */
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] text-text-muted uppercase tracking-[0.1em] font-semibold">Bio</label>
+                <label className="text-[11px] text-text-muted uppercase tracking-[0.12em] font-semibold">Bio</label>
                 <textarea
                   value={bioDraft}
                   onChange={(e) => setBioDraft(e.target.value.slice(0, 160))}
@@ -277,7 +277,7 @@ export function ProfileView() {
                 <button
                   onClick={() => void saveProfile()}
                   disabled={saving}
-                  className="flex-1 py-2.5 text-sm font-semibold bg-accent text-white rounded-[var(--r-full)] active:scale-[0.98] transition-all disabled:opacity-40"
+                  className="flex-1 py-2.5 text-sm font-semibold bg-accent text-background rounded-[var(--r-full)] active:scale-[0.98] transition-all disabled:opacity-40"
                 >
                   {saving ? 'Saving…' : 'Save'}
                 </button>
@@ -296,7 +296,7 @@ export function ProfileView() {
                 </div>
               </div>
 
-              {/* Set display name — only on desktop/IDKit (no World App username available) */}
+              {/* Set display name - only on desktop/IDKit (no World App username available) */}
               {!MiniKit.isInstalled() && needsHandle() && !handleEditMode && (
                 <button
                   onClick={() => { setHandleDraft(''); setHandleEditMode(true) }}
@@ -318,7 +318,7 @@ export function ProfileView() {
                   <button
                     onClick={() => void saveHandle()}
                     disabled={!handleDraft.trim() || handleSaving}
-                    className="px-3 py-2 bg-accent text-white text-xs font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40 shrink-0"
+                    className="px-3 py-2 bg-accent text-background text-xs font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40 shrink-0"
                   >
                     {handleSaving ? '…' : 'Set'}
                   </button>
@@ -335,7 +335,7 @@ export function ProfileView() {
                 <span><span className="text-text font-semibold">{followerCount}</span> followers</span>
                 <span><span className="text-text font-semibold">{followingCount}</span> following</span>
                 {subscriberCount > 0 && (
-                  <span><span className="text-amber-400 font-semibold">{subscriberCount}</span> subscribers</span>
+                  <span><span className="text-accent font-semibold">{subscriberCount}</span> subscribers</span>
                 )}
               </div>
 
@@ -381,7 +381,7 @@ export function ProfileView() {
               onClick={() => setTab(t.id)}
               className={`flex-1 py-2.5 text-sm font-semibold rounded-[var(--r-md)] transition-all ${
                 tab === t.id
-                  ? 'bg-accent text-white'
+                  ? 'bg-accent text-background'
                   : 'text-text-muted'
               }`}
             >
@@ -402,7 +402,7 @@ export function ProfileView() {
         )}
 
         {error && (
-          <p className="text-downvote text-sm text-center py-8">{error}</p>
+          <p className="text-text-secondary text-sm text-center py-8">{error}</p>
         )}
 
         {!isLoading && !error && tab === 'posts' && (
@@ -449,7 +449,7 @@ export function ProfileView() {
             )
             : votes.map((post) => (
                 <div key={post.id} className="relative">
-                  <div className={`absolute top-3 right-3 z-10 text-xs font-bold ${post.voteDirection === 1 ? 'text-upvote' : 'text-downvote'}`}>
+                  <div className={`absolute top-3 right-3 z-10 text-xs font-bold ${post.voteDirection === 1 ? 'text-accent' : 'text-text-muted'}`}>
                     {post.voteDirection === 1 ? '↑' : '↓'}
                   </div>
                   <ProfilePostCard post={post} />

@@ -14,7 +14,7 @@ export async function GET() {
 
   const cookieStore = await cookies()
   cookieStore.set('siwe-nonce', nonce, {
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     httpOnly: true,
     sameSite: 'strict',
     maxAge: 60 * 10, // 10 min

@@ -1,0 +1,7 @@
+# All files require review from @hetark by default
+* @hetark
+
+# Critical paths — explicit ownership
+/app/api/ @hetark
+/lib/ @hetark
+/public/ @hetark

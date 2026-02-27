@@ -20,7 +20,7 @@ export function RoomMessageRow({ message, isOwn }: RoomMessageProps) {
       </div>
       <div className={`max-w-[80%] px-3.5 py-2.5 rounded-[var(--r-lg)] text-sm leading-relaxed ${
         isOwn
-          ? 'bg-accent/20 text-text rounded-br-[4px]'
+          ? 'bg-accent text-background rounded-br-[4px]'
           : 'glass text-text rounded-bl-[4px]'
       }`}>
         {message.text}

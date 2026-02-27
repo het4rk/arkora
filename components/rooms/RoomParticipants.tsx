@@ -65,7 +65,7 @@ export function RoomParticipants({
                     </p>
                   </div>
 
-                  {/* Host controls — only visible to host, not for themselves */}
+                  {/* Host controls - only visible to host, not for themselves */}
                   {isHost && p.nullifierHash !== callerHash && (
                     <div className="flex gap-2 shrink-0">
                       {!p.isMuted && (
@@ -78,7 +78,7 @@ export function RoomParticipants({
                       )}
                       <button
                         onClick={() => onKick(p.nullifierHash)}
-                        className="text-[11px] text-downvote/80 glass px-2.5 py-1.5 rounded-[var(--r-md)] active:opacity-70 transition-opacity"
+                        className="text-[11px] text-text-muted glass px-2.5 py-1.5 rounded-[var(--r-md)] active:opacity-70 transition-opacity"
                       >
                         Kick
                       </button>

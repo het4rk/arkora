@@ -9,6 +9,10 @@ import {
 import { worldchain } from 'viem/chains'
 import type { ISuccessResult } from '@worldcoin/minikit-js'
 
+type VerifyResult = { success: boolean; nullifierHash?: string; error?: string }
+
+// Error selectors from the World ID Router / Semaphore contracts.
+// Viem needs these to decode custom revert reasons; without them it only shows hex.
 const WORLD_ID_ABI = [
   {
     name: 'verifyProof',
@@ -24,7 +28,26 @@ const WORLD_ID_ABI = [
     ],
     outputs: [],
   },
+  // Custom errors so viem can decode revert reasons
+  { type: 'error', name: 'InvalidRoot', inputs: [] },
+  { type: 'error', name: 'NonExistentRoot', inputs: [] },
+  { type: 'error', name: 'ExpiredRoot', inputs: [] },
+  { type: 'error', name: 'InvalidNullifier', inputs: [] },
+  { type: 'error', name: 'InvalidProof', inputs: [] },
+  { type: 'error', name: 'GroupDoesNotExist', inputs: [] },
+  { type: 'error', name: 'MismatchedInputLengths', inputs: [] },
 ] as const
+
+// Error selectors (keccak256 of signature, first 4 bytes) for fallback matching
+// when viem can't decode (e.g., errors from delegated contracts not in our ABI)
+const ERROR_SELECTORS: Record<string, string> = {
+  '0x504570e3': 'InvalidRoot',
+  '0xddae3b71': 'NonExistentRoot',
+  '0x3ae7359e': 'ExpiredRoot',
+  '0x5d904cb2': 'InvalidNullifier',
+  '0x09bde339': 'InvalidProof',
+  '0x69128538': 'GroupDoesNotExist',
+}
 
 /**
  * hashToField mirrors the ByteHasher.hashToField() function in Worldcoin's
@@ -55,8 +78,24 @@ function getClient() {
 }
 
 /**
+ * Extracts the decoded error name from a contract revert.
+ * Checks both viem-decoded names and raw hex selectors.
+ */
+function identifyContractError(message: string): string | null {
+  // Check for viem-decoded error names
+  for (const name of ['InvalidRoot', 'NonExistentRoot', 'ExpiredRoot', 'InvalidNullifier', 'InvalidProof', 'GroupDoesNotExist']) {
+    if (message.includes(name)) return name
+  }
+  // Check for raw hex selectors (when viem can't decode)
+  for (const [selector, name] of Object.entries(ERROR_SELECTORS)) {
+    if (message.includes(selector)) return name
+  }
+  return null
+}
+
+/**
  * Verifies a World ID proof against the WorldIDRouter contract on World Chain.
- * This is an eth_call (view function) — no gas, no transaction, no user signing.
+ * This is an eth_call (view function) - no gas, no transaction, no user signing.
  *
  * If the contract doesn't revert, the proof is valid.
  */
@@ -64,46 +103,92 @@ export async function verifyWorldIdProof(
   proof: ISuccessResult,
   action: string,
   signal?: string
-): Promise<{ success: boolean; nullifierHash?: string; error?: string }> {
-  const appId = process.env.APP_ID as `app_${string}`
+): Promise<VerifyResult> {
+  // Always use NEXT_PUBLIC_APP_ID — this is the same var that IDKit uses client-side
+  // to generate the ZK proof's externalNullifierHash. Using any other var causes mismatch.
+  const appId = (process.env.NEXT_PUBLIC_APP_ID) as `app_${string}`
   const routerAddress = (process.env.WORLD_ID_ROUTER ??
     '0x17B354dD2595411ff79041f930e491A4Df39A278') as Hex
 
-  try {
-    const root = BigInt(proof.merkle_root)
-    const nullifierHash = BigInt(proof.nullifier_hash)
-    const externalNullifierHash = computeExternalNullifierHash(appId, action)
-    const signalHash = hashToField(encodePacked(['string'], [signal ?? '']))
-
-    const [decodedProof] = decodeAbiParameters(
-      [{ type: 'uint256[8]' }],
-      proof.proof as Hex
-    )
-
-    await getClient().readContract({
-      address: routerAddress,
-      abi: WORLD_ID_ABI,
-      functionName: 'verifyProof',
-      // groupId 1 = Orb-level verification
-      args: [root, 1n, signalHash, nullifierHash, externalNullifierHash, decodedProof],
-    })
-
-    return { success: true, nullifierHash: proof.nullifier_hash }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-
-    // InvalidNullifier() revert = nullifier was already used (duplicate verify attempt)
-    if (
-      message.includes('InvalidNullifier') ||
-      message.toLowerCase().includes('already') ||
-      message.toLowerCase().includes('max_verifications')
-    ) {
-      return { success: false, error: 'max_verifications_reached' }
-    }
-
-    console.error('[worldid] Verification failed:', message)
-    return { success: false, error: 'Proof verification failed' }
+  if (!appId) {
+    console.error('[worldid] FATAL: NEXT_PUBLIC_APP_ID env var not set!')
+    return { success: false, error: 'Server misconfiguration: NEXT_PUBLIC_APP_ID not set' }
   }
+
+  const externalNullifierHash = computeExternalNullifierHash(appId, action)
+
+  const root = BigInt(proof.merkle_root)
+  const nullifierHash = BigInt(proof.nullifier_hash)
+  const signalHash = hashToField(encodePacked(['string'], [signal ?? '']))
+
+  const [decodedProof] = decodeAbiParameters(
+    [{ type: 'uint256[8]' }],
+    proof.proof as Hex
+  )
+
+  // Retry on NonExistentRoot — the root may not have propagated to our RPC yet.
+  // World App generates the proof against the latest tree; a few seconds' lag is common.
+  const MAX_ATTEMPTS = 3
+  let lastContractError: string | null = null
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      await getClient().readContract({
+        address: routerAddress,
+        abi: WORLD_ID_ABI,
+        functionName: 'verifyProof',
+        args: [root, 1n, signalHash, nullifierHash, externalNullifierHash, decodedProof],
+      })
+      return { success: true, nullifierHash: proof.nullifier_hash }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      const contractError = identifyContractError(message)
+      lastContractError = contractError
+
+      // Retry only on NonExistentRoot (root propagation lag). All other errors are deterministic.
+      if (contractError === 'NonExistentRoot' || contractError === 'InvalidRoot') {
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise<void>((r) => setTimeout(r, 1000))
+          continue
+        }
+        // All retries exhausted — root genuinely not found
+        return { success: false, error: 'expired_root' }
+      }
+
+      // Nullifier already used on-chain
+      if (contractError === 'InvalidNullifier') {
+        return { success: false, error: 'max_verifications_reached' }
+      }
+
+      // Root expired (not just non-existent — no point retrying)
+      if (contractError === 'ExpiredRoot') {
+        return { success: false, error: 'expired_root' }
+      }
+
+      // ZK proof math didn't check out
+      if (contractError === 'InvalidProof') {
+        return { success: false, error: 'invalid_proof' }
+      }
+
+      // Network / RPC errors
+      if (
+        message.includes('fetch') ||
+        message.includes('ECONNREFUSED') ||
+        message.includes('timeout') ||
+        message.includes('ETIMEDOUT') ||
+        message.includes('503') ||
+        message.includes('502') ||
+        message.includes('429')
+      ) {
+        return { success: false, error: 'network_error' }
+      }
+
+      return { success: false, error: `on_chain_failed: ${contractError ?? message.slice(0, 200)}` }
+    }
+  }
+
+  // Unreachable — all code paths inside the loop return. TypeScript needs this.
+  return { success: false, error: 'expired_root' }
 }
 
 /**

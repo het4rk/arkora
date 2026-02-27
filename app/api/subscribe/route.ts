@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       txId?: string
     }
 
-    if (!creatorHash) {
+    if (!creatorHash || !txId) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
 

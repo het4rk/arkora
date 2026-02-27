@@ -114,7 +114,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
             <button
               onClick={(e) => { e.stopPropagation(); haptic('light'); setReportOpen(true) }}
               aria-label="Report post"
-              className="text-text-muted/40 hover:text-downvote active:scale-90 transition-all"
+              className="text-text-muted/40 hover:text-text-muted active:scale-90 transition-all"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -128,7 +128,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
               onClick={handleDelete}
               disabled={isDeleting}
               aria-label="Delete post"
-              className="text-text-muted/40 hover:text-downvote active:scale-90 transition-all disabled:opacity-30"
+              className="text-text-muted/40 hover:text-text-muted active:scale-90 transition-all disabled:opacity-30"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -142,7 +142,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
 
       {/* Delete error */}
       {deleteError && (
-        <p className="text-downvote text-xs mb-2">{deleteError}</p>
+        <p className="text-text-secondary text-xs mb-2">{deleteError}</p>
       )}
 
       {/* Hero content */}
@@ -180,7 +180,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           </div>
         )}
 
-        {/* Poll — rendered in feed with results if available, otherwise options as preview */}
+        {/* Poll - rendered in feed with results if available, otherwise options as preview */}
         {post.type === 'poll' && post.pollOptions && (
           <PollCard
             post={post}
@@ -194,7 +194,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           <QuotedPost post={post.quotedPost} className="mt-4" />
         )}
 
-        {/* Post image — tap to view card, long-press to view full-resolution */}
+        {/* Post image - tap to view card, long-press to view full-resolution */}
         {post.imageUrl && (
           <div
             className="mt-4 rounded-[var(--r-lg)] overflow-hidden cursor-pointer select-none"
@@ -214,10 +214,10 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           </div>
         )}
 
-        {/* Top reply preview — glass card */}
+        {/* Top reply preview - glass card */}
         {topReply && (
           <div className="mt-5 glass rounded-[var(--r-lg)] px-4 py-4">
-            <p className="text-accent text-[10px] font-bold uppercase tracking-[0.12em] mb-2">
+            <p className="text-accent text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">
               Top reply
             </p>
             <p className="text-text-secondary text-sm leading-relaxed line-clamp-3">
@@ -240,7 +240,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
             onClick={(e) => { e.stopPropagation(); haptic('light'); setRepostMenuOpen(true) }}
             disabled={isReposting}
             aria-label="Repost or quote"
-            className={`flex items-center gap-1 text-xs active:scale-90 transition-all disabled:opacity-40 ${reposted ? 'text-upvote' : 'text-text-muted'}`}
+            className={`flex items-center gap-1 text-xs active:scale-90 transition-all disabled:opacity-40 ${reposted ? 'text-accent' : 'text-text-muted'}`}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

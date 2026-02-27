@@ -40,7 +40,7 @@ export function BottomNav() {
         setUnreadNotificationCount(Math.max(0, current + data.delta))
       })
     } catch {
-      // Pusher unavailable — notification badge won't update in real-time
+      // Pusher unavailable - notification badge won't update in real-time
       pusher?.disconnect()
       pusher = null
     }
@@ -104,11 +104,11 @@ export function BottomNav() {
             {/* Compose FAB */}
             <button
               onClick={() => { haptic('medium'); setComposerOpen(true) }}
-              className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center shadow-lg shadow-accent/30 active:scale-95 transition-all active:bg-accent-hover"
+              className="w-12 h-12 rounded-2xl bg-accent text-background flex items-center justify-center shadow-lg active:scale-95 transition-all active:bg-accent-hover"
               aria-label="Create post"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </button>
@@ -131,7 +131,7 @@ export function BottomNav() {
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
                 {unreadNotificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent ring-2 ring-background" />
                 )}
               </span>
               <span className={cn('text-[10px] font-medium', pathname === '/notifications' && 'text-accent')}>

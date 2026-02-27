@@ -19,11 +19,11 @@ async function getLinkedNullifiers(nullifierHash: string): Promise<string[]> {
   const all = new Set([nullifierHash])
 
   if (nullifierHash.startsWith('wlt_')) {
-    // Session is wallet-based — also check for linked World ID nullifier
+    // Session is wallet-based - also check for linked World ID nullifier
     const wiUser = await getUserByWalletAddressNonWlt(user.walletAddress)
     if (wiUser) all.add(wiUser.nullifierHash)
   } else {
-    // Session is World ID nullifier — also add linked wlt_ nullifier
+    // Session is World ID nullifier - also add linked wlt_ nullifier
     all.add(walletToNullifier(user.walletAddress))
   }
 

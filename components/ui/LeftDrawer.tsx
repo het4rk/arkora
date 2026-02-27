@@ -8,18 +8,19 @@ import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkora
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { generateAlias } from '@/lib/session'
 import { cn, formatDisplayName } from '@/lib/utils'
+import { SKINS, type SkinId } from '@/lib/skins'
 
 /* ─── Privacy options ──────────────────────────────────────────────────── */
-const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: string }[] = [
-  { mode: 'anonymous', label: 'Random',  sub: 'New Human # each post',    icon: '🎲' },
-  { mode: 'alias',     label: 'Alias',   sub: 'Consistent handle',        icon: '👤' },
-  { mode: 'named',     label: 'Named',   sub: 'Your World ID username',   icon: '📛' },
+const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: JSX.Element }[] = [
+  { mode: 'anonymous', label: 'Random',  sub: 'New Human # each post',    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /></svg> },
+  { mode: 'alias',     label: 'Alias',   sub: 'Consistent handle',        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> },
+  { mode: 'named',     label: 'Named',   sub: 'Your World ID username',   icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 15h4M7 11h6M7 9h10" /></svg> },
 ]
 
 /* ─── Theme options ────────────────────────────────────────────────────── */
-const THEMES: { value: Theme; label: string; icon: string }[] = [
-  { value: 'dark',  label: 'Dark',  icon: '🌙' },
-  { value: 'light', label: 'Light', icon: '☀️' },
+const THEMES: { value: Theme; label: string; icon: JSX.Element }[] = [
+  { value: 'dark',  label: 'Dark',  icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg> },
+  { value: 'light', label: 'Light', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg> },
 ]
 
 export function LeftDrawer() {
@@ -30,6 +31,7 @@ export function LeftDrawer() {
     theme, setTheme,
     isVerified, nullifierHash, persistentAlias, setPersistentAlias,
     user, signOut,
+    activeSkinId, ownedSkins, setActiveSkin,
   } = useArkoraStore()
 
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
@@ -95,14 +97,14 @@ export function LeftDrawer() {
             <div className="px-6 pt-[max(env(safe-area-inset-top),48px)] pb-5 border-b border-border/20">
               {isVerified ? (
                 <>
-                  <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
+                  <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">
                     Posting as
                   </p>
                   <HumanBadge label={displayName()} size="md" />
                 </>
               ) : (
                 <>
-                  <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
+                  <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">
                     Browsing as guest
                   </p>
                   <p className="text-text-secondary text-sm leading-relaxed mb-4">
@@ -113,7 +115,7 @@ export function LeftDrawer() {
                       useArkoraStore.getState().setVerifySheetOpen(true)
                       setDrawerOpen(false)
                     }}
-                    className="w-full bg-accent text-white font-semibold py-3 rounded-[var(--r-lg)] text-sm active:scale-[0.98] active:bg-accent-hover transition-all"
+                    className="w-full bg-accent text-background font-semibold py-3 rounded-[var(--r-lg)] text-sm active:scale-[0.98] active:bg-accent-hover transition-all"
                   >
                     Verify with World ID
                   </button>
@@ -124,9 +126,9 @@ export function LeftDrawer() {
             {/* ── Scrollable content ───────────────────────────────── */}
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
 
-              {/* Privacy mode — only relevant for verified users */}
+              {/* Privacy mode - only relevant for verified users */}
               {isVerified && <div>
-                <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
+                <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">
                   Privacy
                 </p>
                 <div className="space-y-2">
@@ -143,7 +145,7 @@ export function LeftDrawer() {
                             : 'glass'
                         )}
                       >
-                        <span className="text-lg leading-none flex-shrink-0">{opt.icon}</span>
+                        <div className="flex-shrink-0">{opt.icon}</div>
                         <div className="text-left min-w-0">
                           <p className={cn(
                             'text-sm font-semibold leading-tight',
@@ -163,7 +165,7 @@ export function LeftDrawer() {
                         )}
                       </button>
 
-                      {/* Alias name input — shown inline when Alias is selected */}
+                      {/* Alias name input - shown inline when Alias is selected */}
                       {opt.mode === 'alias' && identityMode === 'alias' && (
                         <div className="mt-2 flex gap-2">
                           <input
@@ -176,7 +178,7 @@ export function LeftDrawer() {
                           />
                           <button
                             onClick={commitAlias}
-                            className="px-3 py-2.5 bg-accent text-white text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all shrink-0"
+                            className="px-3 py-2.5 bg-accent text-background text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all shrink-0"
                           >
                             Set
                           </button>
@@ -192,7 +194,7 @@ export function LeftDrawer() {
 
               {/* Appearance */}
               <div>
-                <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.14em] mb-3">
+                <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">
                   Appearance
                 </p>
                 <div className="flex gap-2">
@@ -207,7 +209,7 @@ export function LeftDrawer() {
                           : 'glass'
                       )}
                     >
-                      <span className="text-xl leading-none">{t.icon}</span>
+                      <div>{t.icon}</div>
                       <span className={cn(
                         'text-xs font-semibold',
                         theme === t.value ? 'text-accent' : 'text-text-secondary'
@@ -216,6 +218,60 @@ export function LeftDrawer() {
                       </span>
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-border/20" />
+
+              {/* Accent color */}
+              <div>
+                <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">
+                  Accent Color
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SKINS.filter((s) => s.id !== 'hex').map((skin) => {
+                    const owned = skin.id === 'monochrome' || ownedSkins.includes(skin.id)
+                    const active = activeSkinId === skin.id
+                    return (
+                      <button
+                        key={skin.id}
+                        onClick={() => {
+                          if (owned) {
+                            setActiveSkin(skin.id)
+                            void fetch('/api/skins/activate', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ skinId: skin.id }),
+                            })
+                          } else {
+                            setDrawerOpen(false)
+                            router.push('/settings')
+                          }
+                        }}
+                        className={cn(
+                          'w-7 h-7 rounded-full border-2 transition-all relative',
+                          active ? 'border-text scale-110' : owned ? 'border-border' : 'border-border/40 opacity-50'
+                        )}
+                        style={skin.hex ? { backgroundColor: skin.hex } : undefined}
+                      >
+                        {skin.id === 'monochrome' && (
+                          <div className="absolute inset-0.5 rounded-full overflow-hidden">
+                            <div className="absolute inset-0 left-0 right-1/2 bg-black" />
+                            <div className="absolute inset-0 left-1/2 bg-white" />
+                          </div>
+                        )}
+                        {!owned && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-md">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -257,7 +313,7 @@ export function LeftDrawer() {
                     // Hard reload: remounts WalletConnect so walletAuth re-runs
                     window.location.href = '/'
                   }}
-                  className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-downvote/80 text-sm active:opacity-70 transition-opacity"
+                  className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-text-muted text-sm active:opacity-70 transition-opacity"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { MiniKitProvider } from '@/components/providers/MiniKitProvider'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
+import { SkinProvider } from '@/components/providers/SkinProvider'
 import { WalletConnect } from '@/components/auth/WalletConnect'
 import { BottomNav } from '@/components/ui/BottomNav'
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen'
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
     description: 'A provably human anonymous message board. Every voice is verified.',
     url: 'https://arkora.vercel.app',
     siteName: 'Arkora',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Arkora — Every voice is verified' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Arkora - Every voice is verified' }],
     type: 'website',
   },
   twitter: {
@@ -56,6 +57,7 @@ export default function RootLayout({
       <body className="bg-background text-text min-h-screen">
         <MiniKitProvider>
           <ThemeProvider />
+          <SkinProvider />
           <TopBar />
           {/* Auto-triggers walletAuth on mount */}
           <SessionHydrator />

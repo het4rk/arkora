@@ -1,5 +1,5 @@
 // Generates random anonymous session tags like "Human #4821"
-// Different every post — no link between posts
+// Different every post - no link between posts
 export function generateSessionTag(): string {
   const num = Math.floor(1000 + Math.random() * 9000)
   return `Human #${num}`
