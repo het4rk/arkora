@@ -64,9 +64,7 @@ export async function POST(req: NextRequest) {
     }
 
     // On-chain verification via WorldIDRouter on World Chain (eth_call, no gas)
-    console.log('[verify] Starting on-chain verification for action:', action, 'hasWallet:', !!walletAddress)
     const result = await verifyWorldIdProof(payload, action, signal)
-    console.log('[verify] Result:', result.success, result.error ?? 'OK')
 
     if (!result.success || !result.nullifierHash) {
       // Graceful path: Worldcoin rejects duplicate nullifiers with "already verified".

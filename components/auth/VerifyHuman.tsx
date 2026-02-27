@@ -18,13 +18,10 @@ export function VerifyHuman() {
   const { setOpen: idkitSetOpen } = useIDKit()
 
   const wrappedHandleVerify = useCallback(async (proof: ISuccessResult) => {
-    console.log('[IDKit] handleVerify called - proof received from World App')
     verifySetErrorRef.current = false
     try {
       await handleDesktopVerify(proof)
-      console.log('[IDKit] handleVerify resolved - verification succeeded')
     } catch (err) {
-      console.error('[IDKit] handleVerify threw:', err instanceof Error ? err.message : err)
       verifySetErrorRef.current = true
       // Auto-dismiss IDKit's generic error screen so our custom error sheet shows instead.
       // IDKit's onOpenChange(false) fires onError callbacks, which re-open our sheet.
@@ -83,7 +80,6 @@ export function VerifyHuman() {
           handleVerify={wrappedHandleVerify}
           onSuccess={onDesktopSuccess}
           onError={(idkitError: IErrorState) => {
-            console.error('[IDKit onError] error:', JSON.stringify(idkitError), 'handleVerifyFailed:', verifySetErrorRef.current)
             if (!verifySetErrorRef.current) {
               setError(idkitError?.message ?? 'Verification was declined. Please try again.')
             }

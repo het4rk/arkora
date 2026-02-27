@@ -116,15 +116,10 @@ export async function verifyWorldIdProof(
   }
 
   const externalNullifierHash = computeExternalNullifierHash(appId, action)
-  console.log('[worldid] appId:', appId, 'action:', action)
-  console.log('[worldid] externalNullifierHash:', '0x' + externalNullifierHash.toString(16))
 
   const root = BigInt(proof.merkle_root)
   const nullifierHash = BigInt(proof.nullifier_hash)
   const signalHash = hashToField(encodePacked(['string'], [signal ?? '']))
-
-  console.log('[worldid] root:', proof.merkle_root.slice(0, 18) + '...', 'nh:', proof.nullifier_hash.slice(0, 18) + '...')
-  console.log('[worldid] proof.proof length:', proof.proof?.length, '(expected 514 for uint256[8])')
 
   const [decodedProof] = decodeAbiParameters(
     [{ type: 'uint256[8]' }],
@@ -144,18 +139,15 @@ export async function verifyWorldIdProof(
         functionName: 'verifyProof',
         args: [root, 1n, signalHash, nullifierHash, externalNullifierHash, decodedProof],
       })
-      console.log(`[worldid] Proof verified successfully on attempt ${attempt}`)
       return { success: true, nullifierHash: proof.nullifier_hash }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       const contractError = identifyContractError(message)
       lastContractError = contractError
-      console.error(`[worldid] Attempt ${attempt} FAILED:`, contractError ?? message.slice(0, 200))
 
       // Retry only on NonExistentRoot (root propagation lag). All other errors are deterministic.
       if (contractError === 'NonExistentRoot' || contractError === 'InvalidRoot') {
         if (attempt < MAX_ATTEMPTS) {
-          console.log(`[worldid] NonExistentRoot — waiting 1s before retry ${attempt + 1}/${MAX_ATTEMPTS}`)
           await new Promise<void>((r) => setTimeout(r, 1000))
           continue
         }
