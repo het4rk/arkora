@@ -72,7 +72,7 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] **DM conversations rate limit** — key changed from IP to `nullifierHash` (authenticated endpoint)
 - [x] **Nonce cookie** — `secure: true` always (was `process.env.NODE_ENV === 'production'`)
 - [x] **Sentry integrated** — `instrumentation-client.ts`, `global-error.tsx`, `SENTRY_AUTH_TOKEN` in Vercel
-- [x] **pnpm audit** — 2 HIGH in dev-only eslint deps (no prod exposure), 1 LOW in AWS SDK (no path to exploit); neither requires action
+- [x] **pnpm audit** — patched all 3 vulnerabilities via pnpm overrides: `minimatch >=10.2.3` (2 HIGH ReDoS in eslint chain), `fast-xml-parser >=5.3.8` (1 LOW in AWS SDK); `pnpm audit` now returns zero vulnerabilities
 - [x] **CI** — upgraded Node 20 → 22, added `SENTRY_AUTH_TOKEN` + `NEXT_PUBLIC_WORLD_APP_ID` to build env
 - [x] **GitHub community** — `SECURITY.md`, `CONTRIBUTING.md`, PR template, bug/feature issue templates, `CODEOWNERS`
 
@@ -330,7 +330,7 @@ Known limitation: rate limiter is in-process (resets on Vercel cold start). Fine
 - **`ADMIN_NULLIFIER_HASHES` env var** must be set in Vercel Dashboard for `/api/admin/metrics` to be accessible (comma-separated list of admin nullifier hashes).
 - **Brand assets** (`/og-image.png`, `/icon-192.png`, `/icon-512.png`, `/favicon.ico`, `/apple-touch-icon.png`) must be created and placed in `public/` — blocks PWA install and social sharing previews.
 - **Neon DB backups** — Neon Free tier provides 7-day automatic backup retention. Manual: `pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql`.
-- **pnpm audit** — 2 HIGH in dev-only `eslint` deps (no prod exposure), 1 LOW in `@aws-sdk` fast-xml-parser (no exploitable path). Both are supply-chain issues in third-party deps; no action required.
+- **pnpm audit** — zero vulnerabilities. Patched via pnpm overrides: `minimatch >=10.2.3`, `fast-xml-parser >=5.3.8`.
 
 ---
 
