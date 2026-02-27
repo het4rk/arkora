@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { Room } from '@/lib/types'
 
 interface LiveRoomsStripProps {
-  boardId?: string
+  boardId?: string | undefined
 }
 
 export function LiveRoomsStrip({ boardId }: LiveRoomsStripProps) {
