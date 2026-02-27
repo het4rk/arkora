@@ -35,6 +35,7 @@ export interface Post {
   type: 'text' | 'poll' | 'repost'
   pollOptions: { index: number; text: string }[] | null
   pollEndsAt: Date | null
+  contentHash: string | null
 }
 
 export interface PollResult {
@@ -67,6 +68,7 @@ export interface HumanUser {
   karmaScore: number
   worldIdVerified: boolean
   verifiedBlockNumber: number | null
+  registrationTxHash: string | null
   createdAt: Date
 }
 

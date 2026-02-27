@@ -3,6 +3,7 @@ import { posts, postVotes } from './schema'
 import { eq, desc, lt, and, isNull, sql, aliasedTable, inArray } from 'drizzle-orm'
 import type { Post, BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
+import { createHash } from 'crypto'
 
 // Alias for self-join on quotedPost
 const quotedPosts = aliasedTable(posts, 'quoted_posts')
@@ -34,6 +35,7 @@ function toPost(
     type: (row.type as 'text' | 'poll' | 'repost') ?? 'text',
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
+    contentHash: row.contentHash ?? null,
   }
 }
 
@@ -61,6 +63,17 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
 
   if (!row) throw new Error('Failed to create post')
 
+  // Compute and store content hash — tamper evidence fingerprint
+  const contentHash = createHash('sha256')
+    .update(row.id + (input.title ?? '') + (input.body ?? '') + input.nullifierHash)
+    .digest('hex')
+  void db
+    .update(posts)
+    .set({ contentHash })
+    .where(eq(posts.id, row.id))
+    .execute()
+    .catch((err) => console.error('[contentHash update]', err instanceof Error ? err.message : String(err)))
+
   // Increment quote count on the original post (fire-and-forget).
   // Must call .execute() — Drizzle builders are lazy and don't run unless consumed.
   if (input.quotedPostId) {
@@ -72,7 +85,7 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       .catch((err) => console.error('[quoteCount update]', err))
   }
 
-  return toPost(row)
+  return toPost({ ...row, contentHash })
 }
 
 type PostWithQuoted = { post: typeof posts.$inferSelect; quoted: typeof posts.$inferSelect | null }
@@ -163,6 +176,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
       type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll' | 'repost',
       pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
+      contentHash: (r['content_hash'] as string | null) ?? null,
     }
 
     if (r['quoted_id']) {
@@ -180,6 +194,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         quotedPost: null,
         lat: null, lng: null, countryCode: null,
         type: 'text', pollOptions: null, pollEndsAt: null,
+        contentHash: null,
       }
     }
 
@@ -417,6 +432,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
       type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll' | 'repost',
       pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
+      contentHash: (r['content_hash'] as string | null) ?? null,
     }
 
     if (r['quoted_id']) {
@@ -436,6 +452,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
         lng: (r['q_lng'] as number | null) ?? null,
         countryCode: (r['q_country_code'] as string | null) ?? null,
         type: 'text', pollOptions: null, pollEndsAt: null,
+        contentHash: null,
       }
     }
 

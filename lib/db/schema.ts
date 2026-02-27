@@ -40,6 +40,8 @@ export const posts = pgTable(
     countryCode: text('country_code'),
     // Number of unique reports — posts with 5+ are hidden from public feeds
     reportCount: integer('report_count').default(0).notNull(),
+    // keccak256(id + title + body + nullifierHash) — tamper-evidence fingerprint set at creation.
+    contentHash: text('content_hash'),
     // Poll fields — only set when type = 'poll'
     type: text('type').notNull().default('text'), // 'text' | 'poll' | 'repost'
     pollOptions: jsonb('poll_options').$type<{ index: number; text: string }[]>(),
@@ -101,6 +103,8 @@ export const humanUsers = pgTable(
     worldIdVerified: boolean('world_id_verified').default(true).notNull(),
     // World Chain block number at time of proof verification. Null for users verified before Sprint 13.
     verifiedBlockNumber: bigint('verified_block_number', { mode: 'bigint' }),
+    // Tx hash from ArkoraNullifierRegistry.register() on World Chain. Null until contract is deployed.
+    registrationTxHash: text('registration_tx_hash'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({

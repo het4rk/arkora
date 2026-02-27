@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { type ISuccessResult } from '@worldcoin/minikit-js'
 import { verifyWorldIdProof, getLatestWorldChainBlock } from '@/lib/worldid'
-import { getOrCreateUser, getUserByNullifier, setWorldIdVerified } from '@/lib/db/users'
+import { getOrCreateUser, getUserByNullifier, setWorldIdVerified, setRegistrationTxHash } from '@/lib/db/users'
+import { registerNullifierOnchain } from '@/lib/registry'
 import { walletToNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -106,11 +107,19 @@ export async function POST(req: NextRequest) {
     const blockNumber = await getLatestWorldChainBlock()
     await setWorldIdVerified(sessionHash, blockNumber > 0n ? blockNumber : undefined)
 
+    // Fire-and-forget: register nullifier in ArkoraNullifierRegistry on World Chain.
+    // Only runs when REGISTRY_ADDRESS + REGISTRY_DEPLOYER_PRIVATE_KEY are set in env.
+    // Never blocks or fails the verify response — purely additive.
+    void registerNullifierOnchain(result.nullifierHash).then(async (txHash) => {
+      if (txHash) await setRegistrationTxHash(sessionHash, txHash)
+    })
+
+    const updatedUser = await getUserByNullifier(sessionHash)
     const res = NextResponse.json({
       success: true,
       nullifierHash: sessionHash,
       user: {
-        ...sessionUser,
+        ...(updatedUser ?? sessionUser),
         verifiedBlockNumber: blockNumber > 0n ? Number(blockNumber) : null,
       },
     })

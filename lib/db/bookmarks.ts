@@ -27,6 +27,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
     type: (row.type as 'text' | 'poll') ?? 'text',
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
+    contentHash: row.contentHash ?? null,
   }
 }
 

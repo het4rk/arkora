@@ -14,6 +14,7 @@ function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
     karmaScore: row.karmaScore ?? 0,
     worldIdVerified: row.worldIdVerified,
     verifiedBlockNumber: row.verifiedBlockNumber !== null ? Number(row.verifiedBlockNumber) : null,
+    registrationTxHash: row.registrationTxHash ?? null,
     createdAt: row.createdAt,
   }
 }
@@ -112,6 +113,13 @@ export async function updateIdentityMode(
   identityMode: 'anonymous' | 'alias' | 'named'
 ): Promise<void> {
   await db.update(humanUsers).set({ identityMode }).where(eq(humanUsers.nullifierHash, nullifierHash))
+}
+
+export async function setRegistrationTxHash(nullifierHash: string, txHash: string): Promise<void> {
+  await db
+    .update(humanUsers)
+    .set({ registrationTxHash: txHash })
+    .where(eq(humanUsers.nullifierHash, nullifierHash))
 }
 
 export async function setWorldIdVerified(nullifierHash: string, blockNumber?: bigint): Promise<void> {
