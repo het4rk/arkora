@@ -42,3 +42,34 @@ export function haptic(pattern: 'light' | 'medium' | 'heavy' = 'light'): void {
   const ms = pattern === 'light' ? 8 : pattern === 'medium' ? 18 : 32
   navigator.vibrate(ms)
 }
+
+/**
+ * Share a path using the native share sheet (iOS/Android).
+ * Falls back to clipboard copy on desktop.
+ * Returns 'shared' | 'copied' | 'error'.
+ */
+export async function shareUrl(
+  path: string,
+  title: string,
+  text?: string
+): Promise<'shared' | 'copied' | 'error'> {
+  const url = typeof window !== 'undefined'
+    ? `${window.location.origin}${path}`
+    : path
+  haptic('light')
+  if (typeof navigator !== 'undefined' && navigator.share) {
+    try {
+      await navigator.share({ title, text, url })
+      return 'shared'
+    } catch {
+      // User dismissed the sheet - not an error we surface
+      return 'error'
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url)
+    return 'copied'
+  } catch {
+    return 'error'
+  }
+}

@@ -15,7 +15,7 @@ import { QuotedPost } from '@/components/ui/QuotedPost'
 import { ReportSheet } from '@/components/ui/ReportSheet'
 import { ImageViewer } from '@/components/ui/ImageViewer'
 import { useArkoraStore } from '@/store/useArkoraStore'
-import { haptic, formatDisplayName } from '@/lib/utils'
+import { haptic, formatDisplayName, shareUrl } from '@/lib/utils'
 
 interface Props {
   post: Post
@@ -37,6 +37,16 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   const [repostMenuOpen, setRepostMenuOpen] = useState(false)
   const [isReposting, setIsReposting] = useState(false)
   const [reposted, setReposted] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+
+  async function handleShare(e: React.MouseEvent) {
+    e.stopPropagation()
+    const result = await shareUrl(`/post/${post.id}`, post.title)
+    if (result === 'copied') {
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    }
+  }
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isOwner = !!nullifierHash && post.nullifierHash === nullifierHash
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
@@ -252,6 +262,23 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
             {reposted ? <span>Reposted</span> : post.quoteCount > 0 ? <span>{post.quoteCount}</span> : null}
           </button>
           <BookmarkButton postId={post.id} {...(isBookmarked !== undefined && { initialBookmarked: isBookmarked })} />
+          <button
+            onClick={(e) => { void handleShare(e) }}
+            aria-label="Share post"
+            className={`flex items-center gap-1 text-xs active:scale-90 transition-all ${shareCopied ? 'text-accent' : 'text-text-muted'}`}
+          >
+            {shareCopied ? (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+            )}
+          </button>
           <div className="flex items-center gap-1.5 text-text-muted text-xs">
             <span className="opacity-40 text-[10px]">›</span>
             <span>

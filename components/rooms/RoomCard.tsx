@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { BoardTag } from '@/components/ui/BoardTag'
+import { shareUrl } from '@/lib/utils'
 import type { Room } from '@/lib/types'
 
 interface RoomCardProps {
@@ -9,10 +11,21 @@ interface RoomCardProps {
 }
 
 export function RoomCard({ room, onJoin }: RoomCardProps) {
+  const [shareCopied, setShareCopied] = useState(false)
+
   const minutesLeft = Math.max(0, Math.floor((new Date(room.endsAt).getTime() - Date.now()) / 60_000))
   const timeLabel = minutesLeft >= 60
     ? `${Math.floor(minutesLeft / 60)}h left`
     : `${minutesLeft}m left`
+
+  async function handleShare(e: React.MouseEvent) {
+    e.stopPropagation()
+    const result = await shareUrl(`/rooms/${room.id}`, room.title, `Join the live room: ${room.title}`)
+    if (result === 'copied') {
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    }
+  }
 
   return (
     <div className="glass rounded-[var(--r-xl)] p-4 flex flex-col gap-3">
@@ -36,7 +49,7 @@ export function RoomCard({ room, onJoin }: RoomCardProps) {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            {room.participantCount ?? 0}/{room.maxParticipants}
+            {room.participantCount ?? 0}
           </span>
           <span className="flex items-center gap-1">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -51,12 +64,33 @@ export function RoomCard({ room, onJoin }: RoomCardProps) {
           )}
         </div>
 
-        <button
-          onClick={() => onJoin(room)}
-          className="bg-accent text-background text-xs font-semibold px-4 py-2 rounded-[var(--r-full)] active:scale-95 transition-all"
-        >
-          Join
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => { void handleShare(e) }}
+            aria-label="Share room"
+            className={`p-2 rounded-full glass active:scale-90 transition-all ${shareCopied ? 'text-accent' : 'text-text-muted'}`}
+          >
+            {shareCopied ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => onJoin(room)}
+            className="bg-accent text-background text-xs font-semibold px-4 py-2 rounded-[var(--r-full)] active:scale-95 transition-all"
+          >
+            Join
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -8,7 +8,7 @@ import { RoomMessageRow } from '@/components/rooms/RoomMessage'
 import { RoomComposer } from '@/components/rooms/RoomComposer'
 import { RoomParticipants } from '@/components/rooms/RoomParticipants'
 import { BoardTag } from '@/components/ui/BoardTag'
-import { cn } from '@/lib/utils'
+import { cn, shareUrl } from '@/lib/utils'
 import type { Room, RoomParticipant, RoomMessage } from '@/lib/types'
 
 // Equalizer bars - pulses faster when speaking
@@ -118,6 +118,16 @@ export function RoomView({ roomId }: RoomViewProps) {
   const [hasEnded, setHasEnded] = useState(false)
   const [connectionLost, setConnectionLost] = useState(false)
   const [selfMuted, setSelfMuted] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+
+  async function handleShare() {
+    if (!room) return
+    const result = await shareUrl(`/rooms/${roomId}`, room.title, `Join the live room: ${room.title}`)
+    if (result === 'copied') {
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    }
+  }
 
   // Per-participant speaking state: Set of nullifierHashes currently "speaking"
   const [speakingSet, setSpeakingSet] = useState<Set<string>>(new Set())
@@ -364,6 +374,27 @@ export function RoomView({ roomId }: RoomViewProps) {
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
           {participants.length}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleShare()}
+          aria-label="Share room"
+          className={cn(
+            'text-xs glass px-3 py-1.5 rounded-[var(--r-full)] shrink-0 active:opacity-70 transition-all',
+            shareCopied ? 'text-accent' : 'text-text-muted'
+          )}
+        >
+          {shareCopied ? (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+          )}
         </button>
         {isHost && (
           <button
