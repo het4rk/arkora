@@ -52,7 +52,7 @@ export function ConversationList() {
     if (!nullifierHash) return
     setError(false)
     try {
-      const res = await fetch('/api/dm/conversations')
+      const res = await fetch('/api/dm/conversations', { signal: AbortSignal.timeout(10000) })
       const json = (await res.json()) as { success: boolean; data?: ConversationSummary[] }
       if (json.success && json.data) setConversations(json.data)
       else if (!json.success) setError(true)

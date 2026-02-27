@@ -77,7 +77,7 @@ export function useFeed(
         if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
       }
 
-      const res = await fetch(`/api/posts?${params.toString()}`)
+      const res = await fetch(`/api/posts?${params.toString()}`, { signal: AbortSignal.timeout(10000) })
       if (!res.ok) throw new Error('Failed to fetch feed')
 
       const json = (await res.json()) as { data: Post[] }

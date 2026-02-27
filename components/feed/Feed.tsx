@@ -77,7 +77,7 @@ export function Feed() {
   const fetchPollData = useCallback((pollPostIds: string[]) => {
     if (pollPostIds.length === 0) return
     const ids = pollPostIds.join(',')
-    void fetch(`/api/polls/batch?postIds=${encodeURIComponent(ids)}`)
+    void fetch(`/api/polls/batch?postIds=${encodeURIComponent(ids)}`, { signal: AbortSignal.timeout(10000) })
       .then((r) => r.json())
       .then((j: { success: boolean; data?: Record<string, { results: PollResult[]; userVote: number | null }> }) => {
         if (j.success && j.data) {
@@ -128,7 +128,7 @@ export function Feed() {
   const fetchBookmarks = useCallback((postIds: string[], userHash: string) => {
     if (postIds.length === 0 || !userHash) return
     const ids = postIds.join(',')
-    void fetch(`/api/bookmarks?postIds=${encodeURIComponent(ids)}`)
+    void fetch(`/api/bookmarks?postIds=${encodeURIComponent(ids)}`, { signal: AbortSignal.timeout(10000) })
       .then((r) => r.json())
       .then((j: { success: boolean; data?: { bookmarkedIds: string[] } }) => {
         if (j.success && j.data) {

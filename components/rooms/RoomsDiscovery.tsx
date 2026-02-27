@@ -26,7 +26,7 @@ export function RoomsDiscovery() {
       const url = selectedBoard
         ? `/api/rooms?boardId=${selectedBoard}`
         : '/api/rooms'
-      const res = await fetch(url)
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
       const json = (await res.json()) as { success: boolean; data?: Room[] }
       if (json.success && json.data) setRooms(json.data)
       else if (!json.success) setError(true)

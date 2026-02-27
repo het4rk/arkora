@@ -11,6 +11,7 @@ interface RoomComposerProps {
 export function RoomComposer({ roomId, isMuted, onSent }: RoomComposerProps) {
   const [draft, setDraft] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function send() {
@@ -18,16 +19,20 @@ export function RoomComposer({ roomId, isMuted, onSent }: RoomComposerProps) {
     if (!text || isSending || isMuted) return
 
     setIsSending(true)
+    setSendError(null)
     setDraft('')
     try {
-      await fetch(`/api/rooms/${roomId}/message`, {
+      const res = await fetch(`/api/rooms/${roomId}/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
+        signal: AbortSignal.timeout(10000),
       })
+      if (!res.ok) throw new Error(`Send failed (${res.status})`)
       onSent?.()
     } catch {
-      setDraft(text) // restore on failure
+      setDraft(text)
+      setSendError('Message failed to send. Try again.')
     } finally {
       setIsSending(false)
       inputRef.current?.focus()
@@ -43,7 +48,11 @@ export function RoomComposer({ roomId, isMuted, onSent }: RoomComposerProps) {
   }
 
   return (
-    <div className="flex items-center gap-2 px-4 py-3">
+    <div className="px-4 py-3">
+      {sendError && (
+        <p className="text-[11px] text-text-secondary mb-2 text-center">{sendError}</p>
+      )}
+      <div className="flex items-center gap-2">
       <input
         ref={inputRef}
         type="text"
@@ -54,6 +63,7 @@ export function RoomComposer({ roomId, isMuted, onSent }: RoomComposerProps) {
         className="glass-input flex-1 rounded-[var(--r-full)] px-4 py-2.5 text-sm"
       />
       <button
+        type="button"
         onClick={() => void send()}
         disabled={!draft.trim() || isSending}
         className="w-10 h-10 bg-accent rounded-full flex items-center justify-center shrink-0 active:scale-95 disabled:opacity-40 transition-all"
@@ -65,6 +75,7 @@ export function RoomComposer({ roomId, isMuted, onSent }: RoomComposerProps) {
           <polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>
       </button>
+      </div>
     </div>
   )
 }
