@@ -36,6 +36,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const [repostMenuOpen, setRepostMenuOpen] = useState(false)
   const [isReposting, setIsReposting] = useState(false)
+  const [reposted, setReposted] = useState(false)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isOwner = !!nullifierHash && post.nullifierHash === nullifierHash
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
@@ -60,11 +61,15 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
     setIsReposting(true)
     setRepostMenuOpen(false)
     try {
-      await fetch('/api/posts', {
+      const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'repost', quotedPostId: post.id, boardId: post.boardId }),
       })
+      if (res.ok) {
+        setReposted(true)
+        setTimeout(() => setReposted(false), 2000)
+      }
     } catch { /* non-critical */ } finally {
       setIsReposting(false)
     }
@@ -235,7 +240,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
             onClick={(e) => { e.stopPropagation(); haptic('light'); setRepostMenuOpen(true) }}
             disabled={isReposting}
             aria-label="Repost or quote"
-            className="flex items-center gap-1 text-text-muted text-xs active:scale-90 transition-all disabled:opacity-40"
+            className={`flex items-center gap-1 text-xs active:scale-90 transition-all disabled:opacity-40 ${reposted ? 'text-upvote' : 'text-text-muted'}`}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -244,7 +249,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
               <polyline points="7 23 3 19 7 15" />
               <path d="M21 13v2a4 4 0 0 1-4 4H3" />
             </svg>
-            {post.quoteCount > 0 && <span>{post.quoteCount}</span>}
+            {reposted ? <span>Reposted</span> : post.quoteCount > 0 ? <span>{post.quoteCount}</span> : null}
           </button>
           <BookmarkButton postId={post.id} {...(isBookmarked !== undefined && { initialBookmarked: isBookmarked })} />
           <div className="flex items-center gap-1.5 text-text-muted text-xs">

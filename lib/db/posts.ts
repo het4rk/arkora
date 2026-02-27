@@ -98,7 +98,7 @@ export async function getPostById(id: string): Promise<Post | null> {
     .from(posts)
     .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
     .leftJoin(humanUsers, eq(posts.nullifierHash, humanUsers.nullifierHash))
-    .where(eq(posts.id, id))
+    .where(and(eq(posts.id, id), isNull(posts.deletedAt)))
     .limit(1) as PostWithQuoted[]
 
   const row = rows[0]
@@ -287,8 +287,7 @@ export async function deletePostVote(postId: string, nullifierHash: string): Pro
 
 export async function softDeletePost(postId: string, nullifierHash: string): Promise<boolean> {
   const result = await db
-    .update(posts)
-    .set({ deletedAt: sql`now()` })
+    .delete(posts)
     .where(and(eq(posts.id, postId), eq(posts.nullifierHash, nullifierHash)))
     .returning({ id: posts.id })
 

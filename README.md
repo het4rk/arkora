@@ -1,5 +1,7 @@
 # Arkora
 
+**Twitter:** [@humansposting](https://x.com/humansposting)
+
 A provably human anonymous message board. Every voice is verified.
 
 Arkora is a World App miniapp where users post, vote, and converse anonymously — but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities. TikTok-style scroll feed, 4chan anonymity, Reddit boards structure — every voice cryptographically guaranteed real.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Post, PollResult } from '@/lib/types'
 import { haptic } from '@/lib/utils'
 
@@ -24,6 +24,16 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
   const [userVote, setUserVote] = useState<number | null>(initialUserVote)
   const [isVoting, setIsVoting] = useState(false)
   const [voteError, setVoteError] = useState<string | null>(null)
+  // Track whether the user voted in this session so we don't overwrite fresh results
+  // when the parent re-renders with stale initialResults from before the vote.
+  const [votedInSession, setVotedInSession] = useState(false)
+
+  // Sync when parent's async poll-data fetch completes (initialResults arrives after mount).
+  useEffect(() => {
+    if (votedInSession) return
+    setResults(initialResults)
+    setUserVote(initialUserVote)
+  }, [initialResults, initialUserVote, votedInSession])
 
   const options = post.pollOptions ?? []
   const isExpired = post.pollEndsAt ? new Date(post.pollEndsAt) < new Date() : false
@@ -57,6 +67,7 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
       if (json.success && json.data) {
         setResults(json.data.results)
         setUserVote(json.data.userVote)
+        setVotedInSession(true)
       } else if (!json.success) {
         setVoteError(json.error ?? 'Failed to cast vote')
       }

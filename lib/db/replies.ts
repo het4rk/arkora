@@ -57,8 +57,7 @@ export async function getRepliesByPostId(postId: string): Promise<Reply[]> {
 
 export async function softDeleteReply(replyId: string, nullifierHash: string): Promise<boolean> {
   const result = await db
-    .update(replies)
-    .set({ deletedAt: sql`now()` })
+    .delete(replies)
     .where(and(eq(replies.id, replyId), eq(replies.nullifierHash, nullifierHash)))
     .returning({ id: replies.id })
 

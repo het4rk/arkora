@@ -30,12 +30,12 @@ export async function recomputeKarma(nullifierHash: string): Promise<number> {
       WITH post_karma AS (
         SELECT COALESCE(SUM(upvotes - downvotes), 0) AS score
         FROM posts
-        WHERE nullifier_hash = ${nullifierHash} AND deleted_at IS NULL
+        WHERE nullifier_hash = ${nullifierHash}
       ),
       reply_karma AS (
         SELECT COALESCE(SUM(upvotes - downvotes), 0) AS score
         FROM replies
-        WHERE nullifier_hash = ${nullifierHash} AND deleted_at IS NULL
+        WHERE nullifier_hash = ${nullifierHash}
       )
       UPDATE human_users
       SET karma_score = (SELECT score FROM post_karma) + (SELECT score FROM reply_karma)

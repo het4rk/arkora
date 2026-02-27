@@ -3,6 +3,7 @@
 This file is loaded automatically by Claude Code at the start of every session. It provides project history, architecture notes, conventions, and next steps.
 
 **Live URL:** https://arkora.vercel.app
+**Twitter:** [@humansposting](https://x.com/humansposting)
 **World App Developer Portal:** https://developer.worldcoin.org
 
 ---
