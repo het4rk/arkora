@@ -24,6 +24,7 @@ interface ProfileData {
   subscriberCount: number
   isSubscribed: boolean
   subscriptionDaysLeft: number | null
+  tipTotalReceived: number
 }
 
 interface Props {
@@ -202,6 +203,9 @@ export function PublicProfileView({ nullifierHash }: Props) {
               <span><span className="text-text font-semibold">{data?.followerCount ?? 0}</span> followers</span>
               <span><span className="text-text font-semibold">{data?.followingCount ?? 0}</span> following</span>
               <span><span className="text-text font-semibold">{data?.postCount ?? 0}</span> posts</span>
+              {(data?.tipTotalReceived ?? 0) > 0 && (
+                <span><span className="text-text font-semibold">{data!.tipTotalReceived.toFixed(2)}</span> WLD received</span>
+              )}
             </div>
 
             {/* Bio */}

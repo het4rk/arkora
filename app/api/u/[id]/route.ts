@@ -3,6 +3,7 @@ import { getUserByNullifier } from '@/lib/db/users'
 import { getPostsByNullifier } from '@/lib/db/posts'
 import { getPublicProfileData, isFollowing } from '@/lib/db/follows'
 import { getSubscriberCount, getActiveSubscription } from '@/lib/db/subscriptions'
+import { getTipTotalReceived } from '@/lib/db/tips'
 import { getCallerNullifier } from '@/lib/serverAuth'
 
 interface Params {
@@ -14,13 +15,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const { id: nullifierHash } = await params
     const viewerHash = await getCallerNullifier()
 
-    const [user, posts, profileStats, following, subscriberCount, activeSub] = await Promise.all([
+    const [user, posts, profileStats, following, subscriberCount, activeSub, tipTotal] = await Promise.all([
       getUserByNullifier(nullifierHash),
       getPostsByNullifier(nullifierHash, undefined, 30),
       getPublicProfileData(nullifierHash),
       viewerHash ? isFollowing(viewerHash, nullifierHash) : Promise.resolve(false),
       getSubscriberCount(nullifierHash),
       viewerHash ? getActiveSubscription(viewerHash, nullifierHash) : Promise.resolve(null),
+      getTipTotalReceived(nullifierHash),
     ])
 
     const daysLeft = activeSub
@@ -37,6 +39,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
         subscriberCount,
         isSubscribed: !!activeSub,
         subscriptionDaysLeft: daysLeft,
+        tipTotalReceived: tipTotal,
       },
     })
   } catch (err) {

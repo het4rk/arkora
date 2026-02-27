@@ -3,6 +3,7 @@ import { recordTip } from '@/lib/db/tips'
 import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { worldAppNotify } from '@/lib/worldAppNotify'
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,6 +41,14 @@ export async function POST(req: NextRequest) {
     }
 
     await recordTip(senderHash, recipientHash, recipient.walletAddress, amountWld, txId)
+
+    void worldAppNotify(
+      recipientHash,
+      'You received a tip',
+      `${amountWld} WLD from a verified human`,
+      `/u/${encodeURIComponent(recipientHash)}`
+    )
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[tip POST]', err instanceof Error ? err.message : String(err))

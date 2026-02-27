@@ -164,6 +164,21 @@ export async function leaveRoom(roomId: string, nullifierHash: string): Promise<
     )
 }
 
+export async function closeRoom(roomId: string): Promise<void> {
+  await db
+    .update(rooms)
+    .set({ isLive: false })
+    .where(eq(rooms.id, roomId))
+}
+
+export async function getActiveParticipantCount(roomId: string): Promise<number> {
+  const [row] = await db
+    .select({ cnt: count(roomParticipants.id) })
+    .from(roomParticipants)
+    .where(and(eq(roomParticipants.roomId, roomId), isNull(roomParticipants.leftAt)))
+  return Number(row?.cnt ?? 0)
+}
+
 export async function getActiveParticipants(roomId: string): Promise<RoomParticipant[]> {
   const rows = await db
     .select()

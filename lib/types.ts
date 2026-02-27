@@ -30,6 +30,7 @@ export interface Post {
   pollOptions: { index: number; text: string }[] | null
   pollEndsAt: Date | null
   contentHash: string | null
+  authorKarmaScore?: number | null
 }
 
 export interface PollResult {

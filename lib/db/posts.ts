@@ -1,5 +1,5 @@
 import { db } from './index'
-import { posts, postVotes } from './schema'
+import { posts, postVotes, humanUsers } from './schema'
 import { eq, desc, lt, and, isNull, sql, aliasedTable, inArray } from 'drizzle-orm'
 import type { Post, BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
@@ -10,7 +10,8 @@ const quotedPosts = aliasedTable(posts, 'quoted_posts')
 
 function toPost(
   row: typeof posts.$inferSelect,
-  quoted?: typeof posts.$inferSelect | null
+  quoted?: typeof posts.$inferSelect | null,
+  karmaScore?: number | null
 ): Post {
   return {
     id: row.id,
@@ -36,6 +37,7 @@ function toPost(
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
     contentHash: row.contentHash ?? null,
+    authorKarmaScore: karmaScore ?? null,
   }
 }
 
@@ -88,18 +90,19 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
   return toPost({ ...row, contentHash })
 }
 
-type PostWithQuoted = { post: typeof posts.$inferSelect; quoted: typeof posts.$inferSelect | null }
+type PostWithQuoted = { post: typeof posts.$inferSelect; quoted: typeof posts.$inferSelect | null; karmaScore: number | null }
 
 export async function getPostById(id: string): Promise<Post | null> {
   const rows = await db
-    .select({ post: posts, quoted: quotedPosts })
+    .select({ post: posts, quoted: quotedPosts, karmaScore: humanUsers.karmaScore })
     .from(posts)
     .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
+    .leftJoin(humanUsers, eq(posts.nullifierHash, humanUsers.nullifierHash))
     .where(eq(posts.id, id))
     .limit(1) as PostWithQuoted[]
 
   const row = rows[0]
-  return row ? toPost(row.post, row.quoted) : null
+  return row ? toPost(row.post, row.quoted, row.karmaScore) : null
 }
 
 /** Lightweight check — returns only the post owner's nullifierHash (no joins). */
@@ -124,20 +127,21 @@ export async function getFeed(params: FeedParams): Promise<Post[]> {
   }
 
   const rows = await db
-    .select({ post: posts, quoted: quotedPosts })
+    .select({ post: posts, quoted: quotedPosts, karmaScore: humanUsers.karmaScore })
     .from(posts)
     .leftJoin(quotedPosts, and(eq(posts.quotedPostId, quotedPosts.id), isNull(quotedPosts.deletedAt)))
+    .leftJoin(humanUsers, eq(posts.nullifierHash, humanUsers.nullifierHash))
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
     .limit(limit) as PostWithQuoted[]
 
-  return rows.map((r) => toPost(r.post, r.quoted))
+  return rows.map((r) => toPost(r.post, r.quoted, r.karmaScore))
 }
 
 /** Hot feed: Wilson-score-ish ranking — net votes / (age_hours + 2)^1.5 */
 export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> {
   const rows = await db.execute<typeof posts.$inferSelect & { quoted_id: string | null }>(
-    sql`SELECT p.*, qp.id as quoted_id,
+    sql`SELECT p.*, hu.karma_score as author_karma_score, qp.id as quoted_id,
           qp.title as q_title, qp.body as q_body, qp.board_id as q_board_id,
           qp.nullifier_hash as q_nullifier_hash, qp.pseudo_handle as q_pseudo_handle,
           qp.session_tag as q_session_tag, qp.image_url as q_image_url,
@@ -146,6 +150,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
           qp.created_at as q_created_at, qp.deleted_at as q_deleted_at,
           qp.quoted_post_id as q_quoted_post_id
         FROM posts p
+        LEFT JOIN human_users hu ON p.nullifier_hash = hu.nullifier_hash
         LEFT JOIN posts qp ON p.quoted_post_id = qp.id AND qp.deleted_at IS NULL
         WHERE p.deleted_at IS NULL
           AND p.report_count < 5
@@ -177,6 +182,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
       pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
       contentHash: (r['content_hash'] as string | null) ?? null,
+      authorKarmaScore: (r['author_karma_score'] as number | null) ?? null,
     }
 
     if (r['quoted_id']) {
@@ -384,7 +390,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
     params.lng !== undefined
 
   const rows = await db.execute<typeof posts.$inferSelect & { quoted_id: string | null }>(
-    sql`SELECT p.*, qp.id as quoted_id,
+    sql`SELECT p.*, hu.karma_score as author_karma_score, qp.id as quoted_id,
           qp.title as q_title, qp.body as q_body, qp.board_id as q_board_id,
           qp.nullifier_hash as q_nullifier_hash, qp.pseudo_handle as q_pseudo_handle,
           qp.session_tag as q_session_tag, qp.image_url as q_image_url,
@@ -394,6 +400,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
           qp.quoted_post_id as q_quoted_post_id,
           qp.lat as q_lat, qp.lng as q_lng, qp.country_code as q_country_code
         FROM posts p
+        LEFT JOIN human_users hu ON p.nullifier_hash = hu.nullifier_hash
         LEFT JOIN posts qp ON p.quoted_post_id = qp.id AND qp.deleted_at IS NULL
         WHERE p.deleted_at IS NULL
           AND p.report_count < 5
@@ -433,6 +440,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
       pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
       contentHash: (r['content_hash'] as string | null) ?? null,
+      authorKarmaScore: (r['author_karma_score'] as number | null) ?? null,
     }
 
     if (r['quoted_id']) {

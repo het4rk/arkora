@@ -6,7 +6,7 @@ Arkora is a World App miniapp where users post, vote, and converse anonymously �
 
 World ID Orb proofs are validated directly on World Chain via the WorldIDRouter smart contract — not on Worldcoin's centralized servers. Proof validation is settled by blockchain consensus.
 
-**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs) · Community Notes · Bookmarks · Boards · Following feed · Local feed (GPS radius) · E2E encrypted DMs · @ mentions · Live ephemeral Rooms · Block / report / moderation (auto-hide at 5 reports) · WLD tips & subscriptions · Light + dark theme · GDPR-compliant account deletion · Privacy Policy + Terms of Service
+**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers (shown in feed cards + profiles) · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs, tips) · Community Notes · Bookmarks · Dynamic boards (synonym dedup, typo-tolerant matching) · Following feed · Local feed (GPS radius) · E2E encrypted DMs · @ mentions · Live ephemeral Rooms (auto-close when last person leaves) · Block / report / moderation (auto-hide at 5 reports) · WLD tips (with push notification to recipient) & subscriptions · Light + dark theme · GDPR-compliant account deletion · Privacy Policy + Terms of Service
 
 ---
 

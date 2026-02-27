@@ -347,6 +347,7 @@ export function Feed() {
             isBookmarked={bookmarkedIds.has(post.id)}
             pollResults={pollDataMap[post.id]?.results ?? null}
             userVote={pollDataMap[post.id]?.userVote ?? null}
+            authorKarmaScore={post.authorKarmaScore ?? null}
           />
         ))}
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { leaveRoom } from '@/lib/db/rooms'
+import { leaveRoom, closeRoom, getActiveParticipantCount } from '@/lib/db/rooms'
 import { getCallerNullifier } from '@/lib/serverAuth'
 
 // POST /api/rooms/[id]/leave
@@ -15,6 +15,12 @@ export async function POST(
 
     const { id } = await params
     await leaveRoom(id, callerHash)
+
+    // Auto-close room when the last participant leaves
+    const remaining = await getActiveParticipantCount(id)
+    if (remaining === 0) {
+      void closeRoom(id)
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {

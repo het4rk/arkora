@@ -378,6 +378,8 @@ activeRoomId                                             — currently joined ro
 
 - [x] Sprint 13: Onchain World ID verification (WorldIDRouter on World Chain), verifiedBlockNumber, identity merge fix
 - [x] Sprint 14: ArkoraNullifierRegistry.sol contract + server-side registration (lib/registry.ts), post SHA-256 content hashes (tamper evidence), registrationTxHash in settings UI
+- [x] Sprint 15: Dynamic board system (synonym dedup + Levenshtein matching), PostComposer UX overhaul (inline poll expansion), profile name locked to World ID in World App
+- [x] Sprint 16: Tip recipient push notification (worldAppNotify), tip total displayed on public profiles, rooms auto-close when last participant leaves, karma score in feed cards (authorKarmaScore on Post type, JOIN in all feed queries)
 
 ### Previous Sprints
 - [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)
