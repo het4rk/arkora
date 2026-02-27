@@ -421,6 +421,50 @@ Known limitation: rate limiter is in-process (resets on Vercel cold start). Fine
 - [x] Admin metrics — `GET /api/admin/metrics` (DAU, MAU, total users, verified humans, posts/day, board breakdown, active rooms); gated by `ADMIN_NULLIFIER_HASHES` env var
 - [x] Subscription fix — creator must be both `identityMode === 'named'` AND `worldIdVerified` to accept subscriptions
 
+---
+
+## SDLC Workflow (enforced from Sprint 20+)
+
+**Never push directly to `main`.** All work happens on feature branches, goes through PR review, and merges only after CI passes.
+
+### Branch naming
+
+```text
+feat/<short-description>     # new features
+fix/<short-description>      # bug fixes
+chore/<short-description>    # non-code changes (deps, docs, config)
+security/<short-description> # security patches
+```
+
+### Workflow
+
+1. `git checkout -b feat/your-feature` from latest `main`
+2. Commit work on the branch (small, atomic commits)
+3. `git push origin feat/your-feature` - Vercel creates a preview deployment automatically
+4. Open a PR on GitHub - CI (test + lint + typecheck + build) must pass
+5. Review preview URL on Vercel, confirm it works
+6. Merge PR to `main` - Vercel deploys to production automatically
+7. Delete branch after merge
+
+### Branch protection (main)
+
+- Direct pushes blocked
+- CI must pass before merge (`ci` status check)
+- Set via GitHub API once repo is public: `gh api repos/het4rk/arkora/branches/main/protection`
+
+### Commit message format
+
+```text
+<type>(<scope>): <short description>
+
+feat(feed): add location-based filtering
+fix(auth): resolve cookie expiry on signout
+security(api): enforce rate limit on DM endpoint
+chore(deps): upgrade vitest to 4.0.18
+```
+
+---
+
 ### Remaining Launch Work (manual / not yet shipped)
 
 - [ ] **Create brand assets**: `/public/og-image.png` (1200×630), `/public/icon-192.png`, `/public/icon-512.png`, `/public/favicon.ico`, `/public/apple-touch-icon.png` — blocks PWA + social sharing
@@ -437,6 +481,7 @@ Known limitation: rate limiter is in-process (resets on Vercel cold start). Fine
 - [ ] Playwright E2E tests (post-launch)
 - [ ] Custom domain (`arkora.world` or similar)
 
+- [x] Sprint 20 (open source + CI/CD): Vitest unit test suite (69 tests), MIT + CI badges, open source declaration, @sentry/cli build fix, signout cookie `secure: true`, Bittensor decentralization architecture in README, branch protection on main (enforced via GitHub API post-public), SDLC workflow documented
 - [x] Sprint 13: Onchain World ID verification (WorldIDRouter on World Chain), verifiedBlockNumber, identity merge fix
 - [x] Sprint 14: ArkoraNullifierRegistry.sol contract + server-side registration (lib/registry.ts), post SHA-256 content hashes (tamper evidence), registrationTxHash in settings UI
 - [x] Sprint 15: Dynamic board system (synonym dedup + Levenshtein matching), PostComposer UX overhaul (inline poll expansion), profile name locked to World ID in World App
