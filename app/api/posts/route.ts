@@ -63,13 +63,16 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: [] })
       }
       const rawBoardId = searchParams.get('boardId')
-      const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : undefined
-      const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : undefined
-      const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : undefined
+      const latRaw = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : undefined
+      const lngRaw = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : undefined
+      const radiusRaw = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : undefined
+      const lat = latRaw !== undefined && isFinite(latRaw) && latRaw >= -90 && latRaw <= 90 ? latRaw : undefined
+      const lng = lngRaw !== undefined && isFinite(lngRaw) && lngRaw >= -180 && lngRaw <= 180 ? lngRaw : undefined
+      const radiusMiles = radiusRaw !== undefined && isFinite(radiusRaw) && radiusRaw > 0 && radiusRaw <= 5000 ? radiusRaw : undefined
       const localParams: LocalFeedParams = {
         countryCode,
-        lat: lat !== undefined && !isNaN(lat) ? lat : undefined,
-        lng: lng !== undefined && !isNaN(lng) ? lng : undefined,
+        lat,
+        lng,
         radiusMiles,
         boardId: rawBoardId ? normalizeBoard(rawBoardId) : undefined,
         cursor,
@@ -148,7 +151,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Polls require 2–4 options' }, { status: 400 })
       }
       for (const opt of opts) {
-        if (typeof opt !== 'string' || !opt.trim() || opt.trim().length > 100) {
+        if (typeof opt !== 'string') {
+          return NextResponse.json({ success: false, error: 'Each option must be 1–100 characters' }, { status: 400 })
+        }
+        const sanitizedOpt = sanitizeLine(opt)
+        if (!sanitizedOpt || sanitizedOpt.length > 100) {
           return NextResponse.json({ success: false, error: 'Each option must be 1–100 characters' }, { status: 400 })
         }
       }
@@ -213,9 +220,11 @@ export async function POST(req: NextRequest) {
 
     // Country inferred from poster's IP - used for local feed filtering
     const countryCode = getCountryCode(req) ?? undefined
-    // GPS coords - only present when poster has location sharing enabled
-    const lat = typeof body.lat === 'number' && isFinite(body.lat) ? body.lat : undefined
-    const lng = typeof body.lng === 'number' && isFinite(body.lng) ? body.lng : undefined
+    // GPS coords - only present when poster has location sharing enabled; bounds-checked
+    const rawLat = typeof body.lat === 'number' ? body.lat : undefined
+    const rawLng = typeof body.lng === 'number' ? body.lng : undefined
+    const lat = rawLat !== undefined && isFinite(rawLat) && rawLat >= -90 && rawLat <= 90 ? rawLat : undefined
+    const lng = rawLng !== undefined && isFinite(rawLng) && rawLng >= -180 && rawLng <= 180 ? rawLng : undefined
 
     // Build poll-specific fields
     let pollOptions: { index: number; text: string }[] | undefined

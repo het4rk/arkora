@@ -63,6 +63,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Validate walletAddress format if provided (EVM address: 0x + 40 hex chars)
+    if (walletAddress !== undefined && walletAddress !== null && walletAddress !== '') {
+      if (!/^0x[0-9a-fA-F]{40}$/.test(walletAddress)) {
+        return NextResponse.json({ success: false, error: 'Invalid wallet address' }, { status: 400 })
+      }
+    }
+
     // On-chain verification via WorldIDRouter on World Chain (eth_call, no gas)
     const result = await verifyWorldIdProof(payload, action, signal)
 
