@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import './globals.css'
 
 interface Props {
@@ -8,6 +10,9 @@ interface Props {
 }
 
 export default function GlobalError({ error, reset }: Props) {
+  useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
   return (
     <html lang="en">
       <body className="bg-[#0a0a0a] text-white font-[system-ui,sans-serif] flex flex-col items-center justify-center min-h-dvh p-6 text-center">
