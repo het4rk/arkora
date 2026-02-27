@@ -15,10 +15,13 @@ export function VerifyHuman() {
   const verifySetErrorRef = useRef(false)
 
   const wrappedHandleVerify = useCallback(async (proof: ISuccessResult) => {
+    console.log('[IDKit] handleVerify called - proof received from World App')
     verifySetErrorRef.current = false
     try {
       await handleDesktopVerify(proof)
+      console.log('[IDKit] handleVerify resolved - verification succeeded')
     } catch (err) {
+      console.error('[IDKit] handleVerify threw:', err instanceof Error ? err.message : err)
       verifySetErrorRef.current = true
       throw err
     }
@@ -74,9 +77,8 @@ export function VerifyHuman() {
           handleVerify={wrappedHandleVerify}
           onSuccess={onDesktopSuccess}
           onError={(idkitError: IErrorState) => {
-            console.error('[IDKit onError]', idkitError)
+            console.error('[IDKit onError] error:', JSON.stringify(idkitError), 'handleVerifyFailed:', verifySetErrorRef.current)
             if (!verifySetErrorRef.current) {
-              // IDKit error not from our handleVerify (e.g., bridge failure)
               setError(idkitError?.message ?? 'Verification was declined. Please try again.')
             }
             verifySetErrorRef.current = false

@@ -164,6 +164,7 @@ export function useVerification(): UseVerificationReturn {
   // ─── IDKit flow (mobile browser + desktop) ────────────────────────────
   const handleDesktopVerify = useCallback(
     async (proof: ISuccessResult): Promise<void> => {
+      console.log('[handleVerify] Called with proof, merkle_root length:', proof.merkle_root?.length, 'proof length:', proof.proof?.length)
       setStatus('pending')
       setError(null)
 
@@ -179,6 +180,7 @@ export function useVerification(): UseVerificationReturn {
         })
       } catch {
         const msg = 'Network error. Please check your connection and try again.'
+        console.error('[handleVerify] Fetch failed:', msg)
         setStatus('error')
         setError(msg)
         throw new Error(msg)
@@ -191,13 +193,17 @@ export function useVerification(): UseVerificationReturn {
         error?: string
       }
 
+      console.log('[handleVerify] Server response:', res.status, json.success, json.error ?? 'OK')
+
       if (!res.ok || !json.success) {
         const friendly = friendlyVerifyError(json.error)
+        console.error('[handleVerify] Verification failed:', json.error, '->', friendly)
         setStatus('error')
         setError(friendly)
         throw new Error(friendly)
       }
 
+      console.log('[handleVerify] Success! nullifier:', json.nullifierHash?.slice(0, 16) + '...')
       if (json.nullifierHash && json.user) {
         setVerified(json.nullifierHash, json.user)
       }
