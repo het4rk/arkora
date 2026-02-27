@@ -39,7 +39,8 @@
   "pnpm": {
     "overrides": {
       "esbuild": ">=0.25.0",
-      "minimatch": ">=10.2.1"
+      "minimatch": ">=10.2.3",
+      "fast-xml-parser": ">=5.3.8"
     },
     "onlyBuiltDependencies": [
       "esbuild",
