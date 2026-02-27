@@ -20,7 +20,7 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 | Database | Neon Postgres + Drizzle ORM |
 | Auth | SIWE (Sign-In with Ethereum) + World MiniKit + IDKit |
 | Real-time | Pusher Channels |
-| File storage | Hippius S3 (decentralized, S3-compatible) |
+| File storage | Hippius S3 — decentralized storage on Bittensor subnet 14 |
 | State | Zustand (with localStorage persistence) |
 | Animations | Framer Motion |
 | Blockchain | World Chain (chain 480) — proof verified onchain via WorldIDRouter, not Worldcoin's cloud API |
@@ -189,6 +189,21 @@ In-memory sliding-window rate limiter (`lib/rateLimit.ts`). Per-Vercel-instance 
 - Feed (`GET /posts`): 60 req/min per IP
 - Post creation: 5 posts/min per user
 - Replies, votes, search: similar per-user limits
+
+### Decentralization
+
+Arkora is being progressively decentralized across every layer of the stack:
+
+| Layer | Status | Approach |
+|---|---|---|
+| **Identity** | Live | World ID Orb proofs validated onchain via WorldIDRouter on World Chain — no centralized identity API |
+| **File storage** | Live | User-uploaded media stored on [Hippius](https://hippius.com), a decentralized S3-compatible service built on Bittensor subnet 14 |
+| **Compute / platform** | Planned | Migrate core platform logic (feed, posts, moderation) to Bittensor subnet infrastructure — replacing centralized Vercel serverless functions with incentivized, decentralized compute |
+| **Database** | Planned | Evaluate decentralized or verifiable data storage options as the platform matures |
+
+The goal: a social platform where proof of humanity (World ID), content storage (Bittensor/Hippius), and application logic are all decentralized — no single operator can censor, surveil, or shut down the network.
+
+> This is a work in progress. Contributions and ideas welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
