@@ -145,6 +145,16 @@ export async function getUsersByNullifiers(
   return map
 }
 
+/** Look up users by their pseudoHandles - used for @mention notification dispatch. */
+export async function getUsersByHandles(handles: string[]): Promise<HumanUser[]> {
+  if (handles.length === 0) return []
+  const rows = await db
+    .select()
+    .from(humanUsers)
+    .where(inArray(humanUsers.pseudoHandle, handles))
+  return rows.map(toUser)
+}
+
 export async function getUserByWalletAddressNonWlt(walletAddress: string): Promise<HumanUser | null> {
   const [row] = await db
     .select()

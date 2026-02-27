@@ -16,7 +16,7 @@ Only the latest deployed version of Arkora receives security updates.
 If you discover a security vulnerability in Arkora, please report it responsibly through one of these channels:
 
 - **GitHub Private Vulnerability Reporting**: [Security Advisories](../../security/advisories/new) — preferred method
-- **Email**: arkhet@arkora.info — for sensitive disclosures
+- **Email**: [arkhet@arkora.info](mailto:arkhet@arkora.info) — for sensitive disclosures
 
 ### What to Include
 
@@ -31,11 +31,11 @@ Please provide as much of the following as possible:
 
 | Timeline | Action |
 | -------- | ------ |
-| 48 hours | Acknowledgment of your report |
-| 7 days | Initial assessment and severity triage |
-| 14 days | Patch for critical/high severity issues |
-| 30 days | Patch for medium/low severity issues |
-| 90 days | Public disclosure (coordinated with reporter) |
+| 12 hours | Acknowledgment of your report |
+| 24 hours | Initial assessment and severity triage |
+| 36 hours | Patch for critical/high severity issues |
+| 7 days | Patch for medium/low severity issues |
+| 30 days | Public disclosure (coordinated with reporter) |
 
 We will keep you informed throughout the process and credit you in the fix unless you prefer to remain anonymous.
 

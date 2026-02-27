@@ -112,7 +112,7 @@ export interface VoteInput {
 export interface Notification {
   id: string
   recipientHash: string
-  type: 'reply' | 'follow' | 'dm' | 'like' | 'quote' | 'repost'
+  type: 'reply' | 'follow' | 'dm' | 'like' | 'quote' | 'repost' | 'mention'
   referenceId: string | null
   actorHash: string | null
   read: boolean
