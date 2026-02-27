@@ -59,29 +59,33 @@ function getClient() {
 /**
  * Verifies a World ID proof via the Developer Portal cloud API.
  * This is the recommended path for IDKit (desktop/browser) flows.
+ *
+ * signal_hash must be computed identically to IDKit's internal hashToField:
+ * keccak256(abi.encodePacked(signal)) >> 8, formatted as 0x-prefixed hex.
  */
 export async function verifyCloudProof(
   proof: ISuccessResult,
   action: string,
   signal?: string
 ): Promise<VerifyResult> {
-  const appId = process.env.APP_ID
+  const appId = process.env.APP_ID ?? process.env.NEXT_PUBLIC_APP_ID
   if (!appId) {
     console.error('[worldid] APP_ID env var not set')
     return { success: false, error: 'Server misconfiguration' }
   }
+
+  // Compute signal_hash the same way IDKit does: keccak256(abi.encodePacked(signal)) >> 8
+  const signalHashBigInt = hashToField(encodePacked(['string'], [signal ?? '']))
+  const signalHash = '0x' + signalHashBigInt.toString(16).padStart(64, '0')
 
   try {
     const res = await fetch(`https://developer.worldcoin.org/api/v2/verify/${appId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        nullifier_hash: proof.nullifier_hash,
-        merkle_root: proof.merkle_root,
-        proof: proof.proof,
-        verification_level: proof.verification_level ?? 'orb',
+        ...proof,
         action,
-        signal_hash: signal ?? '',
+        signal_hash: signalHash,
       }),
     })
 
@@ -91,6 +95,8 @@ export async function verifyCloudProof(
       detail?: string
       attribute?: string | null
     }
+
+    console.log('[worldid cloud] Response:', res.status, JSON.stringify(json))
 
     if (res.ok && json.success) {
       return { success: true, nullifierHash: proof.nullifier_hash }
@@ -121,7 +127,7 @@ export async function verifyWorldIdProof(
   action: string,
   signal?: string
 ): Promise<VerifyResult> {
-  const appId = process.env.APP_ID as `app_${string}`
+  const appId = (process.env.APP_ID ?? process.env.NEXT_PUBLIC_APP_ID) as `app_${string}`
   const routerAddress = (process.env.WORLD_ID_ROUTER ??
     '0x17B354dD2595411ff79041f930e491A4Df39A278') as Hex
 

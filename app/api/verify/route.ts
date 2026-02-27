@@ -65,11 +65,13 @@ export async function POST(req: NextRequest) {
 
     // Try cloud verification first (recommended for IDKit desktop flows),
     // fall back to on-chain if cloud is unavailable
+    console.log('[verify] Starting verification for action:', action, 'hasWallet:', !!walletAddress)
     let result = await verifyCloudProof(payload, action, signal)
     if (!result.success && result.error !== 'max_verifications_reached') {
       console.log('[verify] Cloud verification failed, trying on-chain:', result.error)
       result = await verifyWorldIdProof(payload, action, signal)
     }
+    console.log('[verify] Final result:', result.success, result.error ?? 'OK')
 
     if (!result.success || !result.nullifierHash) {
       // Graceful path: Worldcoin rejects duplicate nullifiers with "already verified".
