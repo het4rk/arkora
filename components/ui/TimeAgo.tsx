@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { formatDistanceToNowStrict } from 'date-fns'
 import { cn } from '@/lib/utils'
 
@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function TimeAgo({ date, className }: Props) {
-  const d = typeof date === 'string' ? new Date(date) : date
+  const d = useMemo(() => typeof date === 'string' ? new Date(date) : date, [date])
   const [localLabel, setLocalLabel] = useState<string>('')
 
   useEffect(() => {
