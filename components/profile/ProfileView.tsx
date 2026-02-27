@@ -360,7 +360,7 @@ export function ProfileView() {
 
               {user?.bio ? (
                 <button onClick={openEdit} className="mt-3 text-left w-full group">
-                  <p className="text-text-secondary text-sm leading-relaxed group-active:opacity-70 transition-opacity">
+                  <p className="text-text-secondary text-sm leading-relaxed line-clamp-4 group-active:opacity-70 transition-opacity">
                     {user.bio}
                   </p>
                 </button>
@@ -407,7 +407,12 @@ export function ProfileView() {
 
         {!isLoading && !error && tab === 'posts' && (
           posts.length === 0
-            ? <p className="text-text-muted text-sm text-center py-12">No posts yet.</p>
+            ? (
+              <div className="text-center py-12">
+                <p className="text-text-muted text-sm">No posts yet.</p>
+                <p className="text-text-muted/60 text-xs mt-1">Share your first thought on the feed.</p>
+              </div>
+            )
             : posts.map((post) => (
                 <ProfilePostCard
                   key={post.id}
@@ -419,7 +424,12 @@ export function ProfileView() {
 
         {!isLoading && !error && tab === 'replies' && (
           replies.length === 0
-            ? <p className="text-text-muted text-sm text-center py-12">No replies yet.</p>
+            ? (
+              <div className="text-center py-12">
+                <p className="text-text-muted text-sm">No replies yet.</p>
+                <p className="text-text-muted/60 text-xs mt-1">Join a conversation in the feed.</p>
+              </div>
+            )
             : replies.map((reply) => (
                 <ProfileReplyCard
                   key={reply.id}
@@ -431,7 +441,12 @@ export function ProfileView() {
 
         {!isLoading && !error && tab === 'votes' && (
           votes.length === 0
-            ? <p className="text-text-muted text-sm text-center py-12">No votes yet.</p>
+            ? (
+              <div className="text-center py-12">
+                <p className="text-text-muted text-sm">No votes yet.</p>
+                <p className="text-text-muted/60 text-xs mt-1">Upvote or downvote posts in the feed.</p>
+              </div>
+            )
             : votes.map((post) => (
                 <div key={post.id} className="relative">
                   <div className={`absolute top-3 right-3 z-10 text-xs font-bold ${post.voteDirection === 1 ? 'text-upvote' : 'text-downvote'}`}>
@@ -444,7 +459,12 @@ export function ProfileView() {
 
         {!isLoading && !error && tab === 'saved' && (
           saved.length === 0
-            ? <p className="text-text-muted text-sm text-center py-12">No saved posts yet.</p>
+            ? (
+              <div className="text-center py-12">
+                <p className="text-text-muted text-sm">No saved posts yet.</p>
+                <p className="text-text-muted/60 text-xs mt-1">Bookmark posts to find them here.</p>
+              </div>
+            )
             : saved.map((post) => (
                 <ProfilePostCard key={post.id} post={post} />
               ))

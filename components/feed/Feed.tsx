@@ -36,17 +36,26 @@ export function Feed() {
     if (feedMode !== 'local') return
     if (viewerCoords || locationDenied) return
     setLocationRequesting(true)
+    // Secondary timeout: if user leaves permission prompt open indefinitely,
+    // the geolocation `timeout` option only fires post-grant — so we need our own timer.
+    const fallbackTimer = setTimeout(() => {
+      setLocationDenied(true)
+      setLocationRequesting(false)
+    }, 15_000)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        clearTimeout(fallbackTimer)
         setViewerCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude })
         setLocationRequesting(false)
       },
       () => {
+        clearTimeout(fallbackTimer)
         setLocationDenied(true)
         setLocationRequesting(false)
       },
       { timeout: 10_000, enableHighAccuracy: false }
     )
+    return () => clearTimeout(fallbackTimer)
   }, [feedMode, viewerCoords, locationDenied])
 
   const localCoords =

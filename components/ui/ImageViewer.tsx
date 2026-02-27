@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -11,8 +11,11 @@ interface Props {
 }
 
 export function ImageViewer({ src, isOpen, onClose }: Props) {
+  const [imgError, setImgError] = useState(false)
+
   useEffect(() => {
     if (!isOpen) return
+    setImgError(false)
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
@@ -33,13 +36,21 @@ export function ImageViewer({ src, isOpen, onClose }: Props) {
           transition={{ duration: 0.18 }}
           onClick={onClose}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt=""
-            className="max-w-full max-h-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          {imgError ? (
+            <div className="flex flex-col items-center gap-3 text-white/60 px-8 text-center">
+              <p className="text-4xl">🖼️</p>
+              <p className="text-sm">Image could not be loaded.</p>
+            </div>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={src}
+              alt=""
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+              onError={() => setImgError(true)}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>,

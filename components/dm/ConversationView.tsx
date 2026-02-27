@@ -278,6 +278,17 @@ export function ConversationView({ otherHash }: Props) {
                 Send the first message.
               </p>
             )}
+            {!isLoading && !loadError && messages.some((m) => m.failed) && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-up/60 border border-border/30 text-[11px] text-text-muted mb-1">
+                <span>Some messages could not be decrypted.</span>
+                <button
+                  onClick={() => void load()}
+                  className="text-accent font-semibold shrink-0 active:opacity-60 transition-opacity"
+                >
+                  Reload
+                </button>
+              </div>
+            )}
             {messages.map((msg) => {
               const isMe = msg.senderHash === nullifierHash
               return (
@@ -286,8 +297,8 @@ export function ConversationView({ otherHash }: Props) {
                     isMe
                       ? 'bg-accent text-white rounded-br-md'
                       : 'glass rounded-bl-md text-text'
-                  } ${msg.failed ? 'opacity-50 italic' : ''}`}>
-                    {msg.text}
+                  } ${msg.failed ? 'opacity-40 italic' : ''}`}>
+                    {msg.failed ? 'Unable to decrypt' : msg.text}
                   </div>
                 </div>
               )
