@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { MiniKit } from '@worldcoin/minikit-js'
@@ -9,7 +9,7 @@ import { generateAlias } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { SkinShop } from '@/components/settings/SkinShop'
 import { Avatar } from '@/components/ui/Avatar'
-import { ImagePicker } from '@/components/ui/ImagePicker'
+import { AvatarCropper } from '@/components/ui/AvatarCropper'
 
 // Discrete radius options in miles; -1 means "entire country"
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
@@ -58,6 +58,8 @@ export function SettingsView() {
   const [deleting, setDeleting] = useState(false)
   const [avatarSaving, setAvatarSaving] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
+  const [cropFile, setCropFile] = useState<File | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   // ── Subscriptions state ───────────────────────────────────────────────────
   interface SubRow {
@@ -171,13 +173,48 @@ export function SettingsView() {
             <section className="space-y-3">
               <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Profile Picture</p>
               <div className="glass rounded-[var(--r-lg)] p-4 flex items-center gap-4">
-                <Avatar avatarUrl={user?.avatarUrl ?? null} label={user?.pseudoHandle ?? nullifierHash} size="lg" className="shrink-0 w-16 h-16 text-xl" />
+                {/* Hidden file input */}
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  aria-label="Choose avatar photo"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) setCropFile(f)
+                    e.target.value = ''
+                  }}
+                />
+                {/* Avatar preview - tap to change */}
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={avatarSaving}
+                  className="relative shrink-0 group"
+                  aria-label="Change profile photo"
+                >
+                  <Avatar avatarUrl={user?.avatarUrl ?? null} label={user?.pseudoHandle ?? nullifierHash} size="lg" className="w-16 h-16 text-xl" />
+                  <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-active:opacity-100 transition-opacity">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  </div>
+                </button>
                 <div className="flex-1 min-w-0 space-y-2">
-                  <ImagePicker
-                    previewUrl={null}
-                    onUpload={(url) => void saveAvatar(url)}
-                    onClear={() => void saveAvatar(null)}
-                  />
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarSaving}
+                    className="flex items-center gap-2 px-3.5 py-2.5 glass rounded-[var(--r-md)] text-sm text-text-secondary active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <span>{avatarSaving ? 'Saving…' : 'Change photo'}</span>
+                  </button>
                   {user?.avatarUrl && (
                     <button
                       type="button"
@@ -188,11 +225,34 @@ export function SettingsView() {
                       Remove photo
                     </button>
                   )}
-                  {avatarSaving && <p className="text-xs text-text-muted">Saving…</p>}
                   {avatarError && <p className="text-xs text-text-secondary">{avatarError}</p>}
                 </div>
               </div>
             </section>
+          )}
+
+          {/* Avatar circular cropper */}
+          {cropFile && (
+            <AvatarCropper
+              file={cropFile}
+              onCancel={() => setCropFile(null)}
+              onConfirm={async (blob) => {
+                setCropFile(null)
+                setAvatarSaving(true)
+                setAvatarError(null)
+                try {
+                  const form = new FormData()
+                  form.append('file', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }))
+                  const res = await fetch('/api/upload', { method: 'POST', body: form })
+                  const json = (await res.json()) as { success: boolean; url?: string; error?: string }
+                  if (!json.success || !json.url) throw new Error(json.error ?? 'Upload failed')
+                  await saveAvatar(json.url)
+                } catch (err) {
+                  setAvatarError(err instanceof Error ? err.message : 'Upload failed')
+                  setAvatarSaving(false)
+                }
+              }}
+            />
           )}
 
           {/* ── Identity ──────────────────────────────────────────── */}

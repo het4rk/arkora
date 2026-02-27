@@ -49,7 +49,7 @@ export const hippiusAdapter: StorageAdapter = {
         Key: key,
         Body: buffer,
         ContentType: mimetype,
-        ACL: 'public-read',
+        // ACL not set here - rely on bucket-level public access configured in Hippius console
       })
     )
 

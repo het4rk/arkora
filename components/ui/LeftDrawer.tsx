@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MiniKit } from '@worldcoin/minikit-js'
@@ -35,6 +35,11 @@ export function LeftDrawer() {
   } = useArkoraStore()
 
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
+
+  // Sync the draft input when persistentAlias changes from Settings or another source
+  useEffect(() => {
+    setAliasDraft(persistentAlias ?? '')
+  }, [persistentAlias])
 
   function displayName(): string {
     if (!isVerified) return 'Unverified'

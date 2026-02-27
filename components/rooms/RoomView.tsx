@@ -107,7 +107,7 @@ interface RoomViewProps {
 
 export function RoomView({ roomId }: RoomViewProps) {
   const router = useRouter()
-  const { nullifierHash } = useArkoraStore()
+  const { nullifierHash, setActiveRoomId, setActiveRoomTitle } = useArkoraStore()
 
   const [room, setRoom] = useState<Room | null>(null)
   const [participants, setParticipants] = useState<RoomParticipant[]>([])
@@ -135,6 +135,8 @@ export function RoomView({ roomId }: RoomViewProps) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pusherRef = useRef<InstanceType<typeof Pusher> | null>(null)
+  // Prevents double-calling the leave API on unmount after an explicit leave or minimize
+  const skipLeaveOnUnmountRef = useRef(false)
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -190,6 +192,16 @@ export function RoomView({ roomId }: RoomViewProps) {
       timers.clear()
     }
   }, [])
+
+  // Fire leave API when user navigates away without pressing Leave
+  useEffect(() => {
+    return () => {
+      if (!skipLeaveOnUnmountRef.current && nullifierHash) {
+        void fetch(`/api/rooms/${roomId}/leave`, { method: 'POST' })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId])
 
   // Subscribe to Pusher presence channel
   useEffect(() => {
@@ -295,13 +307,29 @@ export function RoomView({ roomId }: RoomViewProps) {
   }
 
   async function handleEndRoom() {
+    skipLeaveOnUnmountRef.current = true
+    setActiveRoomId(null)
+    setActiveRoomTitle(null)
     await fetch(`/api/rooms/${roomId}`, { method: 'DELETE' })
     router.push('/rooms')
   }
 
   async function handleLeave() {
+    skipLeaveOnUnmountRef.current = true
+    // Clear minimized state if it was set
+    setActiveRoomId(null)
+    setActiveRoomTitle(null)
     await fetch(`/api/rooms/${roomId}/leave`, { method: 'POST' })
     router.push('/rooms')
+  }
+
+  function handleMinimize() {
+    if (!room) return
+    // Mark that unmount should NOT call leave - user is still in the room
+    skipLeaveOnUnmountRef.current = true
+    setActiveRoomId(roomId)
+    setActiveRoomTitle(room.title)
+    router.back()
   }
 
   if (isLoading) {
@@ -344,11 +372,12 @@ export function RoomView({ roomId }: RoomViewProps) {
     <div className="flex flex-col h-dvh">
       {/* Header */}
       <div className="px-4 pt-[max(env(safe-area-inset-top),16px)] pb-3 border-b border-border/25 flex items-center gap-3">
+        {/* Minimize - keeps user in room while browsing */}
         <button
           type="button"
-          onClick={() => void handleLeave()}
+          onClick={handleMinimize}
           className="text-text-muted active:opacity-70 transition-opacity shrink-0"
-          aria-label="Leave room"
+          aria-label="Minimize room"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { SkinProvider } from '@/components/providers/SkinProvider'
 import { WalletConnect } from '@/components/auth/WalletConnect'
 import { BottomNav } from '@/components/ui/BottomNav'
+import { RoomMiniPlayer } from '@/components/rooms/RoomMiniPlayer'
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen'
 import { PostComposer } from '@/components/compose/PostComposer'
 import { VerifyHuman } from '@/components/auth/VerifyHuman'
@@ -68,6 +69,7 @@ export default function RootLayout({
           <ErrorBoundary>
             <main className="pb-20 safe-top-bar max-w-[640px] mx-auto">{children}</main>
           </ErrorBoundary>
+          <RoomMiniPlayer />
           <BottomNav />
           <SpeedInsights />
           <Analytics />

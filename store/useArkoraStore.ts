@@ -52,6 +52,7 @@ interface ArkoraState {
 
   // Active room (non-persisted - clears on reload)
   activeRoomId: string | null
+  activeRoomTitle: string | null
 
   // Optimistic vote cache: postId → direction
   optimisticVotes: Record<string, 1 | -1>
@@ -86,6 +87,7 @@ interface ArkoraState {
   setNotifyFollowedPosts: (v: boolean) => void
   setUnreadNotificationCount: (count: number) => void
   setActiveRoomId: (id: string | null) => void
+  setActiveRoomTitle: (title: string | null) => void
   setHasExplicitlySignedOut: (v: boolean) => void
   setActiveSkin: (skinId: SkinId, customHex?: string | null) => void
   setOwnedSkins: (skins: SkinId[]) => void
@@ -108,6 +110,7 @@ const initialState = {
   hasOnboarded: false,
   activeBoard: null,
   activeRoomId: null,
+  activeRoomTitle: null,
   isComposerOpen: false,
   composerQuotedPost: null,
   locationEnabled: false,
@@ -184,6 +187,8 @@ export const useArkoraStore = create<ArkoraState>()(
       setUnreadNotificationCount: (count) => set({ unreadNotificationCount: count }),
 
       setActiveRoomId: (id) => set({ activeRoomId: id }),
+
+      setActiveRoomTitle: (title) => set({ activeRoomTitle: title }),
 
       setHasExplicitlySignedOut: (v) => set({ hasExplicitlySignedOut: v }),
 
