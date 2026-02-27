@@ -54,8 +54,8 @@ export function SkinShop() {
     setPurchasing(confirmSkin)
     setError(null)
 
-    const txId = await sendWld(TREASURY_WALLET, skin.priceWld)
-    if (!txId) {
+    const result = await sendWld(TREASURY_WALLET, skin.priceWld, `Unlock ${skin.label} skin`)
+    if (!result) {
       setError('Transaction cancelled or failed')
       setPurchasing(null)
       return
@@ -64,7 +64,7 @@ export function SkinShop() {
     const res = await fetch('/api/skins/purchase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ skinId: confirmSkin, txId }),
+      body: JSON.stringify({ skinId: confirmSkin, txId: result.txId }),
     })
 
     const json = await res.json()

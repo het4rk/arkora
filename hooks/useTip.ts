@@ -1,30 +1,43 @@
 'use client'
 
-import { MiniKit } from '@worldcoin/minikit-js'
+import { MiniKit, Tokens, Network } from '@worldcoin/minikit-js'
 import { parseEther } from 'viem'
-import { WLD_TOKEN_ADDRESS, ERC20_TRANSFER_ABI } from '@/lib/contracts'
 
 /**
- * Sends a WLD ERC-20 transfer onchain via MiniKit sendTransaction.
- * Returns the MiniKit transaction ID on success, null on failure/cancel.
+ * Sends a WLD payment via MiniKit.pay() — the official World 4.0 payment flow.
+ * Uses reference tracking for Developer Portal integration.
+ * Returns { txId, reference } on success, null on failure/cancel.
  */
-export async function sendWld(toWallet: string, amountWld: number): Promise<string | null> {
+export async function sendWld(
+  toWallet: string,
+  amountWld: number,
+  description: string = 'Arkora payment'
+): Promise<{ txId: string; reference: string } | null> {
   if (!MiniKit.isInstalled()) return null
 
   try {
-    const amountWei = parseEther(amountWld.toString())
-    const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-      transaction: [
-        {
-          address: WLD_TOKEN_ADDRESS,
-          abi: ERC20_TRANSFER_ABI,
-          functionName: 'transfer',
-          args: [toWallet as `0x${string}`, amountWei],
-        },
-      ],
+    const reference = `arkora_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    const tokenAmount = parseEther(amountWld.toString()).toString()
+
+    const { finalPayload } = await MiniKit.commandsAsync.pay({
+      reference,
+      to: toWallet as `0x${string}`,
+      tokens: [{ symbol: Tokens.WLD, token_amount: tokenAmount }],
+      network: Network.WorldChain,
+      description,
     })
+
     if (finalPayload.status === 'error') return null
-    return (finalPayload as { transaction_id?: string }).transaction_id ?? null
+
+    const success = finalPayload as {
+      transaction_id?: string
+      reference?: string
+    }
+
+    return {
+      txId: success.transaction_id ?? '',
+      reference: success.reference ?? reference,
+    }
   } catch {
     return null
   }

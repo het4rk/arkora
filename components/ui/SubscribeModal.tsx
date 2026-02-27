@@ -47,7 +47,8 @@ export function SubscribeModal({
     setLoadingLabel('Confirming in World App…')
     setErrorMsg('')
     try {
-      const txId = await sendWld(creatorWallet, PRICE_WLD)
+      const result = await sendWld(creatorWallet, PRICE_WLD, `Subscribe to ${creatorName}`)
+      if (!result) throw new Error('Transaction cancelled')
       setLoadingLabel('Recording subscription…')
       const res = await fetch('/api/subscribe', {
         method: 'POST',
@@ -55,7 +56,7 @@ export function SubscribeModal({
         body: JSON.stringify({
           creatorHash,
           amountWld: String(PRICE_WLD),
-          txId,
+          txId: result.txId,
         }),
       })
       const json = (await res.json()) as {

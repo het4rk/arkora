@@ -54,16 +54,16 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
       }
       if (!wallet) throw new Error('Could not find recipient wallet')
 
-      const txId = await sendWld(wallet, amount)
+      const result = await sendWld(wallet, amount, `Tip to ${recipientName}`)
       // null means user cancelled or transaction failed — don't record
-      if (!txId) {
+      if (!result) {
         setState('pick')
         return
       }
       await fetch('/api/tip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientHash, amountWld: amount.toString(), txId }),
+        body: JSON.stringify({ recipientHash, amountWld: amount.toString(), txId: result.txId }),
       })
       haptic('heavy')
       setState('success')
