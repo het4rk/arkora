@@ -22,7 +22,18 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as RequestBody
     const { payload, nonce } = body
 
-    // Validate nonce format: must be 32 lowercase hex chars (UUID without hyphens)
+    const cookieStore = await cookies()
+    const storedNonce = cookieStore.get('siwe-nonce')?.value
+
+    // Server must have an active nonce before accepting any provided value
+    if (!storedNonce) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or expired nonce' },
+        { status: 400 }
+      )
+    }
+
+    // Validate provided nonce format: must be 32 lowercase hex chars
     if (!nonce || !/^[0-9a-f]{32}$/.test(nonce)) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired nonce' },
@@ -30,16 +41,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const cookieStore = await cookies()
-    const storedNonce = cookieStore.get('siwe-nonce')?.value
-
     // Constant-time comparison prevents timing oracle attacks
-    const storedBuf = Buffer.from(storedNonce ?? '', 'utf8')
+    const storedBuf = Buffer.from(storedNonce, 'utf8')
     const providedBuf = Buffer.from(nonce, 'utf8')
-    const nonceValid =
-      storedBuf.length === providedBuf.length && timingSafeEqual(storedBuf, providedBuf)
-
-    if (!storedNonce || !nonceValid) {
+    if (storedBuf.length !== providedBuf.length || !timingSafeEqual(storedBuf, providedBuf)) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired nonce' },
         { status: 400 }

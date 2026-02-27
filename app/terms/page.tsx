@@ -139,7 +139,7 @@ export default function TermsPage() {
           <h2 className="text-base font-semibold text-text">13. Contact</h2>
           <p>
             For questions about these terms, email us at{' '}
-            <a href="mailto:legal@arkora.app" className="text-accent hover:underline">legal@arkora.app</a>.
+            <a href="mailto:arkhet@arkora.info" className="text-accent hover:underline">arkhet@arkora.info</a>.
           </p>
         </section>
 
