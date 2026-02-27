@@ -39,7 +39,7 @@ export function PollOptionInputs({ options, onChange, onAdd }: Props) {
               type="button"
               onClick={() => removeOption(opt.id)}
               aria-label={`Remove option ${i + 1}`}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted/50 hover:text-downvote active:scale-90 transition-all"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted/50 hover:text-text-muted active:scale-90 transition-all"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2" strokeLinecap="round">

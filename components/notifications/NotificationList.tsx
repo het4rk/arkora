@@ -15,13 +15,13 @@ const TYPE_LABELS: Record<Notification['type'], string> = {
   repost: 'reposted your post',
 }
 
-const TYPE_ICONS: Record<Notification['type'], string> = {
-  reply: '💬',
-  follow: '👤',
-  dm: '✉️',
-  like: '↑',
-  quote: '"',
-  repost: '↺',
+const TYPE_ICONS: Record<Notification['type'], JSX.Element> = {
+  reply: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>,
+  follow: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>,
+  dm: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>,
+  like: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></svg>,
+  quote: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 11h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4" /><path d="M20 11h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4" /></svg>,
+  repost: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>,
 }
 
 type FilterType = 'all' | Notification['type']
@@ -102,7 +102,7 @@ export function NotificationList() {
             onClick={() => setFilter(f.id)}
             className={`shrink-0 px-3.5 py-1.5 rounded-[var(--r-full)] text-xs font-semibold transition-all active:scale-95 ${
               filter === f.id
-                ? 'bg-accent text-white shadow-sm shadow-accent/30'
+                ? 'bg-accent text-background shadow-sm shadow-accent/30'
                 : 'glass text-text-secondary'
             }`}
           >
@@ -113,7 +113,7 @@ export function NotificationList() {
 
       {visible.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center px-8 py-16">
-          <p className="text-4xl mb-4">🔔</p>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
           <p className="font-semibold text-text mb-1">
             {filter === 'all' ? 'All caught up' : `No ${FILTERS.find((f) => f.id === filter)?.label.toLowerCase() ?? ''} yet`}
           </p>
@@ -129,7 +129,7 @@ export function NotificationList() {
                 !n.read ? 'border border-accent/20' : ''
               }`}
             >
-              <span className="text-xl shrink-0 mt-0.5">{TYPE_ICONS[n.type] ?? '🔔'}</span>
+              <div className="shrink-0 mt-0.5 text-text-muted">{TYPE_ICONS[n.type] ?? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>}</div>
               <div className="flex-1 min-w-0">
                 <p className="text-text text-sm leading-snug">
                   <span className="font-semibold">{n.actorDisplay ?? 'Someone'}</span>

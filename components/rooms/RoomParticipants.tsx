@@ -78,7 +78,7 @@ export function RoomParticipants({
                       )}
                       <button
                         onClick={() => onKick(p.nullifierHash)}
-                        className="text-[11px] text-downvote/80 glass px-2.5 py-1.5 rounded-[var(--r-md)] active:opacity-70 transition-opacity"
+                        className="text-[11px] text-text-muted glass px-2.5 py-1.5 rounded-[var(--r-md)] active:opacity-70 transition-opacity"
                       >
                         Kick
                       </button>

@@ -125,14 +125,14 @@ export function SubscribeModal({
         {/* ── Success (new subscription) ─────────────────────────── */}
         {view === 'success' && (
           <div className="text-center space-y-3 py-4">
-            <div className="w-16 h-16 rounded-full bg-amber-400/15 flex items-center justify-center mx-auto">
-              <span className="text-3xl">⭐</span>
+            <div className="w-16 h-16 rounded-full bg-surface-up flex items-center justify-center mx-auto">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
             </div>
             <p className="font-bold text-text text-xl">Subscribed!</p>
             <p className="text-text-secondary text-sm">Supporting {creatorName} for 30 days</p>
             <button
               onClick={onClose}
-              className="mt-2 px-8 py-3 bg-accent text-white rounded-[var(--r-full)] font-semibold active:scale-95 transition-all"
+              className="mt-2 px-8 py-3 bg-accent text-background rounded-[var(--r-full)] font-semibold active:scale-95 transition-all"
             >
               Done
             </button>
@@ -142,14 +142,14 @@ export function SubscribeModal({
         {/* ── Success (renewal) ──────────────────────────────────── */}
         {view === 'renewed' && (
           <div className="text-center space-y-3 py-4">
-            <div className="w-16 h-16 rounded-full bg-amber-400/15 flex items-center justify-center mx-auto">
-              <span className="text-3xl">⭐</span>
+            <div className="w-16 h-16 rounded-full bg-surface-up flex items-center justify-center mx-auto">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
             </div>
             <p className="font-bold text-text text-xl">Renewed!</p>
             <p className="text-text-secondary text-sm">Subscription extended by 30 days</p>
             <button
               onClick={onClose}
-              className="mt-2 px-8 py-3 bg-accent text-white rounded-[var(--r-full)] font-semibold active:scale-95 transition-all"
+              className="mt-2 px-8 py-3 bg-accent text-background rounded-[var(--r-full)] font-semibold active:scale-95 transition-all"
             >
               Done
             </button>
@@ -175,7 +175,7 @@ export function SubscribeModal({
           <div className="space-y-5">
             <div className="text-center py-2">
               <p className="font-bold text-text text-xl mb-1.5">Something went wrong</p>
-              <p className="text-downvote text-sm leading-relaxed">{errorMsg}</p>
+              <p className="text-text-secondary text-sm leading-relaxed">{errorMsg}</p>
             </div>
             <button
               onClick={() => setView('main')}
@@ -200,7 +200,7 @@ export function SubscribeModal({
             <button
               onClick={() => void handleCancel()}
               disabled={loading}
-              className="w-full py-3 bg-downvote/15 text-downvote rounded-[var(--r-full)] font-semibold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
+              className="w-full py-3 bg-surface-up text-text-muted rounded-[var(--r-full)] font-semibold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
             >
               {loading ? loadingLabel : 'Confirm cancel'}
             </button>
@@ -218,11 +218,11 @@ export function SubscribeModal({
         {view === 'main' && isSubscribed && (
           <div className="space-y-5">
             <div>
-              <div className="w-12 h-12 rounded-full bg-amber-400/15 flex items-center justify-center mb-3">
-                <span className="text-xl">⭐</span>
+              <div className="w-12 h-12 rounded-full bg-surface-up flex items-center justify-center mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
               </div>
               <p className="font-bold text-text text-xl">Subscribed to {creatorName}</p>
-              <p className="text-amber-400 text-sm mt-0.5 font-medium">
+              <p className="text-text-secondary text-sm mt-0.5 font-medium">
                 {daysLeft ?? '?'} days remaining
               </p>
             </div>
@@ -243,14 +243,14 @@ export function SubscribeModal({
             <button
               onClick={() => void handleSubscribe()}
               disabled={loading}
-              className="w-full py-3 bg-accent text-white rounded-[var(--r-full)] font-semibold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
+              className="w-full py-3 bg-accent text-background rounded-[var(--r-full)] font-semibold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
             >
               {loading ? loadingLabel : 'Renew · 1 WLD'}
             </button>
             <button
               onClick={() => setView('cancel-confirm')}
               disabled={loading}
-              className="w-full py-2 text-downvote text-sm font-medium active:opacity-60 transition-opacity disabled:opacity-40"
+              className="w-full py-2 text-text-muted text-sm font-medium active:opacity-60 transition-opacity disabled:opacity-40"
             >
               Cancel subscription
             </button>
@@ -261,8 +261,8 @@ export function SubscribeModal({
         {view === 'main' && !isSubscribed && (
           <div className="space-y-5">
             <div>
-              <div className="w-12 h-12 rounded-full bg-amber-400/15 flex items-center justify-center mb-3">
-                <span className="text-xl">⭐</span>
+              <div className="w-12 h-12 rounded-full bg-surface-up flex items-center justify-center mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
               </div>
               <p className="font-bold text-text text-xl">Subscribe to {creatorName}</p>
               <p className="text-text-muted text-xs mt-0.5">WLD sent directly to creator</p>
@@ -298,7 +298,7 @@ export function SubscribeModal({
             <button
               onClick={() => void handleSubscribe()}
               disabled={loading}
-              className="w-full py-3 bg-accent text-white rounded-[var(--r-full)] font-semibold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
+              className="w-full py-3 bg-accent text-background rounded-[var(--r-full)] font-semibold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
             >
               {loading ? loadingLabel : 'Subscribe · 1 WLD/mo'}
             </button>

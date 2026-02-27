@@ -16,10 +16,10 @@
   --clr-text-sec:   158 158 168;
   --clr-text-muted: 88 88 96;
 
-  /* Brand */
-  --accent-rgb:   108 59 255;
-  --accent-hex:   #6C3BFF;
-  --accent-hover: #7C4FFF;
+  /* Brand — monochrome (white accent on dark) */
+  --accent-rgb:   255 255 255;
+  --accent-hex:   #FFFFFF;
+  --accent-hover: #E0E0E0;
 
   /* iOS 26 Liquid Glass tokens */
   --glass-bg:     rgba(255,255,255,0.055);
@@ -44,6 +44,11 @@
   --clr-text:       18 18 20;
   --clr-text-sec:   88 88 100;
   --clr-text-muted: 150 150 162;
+
+  /* Brand — monochrome (near-black accent on light) */
+  --accent-rgb:   18 18 20;
+  --accent-hex:   #121214;
+  --accent-hover: #2A2A2E;
 
   --glass-bg:     rgba(255,255,255,0.62);
   --glass-border: rgba(255,255,255,0.88);
@@ -112,7 +117,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::selection {
-  background: rgba(108, 59, 255, 0.35);
+  background: rgba(var(--accent-rgb), 0.25);
   color: #fff;
 }
 
@@ -158,9 +163,9 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(
     160deg,
     rgba(255,255,255,0.07)   0%,
-    rgba(108,59,255,0.055)  35%,
+    rgba(255,255,255,0.06)  35%,
     rgba(255,255,255,0.04)  65%,
-    rgba(30,160,255,0.035) 100%
+    rgba(255,255,255,0.035) 100%
   );
   backdrop-filter: blur(56px) saturate(200%);
   -webkit-backdrop-filter: blur(56px) saturate(200%);
@@ -231,8 +236,8 @@ h1, h2, h3, h4, h5, h6 {
 .glass-sidebar {
   background: linear-gradient(
     175deg,
-    rgba(255,255,255,0.075)  0%,
-    rgba(108,59,255,0.045)  40%,
+    rgba(255,255,255,0.075) 0%,
+    rgba(255,255,255,0.06)  40%,
     rgba(255,255,255,0.055) 100%
   );
   backdrop-filter: blur(64px) saturate(200%);
@@ -301,7 +306,7 @@ h1, h2, h3, h4, h5, h6 {
 .glass-input::placeholder { color: rgb(var(--clr-text-muted)); }
 .glass-input:focus {
   background: rgba(255,255,255,0.08);
-  border-color: rgba(108,59,255,0.55);
+  border-color: rgba(var(--accent-rgb), 0.45);
   outline: none;
 }
 [data-theme="light"] .glass-input {
@@ -310,5 +315,5 @@ h1, h2, h3, h4, h5, h6 {
 }
 [data-theme="light"] .glass-input:focus {
   background: #fff;
-  border-color: rgba(108,59,255,0.50);
+  border-color: rgba(var(--accent-rgb), 0.45);
 }

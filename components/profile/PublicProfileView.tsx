@@ -156,7 +156,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
                     className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 disabled:opacity-40 ${
                       data?.isFollowing
                         ? 'glass border border-accent/30 text-accent'
-                        : 'bg-accent text-white shadow-sm shadow-accent/30'
+                        : 'bg-accent text-background shadow-sm shadow-accent/30'
                     }`}
                   >
                     {data?.isFollowing ? 'Following' : 'Follow'}
@@ -173,7 +173,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
                     onClick={() => { haptic('light'); setTipOpen(true) }}
                     className="px-4 py-2 glass rounded-[var(--r-full)] text-sm font-semibold text-text-muted text-center transition-all active:scale-95"
                   >
-                    ⚡ Tip WLD
+                    Tip WLD
                   </button>
                   {/* Subscribe — only for named identity profiles */}
                   {data?.user?.identityMode === 'named' && (
@@ -185,13 +185,13 @@ export function PublicProfileView({ nullifierHash }: Props) {
                       }}
                       className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 ${
                         data?.isSubscribed
-                          ? 'glass border border-amber-400/40 text-amber-400'
+                          ? 'glass border border-accent/40 text-accent'
                           : 'glass border border-border text-text-muted'
                       }`}
                     >
                       {data?.isSubscribed
-                        ? `⭐ Subscribed · ${data.subscriptionDaysLeft ?? '?'}d`
-                        : '⭐ Subscribe · 1 WLD/mo'}
+                        ? `Subscribed · ${data.subscriptionDaysLeft ?? '?'}d`
+                        : 'Subscribe · 1 WLD/mo'}
                     </button>
                   )}
                 </div>

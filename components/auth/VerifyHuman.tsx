@@ -46,9 +46,9 @@ export function VerifyHuman() {
     : 'Verify with QR Code'
 
   const envBadge =
-    env === 'minikit' ? { color: 'bg-green-400', label: 'World App detected' }
-    : env === 'mobile-browser' ? { color: 'bg-yellow-400', label: 'Mobile browser' }
-    : env === 'desktop' ? { color: 'bg-blue-400', label: 'Desktop browser' }
+    env === 'minikit' ? { color: 'bg-text-muted', label: 'World App detected' }
+    : env === 'mobile-browser' ? { color: 'bg-text-muted', label: 'Mobile browser' }
+    : env === 'desktop' ? { color: 'bg-text-muted', label: 'Desktop browser' }
     : null
 
   return (
@@ -78,7 +78,7 @@ export function VerifyHuman() {
         title="Verify you're human"
       >
         <div className="flex flex-col items-center text-center gap-6 py-4">
-          <HumanBadge size="lg" label="Human ✓" />
+          <HumanBadge size="lg" label="Verified" />
 
           <div>
             <h3 className="text-text font-bold text-xl mb-2">
@@ -98,7 +98,7 @@ export function VerifyHuman() {
           )}
 
           {error && (
-            <p className="text-downvote text-sm bg-downvote/10 rounded-xl px-4 py-2 w-full">
+            <p className="text-text-secondary text-sm bg-surface-up rounded-xl px-4 py-2 w-full">
               {error}
             </p>
           )}
@@ -107,7 +107,7 @@ export function VerifyHuman() {
             <button
               onClick={() => void verify()}
               disabled={status === 'pending'}
-              className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-colors active:scale-95 text-base"
+              className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-background font-bold py-4 rounded-2xl transition-colors active:scale-95 text-base"
             >
               {buttonLabel}
             </button>
@@ -115,7 +115,7 @@ export function VerifyHuman() {
             <button
               onClick={env === 'detecting' ? undefined : openIdKit}
               disabled={status === 'pending' || env === 'detecting'}
-              className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-colors active:scale-95 text-base"
+              className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-background font-bold py-4 rounded-2xl transition-colors active:scale-95 text-base"
             >
               {buttonLabel}
             </button>

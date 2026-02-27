@@ -161,7 +161,7 @@ export function OnboardingScreen() {
         {/* Primary CTA */}
         <button
           onClick={advance}
-          className="w-full bg-accent text-white font-semibold py-4 rounded-[var(--r-lg)] text-base tracking-[-0.01em] shadow-lg shadow-accent/25 active:scale-[0.98] active:bg-accent-hover transition-all"
+          className="w-full bg-accent text-background font-semibold py-4 rounded-[var(--r-lg)] text-base tracking-[-0.01em] shadow-lg shadow-accent/25 active:scale-[0.98] active:bg-accent-hover transition-all"
         >
           {isLast ? 'Get started' : 'Continue'}
         </button>

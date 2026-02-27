@@ -46,7 +46,7 @@ export function ProfilePostCard({ post, onDeleted }: Props) {
             onClick={handleDelete}
             disabled={isDeleting}
             aria-label="Delete post"
-            className="text-text-muted/40 hover:text-downvote active:scale-90 transition-all disabled:opacity-30"
+            className="text-text-muted/40 hover:text-text-muted active:scale-90 transition-all disabled:opacity-30"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -63,13 +63,13 @@ export function ProfilePostCard({ post, onDeleted }: Props) {
 
       <div className="flex items-center gap-4 text-text-muted text-xs">
         <span className="flex items-center gap-1">
-          <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor" className="text-upvote/70">
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor" className="text-accent/70">
             <path d="M6 1L11.196 9.5H0.804L6 1Z" />
           </svg>
           {post.upvotes}
         </span>
         <span className="flex items-center gap-1">
-          <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor" className="text-downvote/70">
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor" className="text-text-muted/70">
             <path d="M6 11L0.804 2.5H11.196L6 11Z" />
           </svg>
           {post.downvotes}

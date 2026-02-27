@@ -53,7 +53,7 @@ export function RoomCard({ room, onJoin }: RoomCardProps) {
 
         <button
           onClick={() => onJoin(room)}
-          className="bg-accent text-white text-xs font-semibold px-4 py-2 rounded-[var(--r-full)] active:scale-95 transition-all"
+          className="bg-accent text-background text-xs font-semibold px-4 py-2 rounded-[var(--r-full)] active:scale-95 transition-all"
         >
           Join
         </button>

@@ -111,7 +111,7 @@ export function ImagePicker({ onUpload, onClear, previewUrl, className }: Props)
       )}
 
       {error && (
-        <p className="text-downvote text-xs px-1">{error}</p>
+        <p className="text-text-secondary text-xs px-1">{error}</p>
       )}
     </div>
   )

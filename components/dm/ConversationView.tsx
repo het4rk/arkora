@@ -246,8 +246,8 @@ export function ConversationView({ otherHash }: Props) {
 
       {/* Pusher connection lost banner */}
       {connectionLost && !noKey && (
-        <div className="px-[5vw] py-2 bg-downvote/10 border-b border-downvote/20 text-center">
-          <p className="text-downvote text-xs">Connection lost — new messages may not arrive. Refresh to reconnect.</p>
+        <div className="px-[5vw] py-2 bg-surface-up border-b border-border text-center">
+          <p className="text-text-secondary text-xs">Connection lost — new messages may not arrive. Refresh to reconnect.</p>
         </div>
       )}
 
@@ -271,7 +271,7 @@ export function ConversationView({ otherHash }: Props) {
                 <button
                   type="button"
                   onClick={() => void load()}
-                  className="px-5 py-2.5 bg-accent text-white text-sm font-semibold rounded-[var(--r-lg)] active:scale-95 transition-all"
+                  className="px-5 py-2.5 bg-accent text-background text-sm font-semibold rounded-[var(--r-lg)] active:scale-95 transition-all"
                 >
                   Retry
                 </button>
@@ -299,7 +299,7 @@ export function ConversationView({ otherHash }: Props) {
                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                     isMe
-                      ? 'bg-accent text-white rounded-br-md'
+                      ? 'bg-accent text-background rounded-br-md'
                       : 'glass rounded-bl-md text-text'
                   } ${msg.failed ? 'opacity-40 italic' : ''}`}>
                     {msg.failed ? 'Unable to decrypt' : msg.text}

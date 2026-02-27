@@ -73,7 +73,7 @@ export function InlineFollowButton({ targetHash }: Props) {
       className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-semibold transition-all active:scale-95 disabled:opacity-50 ${
         isFollowing
           ? 'border border-accent/40 text-accent bg-accent/5'
-          : 'bg-accent text-white shadow-sm shadow-accent/20'
+          : 'bg-accent text-background shadow-sm shadow-accent/20'
       }`}
     >
       {isFollowing ? 'Following' : 'Follow'}

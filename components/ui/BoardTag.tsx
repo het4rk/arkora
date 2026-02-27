@@ -13,12 +13,12 @@ export function BoardTag({ boardId, className }: Props) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider',
+        'inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em]',
         'text-text-muted',
         className
       )}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-accent opacity-80 inline-block" />
+      <span className="w-1.5 h-1.5 rounded-full bg-text-muted inline-block" />
       {board.label}
     </span>
   )

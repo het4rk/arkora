@@ -92,7 +92,7 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
 
               {/* Title */}
               <div className="mb-4">
-                <label className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.12em] block mb-2">
+                <label className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] block mb-2">
                   Topic
                 </label>
                 <input
@@ -108,7 +108,7 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
 
               {/* Board */}
               <div className="mb-4">
-                <label className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.12em] block mb-2">
+                <label className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] block mb-2">
                   Board
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -122,7 +122,6 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
                           : 'glass text-text-secondary'
                       }`}
                     >
-                      <span>{b.emoji}</span>
                       <span>#{b.id}</span>
                     </button>
                   ))}
@@ -131,7 +130,7 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
 
               {/* Max participants */}
               <div className="mb-5">
-                <label className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.12em] block mb-2">
+                <label className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] block mb-2">
                   Max participants: {maxParticipants}
                 </label>
                 <input
@@ -149,13 +148,13 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
               </div>
 
               {error && (
-                <p className="text-downvote text-xs mb-3">{error}</p>
+                <p className="text-text-secondary text-xs mb-3">{error}</p>
               )}
 
               <button
                 onClick={() => void handleCreate()}
                 disabled={!title.trim() || isCreating}
-                className="w-full bg-accent text-white font-semibold py-3.5 rounded-[var(--r-lg)] text-sm active:scale-[0.98] disabled:opacity-50 transition-all"
+                className="w-full bg-accent text-background font-semibold py-3.5 rounded-[var(--r-lg)] text-sm active:scale-[0.98] disabled:opacity-50 transition-all"
               >
                 {isCreating ? 'Starting…' : 'Start Room'}
               </button>

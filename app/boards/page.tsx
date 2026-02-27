@@ -26,9 +26,8 @@ export default function BoardsPage() {
           <button
             key={board.id}
             onClick={() => handleSelect(board.id)}
-            className="w-full flex items-center gap-4 glass rounded-[var(--r-xl)] p-4 text-left active:scale-95 transition-transform"
+            className="w-full flex items-center gap-3 glass rounded-[var(--r-xl)] p-4 text-left active:scale-95 transition-transform"
           >
-            <span className="text-3xl">{board.emoji}</span>
             <div>
               <div className="text-text font-semibold">#{board.label}</div>
               <div className="text-text-muted text-xs mt-0.5">

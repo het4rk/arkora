@@ -104,11 +104,11 @@ export function BottomNav() {
             {/* Compose FAB */}
             <button
               onClick={() => { haptic('medium'); setComposerOpen(true) }}
-              className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center shadow-lg shadow-accent/30 active:scale-95 transition-all active:bg-accent-hover"
+              className="w-12 h-12 rounded-2xl bg-accent text-background flex items-center justify-center shadow-lg active:scale-95 transition-all active:bg-accent-hover"
               aria-label="Create post"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </button>

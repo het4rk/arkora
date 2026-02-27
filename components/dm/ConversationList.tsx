@@ -67,12 +67,12 @@ export function ConversationList() {
     return (
       <div className="flex-1 flex items-center justify-center px-8 text-center py-16">
         <div>
-          <div className="text-4xl mb-4">🔒</div>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
           <p className="font-bold text-text text-lg mb-2">Verify to use DMs</p>
           <p className="text-text-secondary text-sm mb-5">Messages are end-to-end encrypted.</p>
           <button
             onClick={() => setVerifySheetOpen(true)}
-            className="px-6 py-3 bg-accent text-white text-sm font-semibold rounded-[var(--r-full)] active:scale-95 transition-all"
+            className="px-6 py-3 bg-accent text-background text-sm font-semibold rounded-[var(--r-full)] active:scale-95 transition-all"
           >
             Verify with World ID
           </button>
@@ -105,7 +105,7 @@ export function ConversationList() {
         <button
           type="button"
           onClick={() => { setIsLoading(true); void fetchConversations() }}
-          className="px-5 py-2.5 bg-accent text-white text-sm font-semibold rounded-[var(--r-lg)] active:scale-95 transition-all"
+          className="px-5 py-2.5 bg-accent text-background text-sm font-semibold rounded-[var(--r-lg)] active:scale-95 transition-all"
         >
           Retry
         </button>
@@ -117,7 +117,7 @@ export function ConversationList() {
     <div className="flex-1 overflow-y-auto">
       {conversations.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
-          <div className="text-4xl mb-4">💬</div>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
           <p className="font-bold text-text text-lg mb-2">No messages yet</p>
           <p className="text-text-secondary text-sm">
             Visit someone&apos;s profile to send them a message.

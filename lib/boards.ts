@@ -9,13 +9,13 @@
  */
 
 /** Hardcoded featured boards — always shown first in the picker. */
-export const FEATURED_BOARDS: { id: string; label: string; emoji: string }[] = [
-  { id: 'arkora',      label: 'Arkora',      emoji: '🏛️' },
-  { id: 'technology',  label: 'Technology',  emoji: '⚡' },
-  { id: 'markets',     label: 'Markets',     emoji: '📈' },
-  { id: 'politics',    label: 'Politics',    emoji: '🗳️' },
-  { id: 'worldchain',  label: 'World Chain', emoji: '🌐' },
-  { id: 'confessions', label: 'Confessions', emoji: '🤫' },
+export const FEATURED_BOARDS: { id: string; label: string }[] = [
+  { id: 'arkora',      label: 'Arkora' },
+  { id: 'technology',  label: 'Technology' },
+  { id: 'markets',     label: 'Markets' },
+  { id: 'politics',    label: 'Politics' },
+  { id: 'worldchain',  label: 'World Chain' },
+  { id: 'confessions', label: 'Confessions' },
 ]
 
 /**

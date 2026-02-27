@@ -173,12 +173,12 @@ export function RoomView({ roomId }: RoomViewProps) {
   if (hasEnded) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-4">
-        <p className="text-4xl">🎙️</p>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
         <p className="text-text font-bold text-lg">Room Ended</p>
         <p className="text-text-muted text-sm">This room is no longer live.</p>
         <button
           onClick={() => router.push('/rooms')}
-          className="bg-accent text-white font-semibold px-6 py-3 rounded-[var(--r-lg)] text-sm active:scale-95 transition-all"
+          className="bg-accent text-background font-semibold px-6 py-3 rounded-[var(--r-lg)] text-sm active:scale-95 transition-all"
         >
           Back to Rooms
         </button>
@@ -235,7 +235,7 @@ export function RoomView({ roomId }: RoomViewProps) {
         {isHost && (
           <button
             onClick={() => void handleEndRoom()}
-            className="text-downvote/80 text-xs glass px-3 py-1.5 rounded-[var(--r-full)] shrink-0 active:opacity-70 transition-opacity"
+            className="text-text-muted text-xs glass px-3 py-1.5 rounded-[var(--r-full)] shrink-0 active:opacity-70 transition-opacity"
           >
             End
           </button>
@@ -246,7 +246,7 @@ export function RoomView({ roomId }: RoomViewProps) {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-16">
-            <p className="text-3xl">🎙️</p>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
             <p className="text-text font-semibold">Room is live</p>
             <p className="text-text-muted text-sm">Be the first to say something</p>
           </div>

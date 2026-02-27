@@ -131,7 +131,7 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
 
       {/* Vote error */}
       {voteError && (
-        <p className="text-downvote text-[11px] pt-1">{voteError}</p>
+        <p className="text-text-secondary text-[11px] pt-1">{voteError}</p>
       )}
 
       {/* Footer */}

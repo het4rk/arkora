@@ -15,10 +15,10 @@ interface JoinIdentitySheetProps {
 
 type IdentityChoice = 'anonymous' | 'alias' | 'named'
 
-const OPTIONS: { mode: IdentityChoice; label: string; sub: string; icon: string }[] = [
-  { mode: 'anonymous', label: 'Anonymous', sub: 'Random one-time handle', icon: '🎲' },
-  { mode: 'alias',     label: 'Alias',     sub: 'Your persistent alias',  icon: '👤' },
-  { mode: 'named',     label: 'Named',     sub: 'Your World ID username', icon: '📛' },
+const OPTIONS: { mode: IdentityChoice; label: string; sub: string; icon: JSX.Element }[] = [
+  { mode: 'anonymous', label: 'Anonymous', sub: 'Random one-time handle', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /></svg> },
+  { mode: 'alias',     label: 'Alias',     sub: 'Your persistent alias',  icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> },
+  { mode: 'named',     label: 'Named',     sub: 'Your World ID username', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 15h4M7 11h6M7 9h10" /></svg> },
 ]
 
 export function JoinIdentitySheet({ room, onConfirm, onClose }: JoinIdentitySheetProps) {
@@ -69,7 +69,7 @@ export function JoinIdentitySheet({ room, onConfirm, onClose }: JoinIdentityShee
                 {room.title}
               </p>
 
-              <p className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.12em] mb-3">
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">
                 Appear as
               </p>
 
@@ -84,7 +84,7 @@ export function JoinIdentitySheet({ room, onConfirm, onClose }: JoinIdentityShee
                         : 'glass'
                     }`}
                   >
-                    <span className="text-lg leading-none">{opt.icon}</span>
+                    <div className="shrink-0">{opt.icon}</div>
                     <div className="text-left flex-1 min-w-0">
                       <p className={`text-sm font-semibold ${selected === opt.mode ? 'text-accent' : 'text-text'}`}>
                         {opt.label}
@@ -105,7 +105,7 @@ export function JoinIdentitySheet({ room, onConfirm, onClose }: JoinIdentityShee
 
               <button
                 onClick={handleConfirm}
-                className="w-full bg-accent text-white font-semibold py-3.5 rounded-[var(--r-lg)] text-sm active:scale-[0.98] active:bg-accent-hover transition-all"
+                className="w-full bg-accent text-background font-semibold py-3.5 rounded-[var(--r-lg)] text-sm active:scale-[0.98] active:bg-accent-hover transition-all"
               >
                 Enter Room
               </button>

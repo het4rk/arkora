@@ -75,7 +75,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
   return (
     <div className="glass-compose px-[5vw] pt-3 pb-[max(env(safe-area-inset-bottom),16px)]">
       {error && (
-        <p className="text-downvote text-xs mb-2 px-1">{error}</p>
+        <p className="text-text-secondary text-xs mb-2 px-1">{error}</p>
       )}
       {replyingToName && (
         <div className="flex items-center gap-2 mb-2 px-1">
@@ -121,7 +121,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
         <button
           onClick={() => { haptic('medium'); void handleSubmit() }}
           disabled={isSubmitting || !body.trim()}
-          className="mb-[3px] h-10 px-4 bg-accent disabled:opacity-35 text-white text-sm font-semibold rounded-[var(--r-md)] transition-all active:scale-95 active:bg-accent-hover shrink-0"
+          className="mb-[3px] h-10 px-4 bg-accent disabled:opacity-35 text-background text-sm font-semibold rounded-[var(--r-md)] transition-all active:scale-95 active:bg-accent-hover shrink-0"
         >
           {isSubmitting ? '…' : 'Reply'}
         </button>
