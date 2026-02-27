@@ -1,15 +1,20 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { isNull, sql } from 'drizzle-orm'
 import { FEATURED_BOARDS, boardLabel } from '@/lib/boards'
+import { rateLimit } from '@/lib/rateLimit'
 
 /**
  * GET /api/boards
  * Returns all known boards sorted by post activity.
  * Featured boards are always included; user-created boards appear after them.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'anon'
+  if (!rateLimit(`boards:${ip}`, 60, 60_000)) {
+    return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+  }
   try {
     // Get all distinct board IDs with post counts from the DB
     const rows = await db

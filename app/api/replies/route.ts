@@ -57,6 +57,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Validate imageUrl if provided — reject non-http(s) schemes and overly long URLs
+    if (imageUrl !== undefined && imageUrl !== null) {
+      try {
+        const parsed = new URL(String(imageUrl))
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error()
+        if (String(imageUrl).length > 2048) throw new Error()
+      } catch {
+        return NextResponse.json({ success: false, error: 'Invalid image URL' }, { status: 400 })
+      }
+    }
+
     // Validate parentReplyId belongs to the same post — prevents cross-post thread injection
     if (parentReplyId) {
       const parentPostId = await getReplyPostId(parentReplyId)

@@ -71,7 +71,7 @@ export function BottomNav() {
               href="/"
               onClick={() => haptic('light')}
               className={cn(
-                'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
+                'flex flex-col items-center gap-0.5 px-3 py-2.5 min-h-[44px] justify-center rounded-xl transition-all',
                 pathname === '/' ? 'text-accent' : 'text-text-muted'
               )}
             >
@@ -90,7 +90,7 @@ export function BottomNav() {
             <button
               onClick={() => { haptic('light'); setSearchOpen(true) }}
               aria-label="Search"
-              className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all active:scale-90"
+              className="flex flex-col items-center gap-0.5 px-3 py-2.5 min-h-[44px] justify-center rounded-xl transition-all active:scale-90"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
@@ -118,7 +118,7 @@ export function BottomNav() {
               href="/notifications"
               onClick={() => haptic('light')}
               className={cn(
-                'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
+                'flex flex-col items-center gap-0.5 px-3 py-2.5 min-h-[44px] justify-center rounded-xl transition-all',
                 pathname === '/notifications' ? 'text-accent' : 'text-text-muted'
               )}
             >
@@ -131,7 +131,7 @@ export function BottomNav() {
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
                 {unreadNotificationCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent" />
                 )}
               </span>
               <span className={cn('text-[10px] font-medium', pathname === '/notifications' && 'text-accent')}>
@@ -144,7 +144,7 @@ export function BottomNav() {
               href="/profile"
               onClick={() => haptic('light')}
               className={cn(
-                'flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all',
+                'flex flex-col items-center gap-0.5 px-3 py-2.5 min-h-[44px] justify-center rounded-xl transition-all',
                 pathname === '/profile' ? 'text-accent' : 'text-text-muted'
               )}
             >

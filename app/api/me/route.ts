@@ -1,8 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
 import { getUserByNullifier } from '@/lib/db/users'
+import { rateLimit } from '@/lib/rateLimit'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'anon'
+  if (!rateLimit(`me:${ip}`, 60, 60_000)) {
+    return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+  }
+
   const nullifierHash = await getCallerNullifier()
   if (!nullifierHash) {
     return NextResponse.json({ success: true, nullifierHash: null, user: null })

@@ -114,7 +114,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
             onChange={(e) => setBody(e.target.value.slice(0, 10000))}
             placeholder="Add a reply…"
             rows={2}
-            className="glass-input w-full rounded-[var(--r-md)] px-3.5 py-3 text-sm resize-none leading-relaxed"
+            className="glass-input w-full rounded-[var(--r-md)] px-3.5 py-3 text-sm resize-none leading-relaxed max-h-40 overflow-y-auto"
           />
         </div>
 

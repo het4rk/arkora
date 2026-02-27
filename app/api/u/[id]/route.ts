@@ -5,14 +5,21 @@ import { getPublicProfileData, isFollowing } from '@/lib/db/follows'
 import { getSubscriberCount, getActiveSubscription } from '@/lib/db/subscriptions'
 import { getTipTotalReceived } from '@/lib/db/tips'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { rateLimit } from '@/lib/rateLimit'
 
 interface Params {
   params: Promise<{ id: string }>
 }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { id: nullifierHash } = await params
+
+    const ip = req.headers.get('x-forwarded-for') ?? 'anon'
+    if (!rateLimit(`profile:${ip}`, 60, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
+
     const viewerHash = await getCallerNullifier()
 
     const [user, posts, profileStats, following, subscriberCount, activeSub, tipTotal] = await Promise.all([

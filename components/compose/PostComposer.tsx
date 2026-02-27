@@ -270,7 +270,12 @@ export function PostComposer() {
         {/* Body (text post) or Poll section */}
         {!isPoll ? (
           <div>
-            <label htmlFor="post-body" className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2 block">Body</label>
+            <div className="flex justify-between items-center mb-2">
+              <label htmlFor="post-body" className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Body</label>
+              {body.length > 8000 && (
+                <span className="text-text-muted/60 text-[11px] tabular-nums" aria-live="polite">{body.length}/10000</span>
+              )}
+            </div>
             <div className="relative">
               <textarea
                 id="post-body"

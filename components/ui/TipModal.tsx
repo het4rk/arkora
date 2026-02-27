@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { MiniKit } from '@worldcoin/minikit-js'
 import { sendWld } from '@/hooks/useTip'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
@@ -30,6 +31,11 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
 
   async function handleSend() {
     if (!isVerified || !nullifierHash) { setVerifySheetOpen(true); return }
+    if (!MiniKit.isInstalled()) {
+      setErrorMsg('Tipping is only available in World App.')
+      setState('error')
+      return
+    }
     if (!amountValid) return
     haptic('medium')
     setState('sending')
@@ -49,6 +55,11 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
       if (!wallet) throw new Error('Could not find recipient wallet')
 
       const txId = await sendWld(wallet, amount)
+      // null means user cancelled or transaction failed — don't record
+      if (!txId) {
+        setState('pick')
+        return
+      }
       await fetch('/api/tip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -205,6 +205,7 @@ export async function POST(req: NextRequest) {
       try {
         const parsed = new URL(String(rawImageUrl))
         if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error()
+        if (String(rawImageUrl).length > 2048) throw new Error()
       } catch {
         return NextResponse.json({ success: false, error: 'Invalid image URL' }, { status: 400 })
       }

@@ -33,6 +33,7 @@ export function ConversationView({ otherHash }: Props) {
   const [isLoading, setIsLoading] = useState(true)
   const [noKey, setNoKey] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [connectionLost, setConnectionLost] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   // Track the latest message timestamp for the Pusher duplicate-guard
@@ -127,6 +128,10 @@ export function ConversationView({ otherHash }: Props) {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
     })
     const channel = pusher.subscribe(`user-${nullifierHash}`)
+
+    channel.bind('pusher:subscription_error', () => {
+      setConnectionLost(true)
+    })
 
     channel.bind('new-dm', async (data: { id: string; senderHash: string; ciphertext: string; nonce: string; createdAt: string }) => {
       // Ignore messages from other conversations (this channel receives all DMs for this user)
@@ -229,9 +234,16 @@ export function ConversationView({ otherHash }: Props) {
         <div className="flex-1 flex items-center justify-center px-8 text-center py-16">
           <div>
             <p className="text-3xl mb-3">🔑</p>
-            <p className="text-text font-semibold mb-2">Not available</p>
-            <p className="text-text-secondary text-sm">This person hasn&apos;t set up encrypted messaging yet.</p>
+            <p className="text-text font-semibold mb-2">DMs not available</p>
+            <p className="text-text-secondary text-sm">This person hasn&apos;t enabled encrypted messaging yet. Ask them to open Arkora in World App to activate DMs.</p>
           </div>
+        </div>
+      )}
+
+      {/* Pusher connection lost banner */}
+      {connectionLost && !noKey && (
+        <div className="px-[5vw] py-2 bg-downvote/10 border-b border-downvote/20 text-center">
+          <p className="text-downvote text-xs">Connection lost — new messages may not arrive. Refresh to reconnect.</p>
         </div>
       )}
 

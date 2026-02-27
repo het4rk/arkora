@@ -380,6 +380,7 @@ activeRoomId                                             — currently joined ro
 - [x] Sprint 14: ArkoraNullifierRegistry.sol contract + server-side registration (lib/registry.ts), post SHA-256 content hashes (tamper evidence), registrationTxHash in settings UI
 - [x] Sprint 15: Dynamic board system (synonym dedup + Levenshtein matching), PostComposer UX overhaul (inline poll expansion), profile name locked to World ID in World App
 - [x] Sprint 16: Tip recipient push notification (worldAppNotify), tip total displayed on public profiles, rooms auto-close when last participant leaves, karma score in feed cards (authorKarmaScore on Post type, JOIN in all feed queries)
+- [x] Sprint 17 (polish): TipModal desktop guard + cancel-tx protection, ConversationView Pusher error banner + better no-key message, ReplyComposer textarea max-height, PostComposer body char counter, imageUrl validation in /api/replies, rate limit on /api/u/[id] + /api/me + /api/boards, URL max-length 2048 on posts+replies, BottomNav 44px touch targets + larger notification badge
 
 ### Previous Sprints
 - [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)
