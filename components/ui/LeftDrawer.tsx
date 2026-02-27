@@ -126,7 +126,7 @@ export function LeftDrawer() {
             {/* ── Scrollable content ───────────────────────────────── */}
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
 
-              {/* Privacy mode — only relevant for verified users */}
+              {/* Privacy mode - only relevant for verified users */}
               {isVerified && <div>
                 <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">
                   Privacy
@@ -165,7 +165,7 @@ export function LeftDrawer() {
                         )}
                       </button>
 
-                      {/* Alias name input — shown inline when Alias is selected */}
+                      {/* Alias name input - shown inline when Alias is selected */}
                       {opt.mode === 'alias' && identityMode === 'alias' && (
                         <div className="mt-2 flex gap-2">
                           <input

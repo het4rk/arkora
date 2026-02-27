@@ -5,7 +5,7 @@ import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 
-// POST /api/community-notes — submit a note on a post
+// POST /api/community-notes - submit a note on a post
 export async function POST(req: NextRequest) {
   try {
     const submitterNullifierHash = await getCallerNullifier()

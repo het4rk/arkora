@@ -26,7 +26,7 @@ export function Feed() {
   const { activeBoard, nullifierHash, isVerified, locationRadius, setLocationRadius } = useArkoraStore()
   const [feedMode, setFeedMode] = useState<FeedMode>('new')
 
-  // Local feed — viewer GPS coords (requested on demand)
+  // Local feed - viewer GPS coords (requested on demand)
   const [viewerCoords, setViewerCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [locationDenied, setLocationDenied] = useState(false)
   const [locationRequesting, setLocationRequesting] = useState(false)
@@ -37,7 +37,7 @@ export function Feed() {
     if (viewerCoords || locationDenied) return
     setLocationRequesting(true)
     // Secondary timeout: if user leaves permission prompt open indefinitely,
-    // the geolocation `timeout` option only fires post-grant — so we need our own timer.
+    // the geolocation `timeout` option only fires post-grant - so we need our own timer.
     const fallbackTimer = setTimeout(() => {
       setLocationDenied(true)
       setLocationRequesting(false)
@@ -209,7 +209,7 @@ export function Feed() {
 
   return (
     <>
-      {/* Feed mode toggle — positioned below TopBar (56px) + safe area */}
+      {/* Feed mode toggle - positioned below TopBar (56px) + safe area */}
       <div
         style={{ top: 'calc(env(safe-area-inset-top, 0px) + 64px)' }}
         className="fixed left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg"
@@ -228,7 +228,7 @@ export function Feed() {
         ))}
       </div>
 
-      {/* Radius slider — shown below tab bar when Local is active and location granted */}
+      {/* Radius slider - shown below tab bar when Local is active and location granted */}
       {hasLocalCoords && (
         <div style={{ top: 'calc(env(safe-area-inset-top, 0px) + 112px)' }} className="fixed left-1/2 -translate-x-1/2 z-20 glass rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
           <input
@@ -330,7 +330,7 @@ export function Feed() {
           </div>
         )}
 
-        {/* Guest join CTA — shown once per session to unverified users */}
+        {/* Guest join CTA - shown once per session to unverified users */}
         {!isVerified && posts.length > 0 && (
           <div className="px-4 pt-4 pb-2">
             <div className="glass rounded-[var(--r-lg)] px-4 py-3.5 flex items-center justify-between gap-3">

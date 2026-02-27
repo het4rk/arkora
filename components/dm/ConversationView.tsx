@@ -90,7 +90,7 @@ export function ConversationView({ otherHash }: Props) {
 
     const myPrivateKey = await ensureOwnKey()
 
-    // Decrypt all messages in parallel — ECDH is symmetric so both sides
+    // Decrypt all messages in parallel - ECDH is symmetric so both sides
     // derive the same shared secret (own private key + other's public key).
     const rawMsgs = msgsJson.data ?? []
     const results = await Promise.allSettled(
@@ -154,7 +154,7 @@ export function ConversationView({ otherHash }: Props) {
           return [...prev, msg]
         })
         latestMsgAt.current = data.createdAt
-      } catch { /* decryption failure — silently ignore */ }
+      } catch { /* decryption failure - silently ignore */ }
     })
 
     return () => {
@@ -247,7 +247,7 @@ export function ConversationView({ otherHash }: Props) {
       {/* Pusher connection lost banner */}
       {connectionLost && !noKey && (
         <div className="px-[5vw] py-2 bg-surface-up border-b border-border text-center">
-          <p className="text-text-secondary text-xs">Connection lost — new messages may not arrive. Refresh to reconnect.</p>
+          <p className="text-text-secondary text-xs">Connection lost - new messages may not arrive. Refresh to reconnect.</p>
         </div>
       )}
 

@@ -65,7 +65,7 @@ export function RoomParticipants({
                     </p>
                   </div>
 
-                  {/* Host controls — only visible to host, not for themselves */}
+                  {/* Host controls - only visible to host, not for themselves */}
                   {isHost && p.nullifierHash !== callerHash && (
                     <div className="flex gap-2 shrink-0">
                       {!p.isMuted && (

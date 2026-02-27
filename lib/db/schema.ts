@@ -33,16 +33,16 @@ export const posts = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
     quotedPostId: uuid('quoted_post_id'),
-    // Location — optional; set when poster has location sharing enabled
+    // Location - optional; set when poster has location sharing enabled
     lat: real('lat'),
     lng: real('lng'),
     // Country inferred from poster's IP at creation time (for local feed country filter)
     countryCode: text('country_code'),
-    // Number of unique reports — posts with 5+ are hidden from public feeds
+    // Number of unique reports - posts with 5+ are hidden from public feeds
     reportCount: integer('report_count').default(0).notNull(),
-    // keccak256(id + title + body + nullifierHash) — tamper-evidence fingerprint set at creation.
+    // keccak256(id + title + body + nullifierHash) - tamper-evidence fingerprint set at creation.
     contentHash: text('content_hash'),
-    // Poll fields — only set when type = 'poll'
+    // Poll fields - only set when type = 'poll'
     type: text('type').notNull().default('text'), // 'text' | 'poll' | 'repost'
     pollOptions: jsonb('poll_options').$type<{ index: number; text: string }[]>(),
     pollEndsAt: timestamp('poll_ends_at', { withTimezone: true }),
@@ -112,7 +112,7 @@ export const humanUsers = pgTable(
   (table) => ({
     // Speeds up @mention autocomplete: pseudoHandle ILIKE prefix% + identityMode filter
     pseudoHandleIdx: index('human_users_pseudo_handle_idx').on(table.pseudoHandle),
-    // Speeds up getUserByWalletAddressNonWlt — runs on every login
+    // Speeds up getUserByWalletAddressNonWlt - runs on every login
     walletIdx: index('human_users_wallet_idx').on(table.walletAddress),
   })
 )
@@ -184,7 +184,7 @@ export const follows = pgTable(
 )
 
 // ── Direct Messages ──────────────────────────────────────────────────────────
-// Public key registry — one row per user, updated when they register a new key
+// Public key registry - one row per user, updated when they register a new key
 export const dmKeys = pgTable('dm_keys', {
   nullifierHash: text('nullifier_hash').primaryKey(),
   publicKey: text('public_key').notNull(),   // base64url Curve25519 public key
@@ -192,7 +192,7 @@ export const dmKeys = pgTable('dm_keys', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-// Encrypted message blobs — server stores ciphertext only
+// Encrypted message blobs - server stores ciphertext only
 export const dmMessages = pgTable(
   'dm_messages',
   {
@@ -240,7 +240,7 @@ export const communityNoteVotes = pgTable(
   })
 )
 
-// Sybil-resistant poll votes — one row per (postId, nullifierHash) enforced by unique constraint
+// Sybil-resistant poll votes - one row per (postId, nullifierHash) enforced by unique constraint
 export const pollVotes = pgTable(
   'poll_votes',
   {
@@ -271,7 +271,7 @@ export const notifications = pgTable(
   },
   (table) => ({
     recipientIdx: index('notifications_recipient_idx').on(table.recipientHash, table.createdAt),
-    // Partial index for the unread-count query — only indexes unread rows
+    // Partial index for the unread-count query - only indexes unread rows
     unreadIdx: index('notifications_unread_idx').on(table.recipientHash, table.createdAt).where(sql`read = false`),
   })
 )

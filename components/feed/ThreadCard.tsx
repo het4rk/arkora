@@ -180,7 +180,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           </div>
         )}
 
-        {/* Poll — rendered in feed with results if available, otherwise options as preview */}
+        {/* Poll - rendered in feed with results if available, otherwise options as preview */}
         {post.type === 'poll' && post.pollOptions && (
           <PollCard
             post={post}
@@ -194,7 +194,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           <QuotedPost post={post.quotedPost} className="mt-4" />
         )}
 
-        {/* Post image — tap to view card, long-press to view full-resolution */}
+        {/* Post image - tap to view card, long-press to view full-resolution */}
         {post.imageUrl && (
           <div
             className="mt-4 rounded-[var(--r-lg)] overflow-hidden cursor-pointer select-none"
@@ -214,7 +214,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           </div>
         )}
 
-        {/* Top reply preview — glass card */}
+        {/* Top reply preview - glass card */}
         {topReply && (
           <div className="mt-5 glass rounded-[var(--r-lg)] px-4 py-4">
             <p className="text-accent text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">

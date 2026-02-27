@@ -1,4 +1,4 @@
-/** Any normalized board slug — can be a featured board or a user-created one. */
+/** Any normalized board slug - can be a featured board or a user-created one. */
 export type BoardId = string
 
 export { FEATURED_BOARDS as BOARDS } from '@/lib/boards'

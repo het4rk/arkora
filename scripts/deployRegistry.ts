@@ -13,14 +13,14 @@
  *   1. Copy the printed contract address
  *   2. Add REGISTRY_ADDRESS=0x... to Vercel Dashboard env vars
  *   3. Add REGISTRY_DEPLOYER_PRIVATE_KEY=0x... to Vercel Dashboard env vars
- *   4. Redeploy — the verify flow will start registering nullifiers automatically
+ *   4. Redeploy - the verify flow will start registering nullifiers automatically
  */
 
 import { createWalletClient, createPublicClient, http, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { worldchain } from 'viem/chains'
 
-// Bytecode produced by solc 0.8.20 — compile with:
+// Bytecode produced by solc 0.8.20 - compile with:
 // solc --bin --optimize --optimize-runs 200 contracts/ArkoraNullifierRegistry.sol
 // OR use Remix IDE (remix.ethereum.org) and paste the contract source
 // Paste the compiled bytecode here after compiling:
@@ -73,7 +73,7 @@ async function deploy() {
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
   if (!receipt.contractAddress) {
-    console.error('Deploy failed — no contract address in receipt')
+    console.error('Deploy failed - no contract address in receipt')
     process.exit(1)
   }
 

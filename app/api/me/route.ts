@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   }
 
   // If this is a World ID session (0x...) but the user has a real wallet address,
-  // prefer the wallet identity — it holds the posts, bio, and username.
+  // prefer the wallet identity - it holds the posts, bio, and username.
   if (
     !nullifierHash.startsWith('wlt_') &&
     user.walletAddress &&

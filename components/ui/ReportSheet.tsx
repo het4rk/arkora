@@ -47,7 +47,7 @@ export function ReportSheet({ isOpen, onClose, targetType, targetId }: Props) {
         }, 1500)
       }
     } catch {
-      // Silent fail — report is best-effort
+      // Silent fail - report is best-effort
     } finally {
       setIsSubmitting(false)
     }

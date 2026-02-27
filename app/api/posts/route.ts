@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     const cursor = searchParams.get('cursor') ?? undefined
     const limit = parseInt(searchParams.get('limit') ?? '10', 10)
 
-    // Following feed — caller identity from cookie
+    // Following feed - caller identity from cookie
     if (feed === 'following') {
       const callerHash = await getCallerNullifier()
       if (!callerHash) {
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: posts })
     }
 
-    // Hot feed — Wilson-score time-decay ranking, no cursor pagination
+    // Hot feed - Wilson-score time-decay ranking, no cursor pagination
     if (feed === 'hot') {
       const rawBoardId = searchParams.get('boardId')
       const hotBoardId = rawBoardId ? normalizeBoard(rawBoardId) : undefined
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: hotPosts })
     }
 
-    // Local feed — country-scoped, optionally radius-filtered
+    // Local feed - country-scoped, optionally radius-filtered
     if (feed === 'local') {
       const countryCode = getCountryCode(req)
       if (!countryCode) {
@@ -161,10 +161,10 @@ export async function POST(req: NextRequest) {
     const title = isRepost ? '' : sanitizeLine(rawTitle ?? '')
     const postBody = (isPoll || isRepost) ? '' : sanitizeText(rawBody ?? '')
 
-    // Resolve board — normalizes, applies synonyms, tolerates typos
+    // Resolve board - normalizes, applies synonyms, tolerates typos
     const boardId = resolveBoard(rawBoardId ?? 'arkora', FEATURED_IDS)
 
-    // Force-anonymous on boards like Confessions — strip handle regardless of identity mode
+    // Force-anonymous on boards like Confessions - strip handle regardless of identity mode
     const pseudoHandle = ANONYMOUS_BOARDS.has(boardId)
       ? undefined
       : rawHandle ? sanitizeLine(rawHandle) : undefined
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
 
     const quotedPostId = typeof body.quotedPostId === 'string' ? body.quotedPostId : undefined
 
-    // Validate imageUrl if provided — reject non-http(s) schemes (e.g. javascript:)
+    // Validate imageUrl if provided - reject non-http(s) schemes (e.g. javascript:)
     const rawImageUrl = body.imageUrl
     if (rawImageUrl !== undefined && rawImageUrl !== null) {
       try {
@@ -211,9 +211,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Country inferred from poster's IP — used for local feed filtering
+    // Country inferred from poster's IP - used for local feed filtering
     const countryCode = getCountryCode(req) ?? undefined
-    // GPS coords — only present when poster has location sharing enabled
+    // GPS coords - only present when poster has location sharing enabled
     const lat = typeof body.lat === 'number' && isFinite(body.lat) ? body.lat : undefined
     const lng = typeof body.lng === 'number' && isFinite(body.lng) ? body.lng : undefined
 
@@ -235,7 +235,7 @@ export async function POST(req: NextRequest) {
     })
     invalidatePosts()
 
-    // Notify quoted post author — fire-and-forget
+    // Notify quoted post author - fire-and-forget
     if (quotedPostId) {
       void (async () => {
         try {

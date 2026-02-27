@@ -1,5 +1,5 @@
 /**
- * Seed script — inserts a mock verified user and post, then reads it back.
+ * Seed script - inserts a mock verified user and post, then reads it back.
  * Run: pnpm db:seed
  *
  * Requires DATABASE_URL in .env.local
@@ -28,7 +28,7 @@ async function seed() {
   const [post] = await db
     .insert(posts)
     .values({
-      title: 'Welcome to Arkora — provably human message board',
+      title: 'Welcome to Arkora - provably human message board',
       body: 'Every voice here is cryptographically guaranteed to be a real, unique human. No bots. No spam. Just humans.',
       boardId: 'arkora',
       nullifierHash,

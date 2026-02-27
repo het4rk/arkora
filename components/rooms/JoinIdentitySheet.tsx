@@ -34,7 +34,7 @@ export function JoinIdentitySheet({ room, onConfirm, onClose }: JoinIdentityShee
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
       return username ?? user?.pseudoHandle ?? 'World ID user'
     }
-    // anonymous — generate a fresh one-time handle for this room session
+    // anonymous - generate a fresh one-time handle for this room session
     return `Human #${Math.floor(1000 + Math.random() * 9000)}`
   }
 

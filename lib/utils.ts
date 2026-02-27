@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 
-// Tailwind class merging helper — install clsx if needed, otherwise inline it
+// Tailwind class merging helper - install clsx if needed, otherwise inline it
 export function cn(...inputs: ClassValue[]): string {
   return clsx(inputs)
 }
@@ -35,7 +35,7 @@ export function formatDisplayName(name: string): string {
   return name.split(/[_.\-\s]+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
-// Haptic feedback — uses the Vibration API (supported in World App / Android WebView)
+// Haptic feedback - uses the Vibration API (supported in World App / Android WebView)
 // Silently no-ops in Safari/desktop where the API is unavailable.
 export function haptic(pattern: 'light' | 'medium' | 'heavy' = 'light'): void {
   if (typeof navigator === 'undefined' || !navigator.vibrate) return

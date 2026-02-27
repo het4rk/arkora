@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: [] })
     }
 
-    // Rate limit by IP — search is unauthenticated so we can't key on nullifier
+    // Rate limit by IP - search is unauthenticated so we can't key on nullifier
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
     if (!rateLimit(`search:${ip}`, 30, 60_000)) {
       return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })

@@ -4,7 +4,7 @@ import { isVerifiedHuman } from '@/lib/db/users'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
 
-// GET /api/dm/keys?nullifierHash=xxx — fetch someone's public key (requires auth)
+// GET /api/dm/keys?nullifierHash=xxx - fetch someone's public key (requires auth)
 export async function GET(req: NextRequest) {
   const callerHash = await getCallerNullifier()
   if (!callerHash) {
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ success: true, data: { publicKey } })
 }
 
-// POST /api/dm/keys — register/update own public key
+// POST /api/dm/keys - register/update own public key
 export async function POST(req: NextRequest) {
   try {
     const nullifierHash = await getCallerNullifier()

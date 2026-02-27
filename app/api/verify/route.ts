@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     if (!result.success || !result.nullifierHash) {
       // Graceful path: Worldcoin rejects duplicate nullifiers with "already verified".
-      // The proof was still valid (real human) — restore the session from our DB.
+      // The proof was still valid (real human) - restore the session from our DB.
       const alreadyVerified =
         result.error?.toLowerCase().includes('already') ||
         result.error?.toLowerCase().includes('max_verifications')
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         if (existingUser) {
           const { nullifierHash: sessionHash, user: sessionUser } =
             await resolveIdentity(payload.nullifier_hash, existingUser)
-          // Ensure worldIdVerified is set — handles users created before this column existed
+          // Ensure worldIdVerified is set - handles users created before this column existed
           await setWorldIdVerified(sessionHash)
           const restored = NextResponse.json({
             success: true,
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Upsert user — idempotent, safe to call multiple times
+    // Upsert user - idempotent, safe to call multiple times
     // Desktop IDKit users may not have a wallet; use nullifier as placeholder
     const effectiveWallet = walletAddress || `idkit_${result.nullifierHash.slice(0, 40)}`
     const worldIdUser = await getOrCreateUser(result.nullifierHash, effectiveWallet, undefined, true)
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
     // Fire-and-forget: register nullifier in ArkoraNullifierRegistry on World Chain.
     // Only runs when REGISTRY_ADDRESS + REGISTRY_DEPLOYER_PRIVATE_KEY are set in env.
-    // Never blocks or fails the verify response — purely additive.
+    // Never blocks or fails the verify response - purely additive.
     void registerNullifierOnchain(result.nullifierHash).then(async (txHash) => {
       if (txHash) await setRegistrationTxHash(sessionHash, txHash)
     })

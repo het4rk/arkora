@@ -85,7 +85,7 @@ export function BottomSheet({ isOpen, onClose, children, title, className }: Pro
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           >
-            {/* Drag handle — touch this to swipe away */}
+            {/* Drag handle - touch this to swipe away */}
             <div
               className="flex justify-center pt-3.5 pb-1 cursor-grab touch-none"
               onTouchStart={onHandleTouchStart}

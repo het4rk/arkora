@@ -25,7 +25,7 @@ interface VerifyResult {
  * Checks that the tx exists, succeeded, and contains a Transfer event
  * to the expected recipient for at least the expected amount.
  *
- * txId from MiniKit is NOT a tx hash — it's an internal ID.
+ * txId from MiniKit is NOT a tx hash - it's an internal ID.
  * We can't directly look up by MiniKit txId on-chain.
  * Instead, we trust the MiniKit pay() flow (which shows the user
  * the exact amount/recipient in World App before signing) and
@@ -45,7 +45,7 @@ export async function verifyWldTransfer(
   // MiniKit transaction_id is NOT always a valid tx hash
   // If it doesn't look like a hex hash, skip verification
   if (!txHash.startsWith('0x') || txHash.length !== 66) {
-    return { verified: false, error: 'Not a valid transaction hash — MiniKit reference ID' }
+    return { verified: false, error: 'Not a valid transaction hash - MiniKit reference ID' }
   }
 
   try {

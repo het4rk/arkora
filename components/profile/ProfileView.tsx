@@ -89,7 +89,7 @@ export function ProfileView() {
         if (json.success && json.user) {
           setVerified(nullifierHash, json.user)
         }
-      } catch { /* silent — stale store data is acceptable fallback */ }
+      } catch { /* silent - stale store data is acceptable fallback */ }
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nullifierHash, isVerified])
@@ -296,7 +296,7 @@ export function ProfileView() {
                 </div>
               </div>
 
-              {/* Set display name — only on desktop/IDKit (no World App username available) */}
+              {/* Set display name - only on desktop/IDKit (no World App username available) */}
               {!MiniKit.isInstalled() && needsHandle() && !handleEditMode && (
                 <button
                   onClick={() => { setHandleDraft(''); setHandleEditMode(true) }}

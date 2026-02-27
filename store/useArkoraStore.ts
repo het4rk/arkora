@@ -17,7 +17,7 @@ interface ArkoraState {
 
   // Identity preference
   identityMode: IdentityMode
-  // Alias — auto-generated from nullifier, user can rename it (persisted locally)
+  // Alias - auto-generated from nullifier, user can rename it (persisted locally)
   persistentAlias: string | null
 
   // Appearance
@@ -37,11 +37,11 @@ interface ArkoraState {
   isDrawerOpen: boolean
   isSearchOpen: boolean
 
-  // Location — locationEnabled tags posts with GPS; locationRadius controls local feed view radius
+  // Location - locationEnabled tags posts with GPS; locationRadius controls local feed view radius
   locationEnabled: boolean
   locationRadius: number   // miles; -1 = entire country
 
-  // DM — private key stored client-side only, never sent to server
+  // DM - private key stored client-side only, never sent to server
   dmPrivateKey: string | null
 
   // Notification preferences
@@ -50,7 +50,7 @@ interface ArkoraState {
   notifyFollows: boolean
   notifyFollowedPosts: boolean
 
-  // Active room (non-persisted — clears on reload)
+  // Active room (non-persisted - clears on reload)
   activeRoomId: string | null
 
   // Optimistic vote cache: postId → direction
@@ -59,7 +59,7 @@ interface ArkoraState {
   // Notification badge (non-persisted)
   unreadNotificationCount: number
 
-  // Set when user explicitly clicks "Sign out" — prevents auto-re-auth on page reload
+  // Set when user explicitly clicks "Sign out" - prevents auto-re-auth on page reload
   hasExplicitlySignedOut: boolean
 
   // Actions
@@ -193,7 +193,7 @@ export const useArkoraStore = create<ArkoraState>()(
 
       reset: () => set(initialState),
 
-      // Clears auth state only — preserves theme, identity prefs, location settings, and onboarding flag
+      // Clears auth state only - preserves theme, identity prefs, location settings, and onboarding flag
       signOut: () =>
         set({
           walletAddress: null,

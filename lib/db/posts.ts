@@ -64,7 +64,7 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
 
   if (!row) throw new Error('Failed to create post')
 
-  // Compute and store content hash — tamper evidence fingerprint
+  // Compute and store content hash - tamper evidence fingerprint
   const contentHash = createHash('sha256')
     .update(row.id + (input.title ?? '') + (input.body ?? '') + input.nullifierHash)
     .digest('hex')
@@ -76,7 +76,7 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
     .catch((err) => console.error('[contentHash update]', err instanceof Error ? err.message : String(err)))
 
   // Increment quote count on the original post (fire-and-forget).
-  // Must call .execute() — Drizzle builders are lazy and don't run unless consumed.
+  // Must call .execute() - Drizzle builders are lazy and don't run unless consumed.
   if (input.quotedPostId) {
     void db
       .update(posts)
@@ -104,7 +104,7 @@ export async function getPostById(id: string): Promise<Post | null> {
   return row ? toPost(row.post, row.quoted, row.karmaScore) : null
 }
 
-/** Lightweight check — returns only the post owner's nullifierHash (no joins). */
+/** Lightweight check - returns only the post owner's nullifierHash (no joins). */
 export async function getPostNullifier(id: string): Promise<string | null> {
   const [row] = await db
     .select({ nullifierHash: posts.nullifierHash })
@@ -137,7 +137,7 @@ export async function getFeed(params: FeedParams): Promise<Post[]> {
   return rows.map((r) => toPost(r.post, r.quoted, r.karmaScore))
 }
 
-/** Hot feed: Wilson-score-ish ranking — net votes / (age_hours + 2)^1.5 */
+/** Hot feed: Wilson-score-ish ranking - net votes / (age_hours + 2)^1.5 */
 export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> {
   const rows = await db.execute<typeof posts.$inferSelect & { quoted_id: string | null }>(
     sql`SELECT p.*, hu.karma_score as author_karma_score, qp.id as quoted_id,
@@ -375,7 +375,7 @@ export async function getVotedPostsByNullifier(
 }
 
 /**
- * Local feed — filtered by country first, then optionally by GPS radius.
+ * Local feed - filtered by country first, then optionally by GPS radius.
  *
  * Country filtering: posts where country_code matches the viewer's country.
  * Radius filtering: when lat/lng + radiusMiles are provided and radiusMiles > 0,

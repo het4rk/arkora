@@ -9,7 +9,7 @@ export { KARMA_TIERS, getKarmaTier } from '@/lib/karma'
 /**
  * Increment or decrement a user's karma score.
  * delta can be positive or negative.
- * Fire-and-forget — never throws (errors are swallowed).
+ * Fire-and-forget - never throws (errors are swallowed).
  */
 export async function updateKarma(nullifierHash: string, delta: number): Promise<void> {
   if (delta === 0) return

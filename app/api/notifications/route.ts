@@ -5,7 +5,7 @@ import { getCallerNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
 import type { EnrichedNotification } from '@/lib/types'
 
-// GET /api/notifications — returns enriched notifications + unreadCount
+// GET /api/notifications - returns enriched notifications + unreadCount
 export async function GET(req: NextRequest) {
   try {
     const nullifierHash = await getCallerNullifier()
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
-    // countOnly shortcut — just return the badge count without full enrichment
+    // countOnly shortcut - just return the badge count without full enrichment
     const countOnly = new URL(req.url).searchParams.get('countOnly') === '1'
     if (countOnly) {
       const count = await getUnreadCount(nullifierHash)
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/notifications — mark all as read
+// POST /api/notifications - mark all as read
 export async function POST() {
   try {
     const nullifierHash = await getCallerNullifier()

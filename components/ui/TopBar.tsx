@@ -15,7 +15,7 @@ export function TopBar() {
 
   return (
     <>
-      {/* Swipe-from-left-edge zone — transparent, full height, 20px wide */}
+      {/* Swipe-from-left-edge zone - transparent, full height, 20px wide */}
       <div
         className="fixed left-0 top-0 bottom-0 w-5 z-50 pointer-events-auto"
         onTouchStart={(e) => { touchStartX.current = e.touches[0]!.clientX }}
@@ -31,7 +31,7 @@ export function TopBar() {
       >
         <div className="max-w-[640px] mx-auto">
         <div className="relative flex items-center h-14 px-2">
-          {/* Hamburger — left */}
+          {/* Hamburger - left */}
           <button
             onClick={openDrawer}
             aria-label="Open menu"
@@ -46,7 +46,7 @@ export function TopBar() {
             </svg>
           </button>
 
-          {/* Wordmark — centered */}
+          {/* Wordmark - centered */}
           <span className="absolute left-1/2 -translate-x-1/2 text-base font-bold tracking-[-0.03em] text-text select-none">
             Arkora
           </span>

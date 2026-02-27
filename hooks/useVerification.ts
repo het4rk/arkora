@@ -27,10 +27,10 @@ function friendlyVerifyError(serverError: string | undefined): string {
 
 /**
  * Three-way environment:
- *  'detecting'      — polling for MiniKit, UI should show neutral loading state
- *  'minikit'        — running inside World App WebView (MiniKit available)
- *  'mobile-browser' — mobile device (phone/tablet/iPad) but NOT inside World App
- *  'desktop'        — desktop / laptop browser
+ *  'detecting'      - polling for MiniKit, UI should show neutral loading state
+ *  'minikit'        - running inside World App WebView (MiniKit available)
+ *  'mobile-browser' - mobile device (phone/tablet/iPad) but NOT inside World App
+ *  'desktop'        - desktop / laptop browser
  */
 export type VerifyEnvironment = 'detecting' | 'minikit' | 'mobile-browser' | 'desktop'
 
@@ -65,7 +65,7 @@ export function useVerification(): UseVerificationReturn {
   // Detect environment after mount.
   // MiniKit requires the World App WebView to inject window.WorldApp, which can
   // take 300–600 ms. We poll up to ~3 s (15 × 200 ms) before concluding
-  // MiniKit is unavailable — same strategy as WalletConnect.tsx.
+  // MiniKit is unavailable - same strategy as WalletConnect.tsx.
   useEffect(() => {
     let retries = 0
     const MAX_RETRIES = 15

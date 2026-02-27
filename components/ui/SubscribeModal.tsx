@@ -273,7 +273,7 @@ export function SubscribeModal({
               {[
                 '30 days of subscriber status',
                 '1 WLD sent directly onchain to creator',
-                'Manual renewal — cancel anytime in Settings',
+                'Manual renewal - cancel anytime in Settings',
               ].map((line) => (
                 <div key={line} className="flex items-center gap-3 text-sm text-text-secondary">
                   <svg

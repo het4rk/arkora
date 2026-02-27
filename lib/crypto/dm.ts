@@ -4,7 +4,7 @@
  * Protocol: Curve25519 ECDH + HKDF-SHA256 → AES-256-GCM
  *
  * Security model:
- * - Server stores only ciphertext + public keys — cannot read messages
+ * - Server stores only ciphertext + public keys - cannot read messages
  * - Private key lives in Zustand persisted store (localStorage)
  * - Key material: ECDH shared point → HKDF stretch → AES-256 key
  * - Forward secrecy: NOT provided (same static key per conversation)

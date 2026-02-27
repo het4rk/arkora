@@ -1,6 +1,6 @@
 /**
  * Client-safe karma tier utilities.
- * No DB imports — safe to use in 'use client' components.
+ * No DB imports - safe to use in 'use client' components.
  */
 
 export type KarmaTier = 'newcomer' | 'contributor' | 'trusted' | 'elder'

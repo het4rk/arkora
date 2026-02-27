@@ -27,9 +27,9 @@ export function VerifyHuman() {
 
   const subtitles = {
     detecting: 'Detecting your environment…',
-    minikit: 'Your proof is validated directly on World Chain — not on our servers. One verification, permanently on-chain.',
-    'mobile-browser': "You're browsing outside of World App. Tap below to verify with a QR code — open your World App camera to scan it. For one-tap verification, open Arkora directly in World App.",
-    desktop: 'Scan the QR code with World App on your phone. Your proof is validated on World Chain — not on a central server.',
+    minikit: 'Your proof is validated directly on World Chain - not on our servers. One verification, permanently on-chain.',
+    'mobile-browser': "You're browsing outside of World App. Tap below to verify with a QR code - open your World App camera to scan it. For one-tap verification, open Arkora directly in World App.",
+    desktop: 'Scan the QR code with World App on your phone. Your proof is validated on World Chain - not on a central server.',
   }
 
   const footers = {
@@ -67,7 +67,7 @@ export function VerifyHuman() {
         >
           {({ open }: { open: () => void }) => {
             idkitOpenRef.current = open
-            return null
+            return <></>
           }}
         </IDKitWidget>
       )}

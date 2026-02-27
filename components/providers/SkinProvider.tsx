@@ -19,7 +19,7 @@ export function SkinProvider() {
     const root = document.documentElement
 
     if (activeSkinId === 'monochrome') {
-      // Remove overrides — let globals.css theme-aware defaults work
+      // Remove overrides - let globals.css theme-aware defaults work
       root.style.removeProperty('--accent-rgb')
       root.style.removeProperty('--accent-hex')
       root.style.removeProperty('--accent-hover')

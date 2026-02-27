@@ -40,7 +40,7 @@ export function BottomNav() {
         setUnreadNotificationCount(Math.max(0, current + data.delta))
       })
     } catch {
-      // Pusher unavailable — notification badge won't update in real-time
+      // Pusher unavailable - notification badge won't update in real-time
       pusher?.disconnect()
       pusher = null
     }

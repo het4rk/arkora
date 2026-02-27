@@ -8,7 +8,7 @@
  * synonymous topic names.
  */
 
-/** Hardcoded featured boards — always shown first in the picker. */
+/** Hardcoded featured boards - always shown first in the picker. */
 export const FEATURED_BOARDS: { id: string; label: string }[] = [
   { id: 'arkora',      label: 'Arkora' },
   { id: 'technology',  label: 'Technology' },
@@ -103,7 +103,7 @@ export function resolveBoard(input: string, existingIds: string[]): string {
   // Exact match
   if (existingIds.includes(slug)) return slug
 
-  // Typo tolerance — find closest existing board within edit distance 2
+  // Typo tolerance - find closest existing board within edit distance 2
   let best: string | null = null
   let bestDist = 3 // threshold: only match if distance ≤ 2
   for (const id of existingIds) {
@@ -112,7 +112,7 @@ export function resolveBoard(input: string, existingIds: string[]): string {
   }
   if (best) return best
 
-  // New board — return normalized slug
+  // New board - return normalized slug
   return slug
 }
 

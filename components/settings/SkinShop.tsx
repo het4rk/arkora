@@ -194,7 +194,7 @@ export function SkinShop() {
                     {hexSkin.label} Color
                   </p>
                   <p className="text-text-muted text-xs">
-                    {hexOwned ? 'Pick any hex color' : `${hexSkin.priceWld} WLD — unlock any color`}
+                    {hexOwned ? 'Pick any hex color' : `${hexSkin.priceWld} WLD - unlock any color`}
                   </p>
                 </div>
                 {hexOwned && hexActive && (
@@ -204,7 +204,7 @@ export function SkinShop() {
                 )}
               </button>
 
-              {/* Color picker — only when hex is owned and active */}
+              {/* Color picker - only when hex is owned and active */}
               {hexOwned && hexActive && (
                 <div className="flex items-center gap-2 pt-1">
                   <input
@@ -252,7 +252,7 @@ export function SkinShop() {
                 Unlock {confirmSkinData.label}
               </p>
               <p className="text-text-secondary text-sm mt-1">
-                {confirmSkinData.priceWld} WLD — permanent, synced across devices
+                {confirmSkinData.priceWld} WLD - permanent, synced across devices
               </p>
             </div>
 

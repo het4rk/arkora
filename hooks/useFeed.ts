@@ -42,7 +42,7 @@ export function useFeed(
 
   const applyPage = useCallback((fetched: Post[], reset: boolean) => {
     setPosts((prev) => (reset ? fetched : [...prev, ...fetched]))
-    // Hot feed is a ranked snapshot — no pagination
+    // Hot feed is a ranked snapshot - no pagination
     setHasMore(feedMode !== 'hot' && fetched.length === FEED_LIMIT)
     if (fetched.length > 0) {
       const last = fetched[fetched.length - 1]
@@ -72,7 +72,7 @@ export function useFeed(
         if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
       } else if (feedMode === 'hot') {
         params.set('feed', 'hot')
-        // No cursor — hot feed always returns a fresh ranked snapshot
+        // No cursor - hot feed always returns a fresh ranked snapshot
       } else {
         if (!reset && cursorRef.current) params.set('cursor', cursorRef.current)
       }

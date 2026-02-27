@@ -1,5 +1,5 @@
 /**
- * StorageAdapter — pluggable image/file storage interface.
+ * StorageAdapter - pluggable image/file storage interface.
  *
  * Current adapter: local-disk (dev/free, stores in /public/uploads)
  * Next adapter:    Hippius Bittensor subnet (see hippius.ts)

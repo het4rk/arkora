@@ -35,7 +35,7 @@ function toParticipant(row: typeof roomParticipants.$inferSelect): RoomParticipa
   }
 }
 
-// Lazily close rooms past their TTL — called on each list/get request
+// Lazily close rooms past their TTL - called on each list/get request
 async function cleanupExpiredRooms(): Promise<void> {
   await db
     .update(rooms)

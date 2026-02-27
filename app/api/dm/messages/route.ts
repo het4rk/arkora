@@ -24,7 +24,7 @@ async function isBlocked(hashA: string, hashB: string): Promise<boolean> {
 }
 
 // GET /api/dm/messages?otherHash=&cursor=&since=
-// myHash is derived from the auth cookie — never trusted from query params
+// myHash is derived from the auth cookie - never trusted from query params
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -48,8 +48,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/dm/messages — store encrypted message
-// senderHash is derived from the auth cookie — never trusted from body
+// POST /api/dm/messages - store encrypted message
+// senderHash is derived from the auth cookie - never trusted from body
 export async function POST(req: NextRequest) {
   try {
     const { recipientHash, ciphertext, nonce } = (await req.json()) as {
@@ -83,12 +83,12 @@ export async function POST(req: NextRequest) {
 
     const id = await saveDmMessage(senderHash, recipientHash, ciphertext, nonce)
 
-    // Notify recipient — fire-and-forget (DB notification + real-time Pusher ping)
+    // Notify recipient - fire-and-forget (DB notification + real-time Pusher ping)
     void createNotification(recipientHash, 'dm', undefined, senderHash)
 
     // Push the encrypted message to the recipient's personal Pusher channel so
     // their ConversationView receives it instantly without polling.
-    // ciphertext + nonce are already encrypted — safe to transmit over Pusher (TLS).
+    // ciphertext + nonce are already encrypted - safe to transmit over Pusher (TLS).
     void pusherServer.trigger(`private-user-${recipientHash}`, 'new-dm', {
       id,
       senderHash,
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     // Also increment the recipient's unread badge in real-time
     void pusherServer.trigger(`private-user-${recipientHash}`, 'notif-count', { delta: 1 })
 
-    // World App push notification — delivered even when app is closed
+    // World App push notification - delivered even when app is closed
     void worldAppNotify(recipientHash, 'New message', 'You have a new message on Arkora', '/dm')
 
     return NextResponse.json({ success: true, data: { id } }, { status: 201 })

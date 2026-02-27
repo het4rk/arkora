@@ -154,7 +154,7 @@ export function PostComposer() {
   if (!isComposerOpen) return null
 
   const isAnonymousBoard = ANONYMOUS_BOARDS.has(boardId)
-  // Board not in featured list — user created it
+  // Board not in featured list - user created it
   const isCustomBoardActive = !FEATURED_BOARDS.some((b) => b.id === boardId)
 
   return (
@@ -185,7 +185,7 @@ export function PostComposer() {
               </button>
             ))}
 
-            {/* Custom board chip — shown when user selected a custom board */}
+            {/* Custom board chip - shown when user selected a custom board */}
             {isCustomBoardActive && (
               <button
                 type="button"
@@ -241,7 +241,7 @@ export function PostComposer() {
           {isAnonymousBoard && (
             <p className="mt-2.5 text-[11px] text-text-muted flex items-center gap-1">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-              <span>Your identity is completely hidden on this board — no handle, no profile link.</span>
+              <span>Your identity is completely hidden on this board - no handle, no profile link.</span>
             </p>
           )}
         </div>
@@ -288,7 +288,7 @@ export function PostComposer() {
                 className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed"
               />
             </div>
-            {/* Add poll — only when not quoting */}
+            {/* Add poll - only when not quoting */}
             {!composerQuotedPost && (
               <button
                 type="button"
@@ -368,7 +368,7 @@ export function PostComposer() {
           </div>
         )}
 
-        {/* Image attachment — text post only */}
+        {/* Image attachment - text post only */}
         {!isPoll && (
           <ImagePicker
             previewUrl={imageUrl}

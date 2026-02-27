@@ -38,14 +38,14 @@ function stripExif(buf: Buffer): Buffer {
   while (i < buf.length - 1) {
     if (buf[i] !== 0xFF) break
     const marker = buf[i + 1]!
-    // APP1 (EXIF), APP2 (ICC), COM (comments) — skip these segments
+    // APP1 (EXIF), APP2 (ICC), COM (comments) - skip these segments
     if (marker === 0xE1 || marker === 0xE2 || marker === 0xFE) {
       if (i + 3 >= buf.length) break
       const segLen = (buf[i + 2]! << 8) | buf[i + 3]!
       i += 2 + segLen
       continue
     }
-    // SOS (start of scan) — rest is image data, keep everything
+    // SOS (start of scan) - rest is image data, keep everything
     if (marker === 0xDA) {
       clean.push(buf.subarray(i))
       return Buffer.concat(clean)
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
 
     const rawBuffer = Buffer.from(await file.arrayBuffer())
 
-    // Validate magic bytes — file.type is client-supplied and can be spoofed
+    // Validate magic bytes - file.type is client-supplied and can be spoofed
     if (!validateMagicBytes(rawBuffer, file.type)) {
       return NextResponse.json(
         { success: false, error: 'File content does not match declared type' },

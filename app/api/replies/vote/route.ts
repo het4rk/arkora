@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const oldVote = await getReplyVoteByNullifier(replyId, nullifierHash)
     const oldDir = oldVote?.direction ?? 0
 
-    // direction=0 means un-vote — no self-vote check needed
+    // direction=0 means un-vote - no self-vote check needed
     if (direction === 0) {
       const counts = await deleteReplyVote(replyId, nullifierHash)
       if (oldDir !== 0) {

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     const sanitizedUsername = username ? sanitizeLine(username).slice(0, 50) : undefined
 
     const nullifierHash = walletToNullifier(walletAddress)
-    // worldIdVerified: false — wallet-auth only, requires World ID verify to unlock actions
+    // worldIdVerified: false - wallet-auth only, requires World ID verify to unlock actions
     let user = await getOrCreateUser(nullifierHash, walletAddress, sanitizedUsername, false)
 
     // One-time migration: copy pseudoHandle and bio from the linked World ID record if

@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     description: 'A provably human anonymous message board. Every voice is verified.',
     url: 'https://arkora.vercel.app',
     siteName: 'Arkora',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Arkora — Every voice is verified' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Arkora - Every voice is verified' }],
     type: 'website',
   },
   twitter: {

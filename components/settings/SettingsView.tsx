@@ -361,7 +361,7 @@ export function SettingsView() {
                 <div className="px-4 py-3.5">
                   <p className="text-text text-sm font-semibold mb-0.5">Verified on-chain</p>
                   <p className="text-text-muted text-xs leading-relaxed">
-                    Your humanity proof was validated by World Chain&apos;s smart contracts — not by a central server.
+                    Your humanity proof was validated by World Chain&apos;s smart contracts - not by a central server.
                   </p>
                 </div>
                 {walletAddress && !walletAddress.startsWith('idkit_') && (
@@ -422,7 +422,7 @@ export function SettingsView() {
             <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Privacy</p>
             <div className="glass rounded-[var(--r-lg)] px-4 py-4">
               <p className="text-text-secondary text-sm leading-relaxed">
-                Your identity is never stored. Only a cryptographic proof of humanity is used to verify your account — your personal data stays on your device.
+                Your identity is never stored. Only a cryptographic proof of humanity is used to verify your account - your personal data stays on your device.
               </p>
             </div>
           </section>
@@ -452,7 +452,7 @@ export function SettingsView() {
                 </button>
               </div>
 
-              {/* Radius slider — shown whether or not tagging is on (users still pick their feed radius) */}
+              {/* Radius slider - shown whether or not tagging is on (users still pick their feed radius) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-text-muted text-xs">Local feed radius</p>

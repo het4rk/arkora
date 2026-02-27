@@ -1,7 +1,7 @@
 /**
  * Simple in-memory sliding-window rate limiter.
  *
- * Works per server instance — on Vercel each serverless invocation is a fresh process,
+ * Works per server instance - on Vercel each serverless invocation is a fresh process,
  * so this store lives for the lifetime of one warm instance and provides burst protection.
  * Upgrade to Upstash Redis when you need cross-instance enforcement at scale.
  */

@@ -6,7 +6,7 @@ import { useArkoraStore } from '@/store/useArkoraStore'
 import type { HumanUser } from '@/lib/types'
 
 // Silently triggers walletAuth on app open, then auto-verifies the user
-// using a wallet-derived identity — no separate World ID ZK step required.
+// using a wallet-derived identity - no separate World ID ZK step required.
 export function WalletConnect() {
   const { walletAddress, isVerified, user, setWalletAddress, setVerified, hasOnboarded, hasExplicitlySignedOut } = useArkoraStore()
   const attempted = useRef(false)
@@ -23,7 +23,7 @@ export function WalletConnect() {
     attempted.current = true
 
     // ── Fast path: wallet address already persisted ───────────────────────
-    // Always call callUserEndpoint when walletAddress is cached — this:
+    // Always call callUserEndpoint when walletAddress is cached - this:
     //   1. Sets the `arkora-nh` httpOnly session cookie (required for DM auth)
     //   2. Captures the MiniKit username if pseudoHandle is still null
     // MiniKitProvider populates MiniKit.user on mount so the username is
@@ -34,16 +34,16 @@ export function WalletConnect() {
       return
     }
 
-    // Already verified via some other path without a wallet — nothing to do
+    // Already verified via some other path without a wallet - nothing to do
     if (isVerified) return
 
-    // ── Full path: no wallet yet — wait for MiniKit, then walletAuth ──────
+    // ── Full path: no wallet yet - wait for MiniKit, then walletAuth ──────
     let retries = 0
     const MAX_RETRIES = 20 // up to ~6s (20 × 300ms)
     let pendingTimer: ReturnType<typeof setTimeout> | null = null
 
     // MiniKit.isInstalled() internally calls console.error() every time it
-    // returns false — which floods the Next.js dev overlay during our 20-retry
+    // returns false - which floods the Next.js dev overlay during our 20-retry
     // polling loop. We silence ONLY that specific message during retries.
     function silentIsInstalled(): boolean {
       const orig = console.error
@@ -74,7 +74,7 @@ export function WalletConnect() {
             requestId: '0',
             expirationTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             notBefore: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            statement: 'Sign in to Arkora — provably human anonymous message board.',
+            statement: 'Sign in to Arkora - provably human anonymous message board.',
           })
 
           if (finalPayload.status === 'error') return
@@ -101,7 +101,7 @@ export function WalletConnect() {
           setWalletAddress(authJson.walletAddress)
           await callUserEndpoint(authJson.walletAddress, miniKitUsername)
         } catch {
-          // Silent failure — user can still browse anonymously
+          // Silent failure - user can still browse anonymously
         }
       })()
 

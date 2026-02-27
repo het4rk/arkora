@@ -2,7 +2,7 @@ import { getUserByNullifier } from '@/lib/db/users'
 
 /**
  * Sends a native World App push notification to a user identified by their nullifierHash.
- * Fire-and-forget — never throws, never blocks the caller.
+ * Fire-and-forget - never throws, never blocks the caller.
  */
 export async function worldAppNotify(
   recipientHash: string,
@@ -33,6 +33,6 @@ export async function worldAppNotify(
       }),
     }).catch(() => {/* silent */})
   } catch {
-    // Non-critical — never surface push notification failures
+    // Non-critical - never surface push notification failures
   }
 }

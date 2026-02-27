@@ -47,7 +47,7 @@ function NoteCard({
     if (helpful) setHelpfulVotes((v) => v + delta)
     else setNotHelpfulVotes((v) => v + delta)
     if (myVote !== null && myVote !== helpful) {
-      // switching side — undo previous
+      // switching side - undo previous
       if (myVote) setHelpfulVotes((v) => v - 1)
       else setNotHelpfulVotes((v) => v - 1)
     }
@@ -166,7 +166,7 @@ export function ThreadView({ postId }: Props) {
 
   useEffect(() => { void fetchThread() }, [fetchThread])
 
-  // Must be before early returns — hooks cannot be called conditionally
+  // Must be before early returns - hooks cannot be called conditionally
   const sortedReplies = useMemo(() => {
     const sorted = [...(data?.replies ?? [])]
     switch (replySort) {
@@ -209,7 +209,7 @@ export function ThreadView({ postId }: Props) {
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
-      {/* Scrollable content — pb must clear the fixed composer (which covers the nav bar) */}
+      {/* Scrollable content - pb must clear the fixed composer (which covers the nav bar) */}
       <div className="flex-1 overflow-y-auto pb-72">
 
         {/* Back button */}
@@ -310,7 +310,7 @@ export function ThreadView({ postId }: Props) {
                 </svg>
                 <span>{post.quoteCount > 0 ? post.quoteCount : 'Quote'}</span>
               </button>
-              {/* Community Note button — only for verified users */}
+              {/* Community Note button - only for verified users */}
               {isVerified && (
                 <button
                   onClick={() => { haptic('light'); setNoteOpen((o) => !o) }}
@@ -400,7 +400,7 @@ export function ThreadView({ postId }: Props) {
         </div>
       </div>
 
-      {/* Fixed reply composer — z-40 sits above BottomNav (z-30) */}
+      {/* Fixed reply composer - z-40 sits above BottomNav (z-30) */}
       <div className="fixed bottom-0 left-0 right-0 z-40">
         <ReplyComposer
           postId={postId}

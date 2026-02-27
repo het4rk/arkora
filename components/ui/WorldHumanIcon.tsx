@@ -4,7 +4,7 @@ interface Props {
 }
 
 /**
- * World ID "Verified Human" badge icon — blue circle with white human silhouette.
+ * World ID "Verified Human" badge icon - blue circle with white human silhouette.
  * Replaces the plain ✓ checkmark to signal World ID verification.
  */
 export function WorldHumanIcon({ size = 12, className }: Props) {

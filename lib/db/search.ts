@@ -35,14 +35,14 @@ function toPost(row: typeof posts.$inferSelect): Post {
  *
  * Uses PostgreSQL's native tsvector/tsquery for ranked relevance.
  * Falls back to a fast ILIKE scan so short single-token queries (< 3 chars)
- * still get results — tsquery needs at least one lexeme.
+ * still get results - tsquery needs at least one lexeme.
  */
 export async function searchPosts(query: string, limit = 20): Promise<Post[]> {
   limit = Math.min(limit, 50)
   const q = query.trim().slice(0, 200)
   if (!q) return []
 
-  // For very short queries use ILIKE — tsvector strips short tokens
+  // For very short queries use ILIKE - tsvector strips short tokens
   if (q.length < 3) {
     const pattern = `%${q}%`
     const rows = await db

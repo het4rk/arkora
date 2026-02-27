@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
-  // Required for MiniKit — allows World App to frame the app.
+  // Required for MiniKit - allows World App to frame the app.
   // Note: CSP frame-ancestors supersedes X-Frame-Options in all modern browsers.
   async headers() {
     return [
@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
         headers: [
           // Force HTTPS for 2 years; include subdomains and preload list
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-          // Comprehensive CSP — restrict framing to World App, block inline scripts/eval
+          // Comprehensive CSP - restrict framing to World App, block inline scripts/eval
           {
             key: 'Content-Security-Policy',
             value: [
@@ -31,8 +31,8 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",                  // Tailwind injects inline styles
               "img-src 'self' data: blob: https:",                 // Allow images from HTTPS origins
               "font-src 'self'",
-              "connect-src 'self' https://*.pusher.com wss://*.pusher.com https://*.worldcoin.org https://*.alchemy.com",
-              "frame-ancestors 'self' https://worldcoin.org https://*.worldcoin.org",
+              "connect-src 'self' https://*.pusher.com wss://*.pusher.com https://*.worldcoin.org https://*.world.org https://*.alchemy.com",
+              "frame-ancestors 'self' https://worldcoin.org https://*.worldcoin.org https://world.org https://*.world.org",
               "base-uri 'self'",
               "form-action 'self'",
             ].join('; '),

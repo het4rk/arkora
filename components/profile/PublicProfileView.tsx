@@ -147,7 +147,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
                 </div>
               </div>
 
-              {/* Action buttons — hidden on own profile */}
+              {/* Action buttons - hidden on own profile */}
               {!isOwnProfile && (
                 <div className="shrink-0 flex flex-col gap-2">
                   <button
@@ -175,7 +175,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
                   >
                     Tip WLD
                   </button>
-                  {/* Subscribe — only for named identity profiles */}
+                  {/* Subscribe - only for named identity profiles */}
                   {data?.user?.identityMode === 'named' && (
                     <button
                       onClick={() => {
@@ -226,7 +226,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
         </div>
       </div>
 
-      {/* Modals — wrapped in AnimatePresence for spring exit animation */}
+      {/* Modals - wrapped in AnimatePresence for spring exit animation */}
       <AnimatePresence>
         {tipOpen && (
           <TipModal

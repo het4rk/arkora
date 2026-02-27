@@ -10,7 +10,7 @@ import { haptic } from '@/lib/utils'
 interface Props {
   recipientHash: string
   recipientName: string
-  /** Pre-fetched wallet — skips extra /api/u round-trip when available. */
+  /** Pre-fetched wallet - skips extra /api/u round-trip when available. */
   recipientWallet?: string | undefined
   onClose: () => void
 }
@@ -55,7 +55,7 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
       if (!wallet) throw new Error('Could not find recipient wallet')
 
       const result = await sendWld(wallet, amount, `Tip to ${recipientName}`)
-      // null means user cancelled or transaction failed — don't record
+      // null means user cancelled or transaction failed - don't record
       if (!result) {
         setState('pick')
         return

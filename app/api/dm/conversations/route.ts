@@ -3,7 +3,7 @@ import { getConversations } from '@/lib/db/dm'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
 
-// GET /api/dm/conversations — returns conversations for the authenticated caller
+// GET /api/dm/conversations - returns conversations for the authenticated caller
 export async function GET(req: NextRequest) {
   try {
     const nullifierHash = await getCallerNullifier()

@@ -4,7 +4,7 @@ import { MiniKit, Tokens, Network } from '@worldcoin/minikit-js'
 import { parseEther } from 'viem'
 
 /**
- * Sends a WLD payment via MiniKit.pay() — the official World 4.0 payment flow.
+ * Sends a WLD payment via MiniKit.pay() - the official World 4.0 payment flow.
  * Uses reference tracking for Developer Portal integration.
  * Returns { txId, reference } on success, null on failure/cancel.
  */

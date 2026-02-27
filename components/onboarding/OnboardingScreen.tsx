@@ -16,7 +16,7 @@ const SLIDES = [
     ),
     heading: 'Arkora',
     sub: 'Where verified humans connect.',
-    body: 'Every person here has proven their humanity through World ID. No bots, no fake accounts — just authentic conversations between real people.',
+    body: 'Every person here has proven their humanity through World ID. No bots, no fake accounts - just authentic conversations between real people.',
   },
   {
     icon: (
@@ -43,7 +43,7 @@ const SLIDES = [
     ),
     heading: 'Verified, never exposed',
     sub: 'Privacy by design.',
-    body: 'Your World ID proof is validated on-chain. We never see your personal data — only that you\'re a unique, verified human.',
+    body: 'Your World ID proof is validated on-chain. We never see your personal data - only that you\'re a unique, verified human.',
   },
 ]
 
@@ -73,7 +73,7 @@ export function OnboardingScreen() {
   const slide = SLIDES[step]!
   const isLast = step === SLIDES.length - 1
 
-  // "Browse as guest" — dismiss onboarding, user views feed without verifying.
+  // "Browse as guest" - dismiss onboarding, user views feed without verifying.
   // Any action requiring identity will trigger the verify sheet naturally.
   function browseAsGuest() {
     haptic('light')
@@ -166,7 +166,7 @@ export function OnboardingScreen() {
           {isLast ? 'Get started' : 'Continue'}
         </button>
 
-        {/* Guest option — only on last slide */}
+        {/* Guest option - only on last slide */}
         {isLast && (
           <button
             onClick={browseAsGuest}

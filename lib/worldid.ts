@@ -56,7 +56,7 @@ function getClient() {
 
 /**
  * Verifies a World ID proof against the WorldIDRouter contract on World Chain.
- * This is an eth_call (view function) — no gas, no transaction, no user signing.
+ * This is an eth_call (view function) - no gas, no transaction, no user signing.
  *
  * If the contract doesn't revert, the proof is valid.
  */

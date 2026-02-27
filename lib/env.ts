@@ -46,7 +46,7 @@ export function validateEnv(): void {
 }
 
 /**
- * Type-safe env accessor — throws if the var is not set.
+ * Type-safe env accessor - throws if the var is not set.
  * Use this instead of `process.env.FOO!` to get clear errors.
  */
 export function requireEnv(key: string): string {

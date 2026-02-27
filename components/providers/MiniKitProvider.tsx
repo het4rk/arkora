@@ -8,7 +8,7 @@ interface Props {
 }
 
 // MiniKitProvider wraps the app for World App event interception.
-// No appId prop — MiniKit reads it from the World App WebView context.
+// No appId prop - MiniKit reads it from the World App WebView context.
 export function MiniKitProvider({ children }: Props) {
   return <WorldMiniKitProvider>{children}</WorldMiniKitProvider>
 }
