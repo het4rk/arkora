@@ -377,6 +377,7 @@ activeRoomId                                             — currently joined ro
 - [ ] Custom domain (`arkora.world` or similar)
 
 - [x] Sprint 13: Onchain World ID verification (WorldIDRouter on World Chain), verifiedBlockNumber, identity merge fix
+- [x] Sprint 14: ArkoraNullifierRegistry.sol contract + server-side registration (lib/registry.ts), post SHA-256 content hashes (tamper evidence), registrationTxHash in settings UI
 
 ### Previous Sprints
 - [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)
