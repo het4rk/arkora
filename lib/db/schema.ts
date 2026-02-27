@@ -104,6 +104,9 @@ export const humanUsers = pgTable(
     verifiedBlockNumber: bigint('verified_block_number', { mode: 'bigint' }),
     // Tx hash from ArkoraNullifierRegistry.register() on World Chain. Null until contract is deployed.
     registrationTxHash: text('registration_tx_hash'),
+    // Skin / accent color preference
+    activeSkinId: text('active_skin_id').default('monochrome'),
+    customHex: text('custom_hex'), // only used when activeSkinId = 'hex'
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
@@ -325,8 +328,26 @@ export const subscriptions = pgTable(
   })
 )
 
+// ── Skin Purchases ───────────────────────────────────────────────────────────
+export const skinPurchases = pgTable(
+  'skin_purchases',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    buyerHash: text('buyer_hash').notNull(),
+    skinId: text('skin_id').notNull(),
+    amountWld: text('amount_wld').notNull(),
+    txId: text('tx_id'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    buyerIdx: index('skin_purchases_buyer_idx').on(t.buyerHash),
+    uniquePurchase: unique('skin_purchases_unique').on(t.buyerHash, t.skinId),
+  })
+)
+
 export type DbTip = typeof tips.$inferSelect
 export type DbSubscription = typeof subscriptions.$inferSelect
+export type DbSkinPurchase = typeof skinPurchases.$inferSelect
 
 // ── Reports ──────────────────────────────────────────────────────────────────
 export const reports = pgTable(

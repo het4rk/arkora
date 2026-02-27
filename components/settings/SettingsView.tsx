@@ -7,6 +7,7 @@ import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkoraStore'
 import { generateAlias } from '@/lib/session'
 import { cn } from '@/lib/utils'
+import { SkinShop } from '@/components/settings/SkinShop'
 
 // Discrete radius options in miles; -1 means "entire country"
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
@@ -239,6 +240,9 @@ export function SettingsView() {
               ))}
             </div>
           </section>
+
+          {/* ── Accent Color (Skin Shop) ─────────────────────────── */}
+          <SkinShop />
 
           {/* ── Account ──────────────────────────────────────────── */}
           <section className="space-y-3">

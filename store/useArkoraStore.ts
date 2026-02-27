@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { HumanUser, BoardId, Post } from '@/lib/types'
+import type { SkinId } from '@/lib/skins'
 
 export type IdentityMode = 'anonymous' | 'alias' | 'named'
 export type Theme = 'dark' | 'light'
@@ -21,6 +22,9 @@ interface ArkoraState {
 
   // Appearance
   theme: Theme
+  activeSkinId: SkinId
+  customHex: string | null
+  ownedSkins: SkinId[]
 
   // Onboarding
   hasOnboarded: boolean
@@ -83,6 +87,8 @@ interface ArkoraState {
   setUnreadNotificationCount: (count: number) => void
   setActiveRoomId: (id: string | null) => void
   setHasExplicitlySignedOut: (v: boolean) => void
+  setActiveSkin: (skinId: SkinId, customHex?: string | null) => void
+  setOwnedSkins: (skins: SkinId[]) => void
   reset: () => void
   signOut: () => void
 }
@@ -95,6 +101,9 @@ const initialState = {
   identityMode: 'anonymous' as IdentityMode,
   persistentAlias: null,
   theme: 'dark' as Theme,
+  activeSkinId: 'monochrome' as SkinId,
+  customHex: null as string | null,
+  ownedSkins: [] as SkinId[],
   hasOnboarded: false,
   activeBoard: null,
   activeRoomId: null,
@@ -177,6 +186,11 @@ export const useArkoraStore = create<ArkoraState>()(
 
       setHasExplicitlySignedOut: (v) => set({ hasExplicitlySignedOut: v }),
 
+      setActiveSkin: (skinId, customHex) =>
+        set({ activeSkinId: skinId, customHex: customHex ?? null }),
+
+      setOwnedSkins: (skins) => set({ ownedSkins: skins }),
+
       reset: () => set(initialState),
 
       // Clears auth state only — preserves theme, identity prefs, location settings, and onboarding flag
@@ -194,6 +208,9 @@ export const useArkoraStore = create<ArkoraState>()(
           isVerifySheetOpen: false,
           isDrawerOpen: false,
           isSearchOpen: false,
+          activeSkinId: 'monochrome' as SkinId,
+          customHex: null,
+          ownedSkins: [],
           hasExplicitlySignedOut: true,
         }),
     }),
@@ -207,6 +224,9 @@ export const useArkoraStore = create<ArkoraState>()(
         identityMode: state.identityMode,
         persistentAlias: state.persistentAlias,
         theme: state.theme,
+        activeSkinId: state.activeSkinId,
+        customHex: state.customHex,
+        ownedSkins: state.ownedSkins,
         hasOnboarded: state.hasOnboarded,
         locationEnabled: state.locationEnabled,
         locationRadius: state.locationRadius,

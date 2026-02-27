@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { MiniKitProvider } from '@/components/providers/MiniKitProvider'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
+import { SkinProvider } from '@/components/providers/SkinProvider'
 import { WalletConnect } from '@/components/auth/WalletConnect'
 import { BottomNav } from '@/components/ui/BottomNav'
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen'
@@ -56,6 +57,7 @@ export default function RootLayout({
       <body className="bg-background text-text min-h-screen">
         <MiniKitProvider>
           <ThemeProvider />
+          <SkinProvider />
           <TopBar />
           {/* Auto-triggers walletAuth on mount */}
           <SessionHydrator />

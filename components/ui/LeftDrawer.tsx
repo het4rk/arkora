@@ -8,6 +8,7 @@ import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkora
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { generateAlias } from '@/lib/session'
 import { cn, formatDisplayName } from '@/lib/utils'
+import { SKINS, type SkinId } from '@/lib/skins'
 
 /* ─── Privacy options ──────────────────────────────────────────────────── */
 const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: JSX.Element }[] = [
@@ -30,6 +31,7 @@ export function LeftDrawer() {
     theme, setTheme,
     isVerified, nullifierHash, persistentAlias, setPersistentAlias,
     user, signOut,
+    activeSkinId, ownedSkins, setActiveSkin,
   } = useArkoraStore()
 
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
@@ -216,6 +218,60 @@ export function LeftDrawer() {
                       </span>
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-border/20" />
+
+              {/* Accent color */}
+              <div>
+                <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">
+                  Accent Color
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SKINS.filter((s) => s.id !== 'hex').map((skin) => {
+                    const owned = skin.id === 'monochrome' || ownedSkins.includes(skin.id)
+                    const active = activeSkinId === skin.id
+                    return (
+                      <button
+                        key={skin.id}
+                        onClick={() => {
+                          if (owned) {
+                            setActiveSkin(skin.id)
+                            void fetch('/api/skins/activate', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ skinId: skin.id }),
+                            })
+                          } else {
+                            setDrawerOpen(false)
+                            router.push('/settings')
+                          }
+                        }}
+                        className={cn(
+                          'w-7 h-7 rounded-full border-2 transition-all relative',
+                          active ? 'border-text scale-110' : owned ? 'border-border' : 'border-border/40 opacity-50'
+                        )}
+                        style={skin.hex ? { backgroundColor: skin.hex } : undefined}
+                      >
+                        {skin.id === 'monochrome' && (
+                          <div className="absolute inset-0.5 rounded-full overflow-hidden">
+                            <div className="absolute inset-0 left-0 right-1/2 bg-black" />
+                            <div className="absolute inset-0 left-1/2 bg-white" />
+                          </div>
+                        )}
+                        {!owned && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-md">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>

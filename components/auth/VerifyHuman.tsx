@@ -5,7 +5,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useVerification } from '@/hooks/useVerification'
-import { IDKitWidget, VerificationLevel, type ISuccessResult } from '@worldcoin/idkit'
+import { IDKitWidget, VerificationLevel, type ISuccessResult, type IErrorState } from '@worldcoin/idkit'
 
 export function VerifyHuman() {
   const { isVerifySheetOpen, setVerifySheetOpen, isVerified } = useArkoraStore()
@@ -61,7 +61,7 @@ export function VerifyHuman() {
           verification_level={VerificationLevel.Orb}
           handleVerify={(proof: ISuccessResult) => handleDesktopVerify(proof)}
           onSuccess={onDesktopSuccess}
-          onError={() => {
+          onError={(_error: IErrorState) => {
             setTimeout(() => setVerifySheetOpen(true), 100)
           }}
         >

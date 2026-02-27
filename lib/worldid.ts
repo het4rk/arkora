@@ -102,7 +102,24 @@ export async function verifyWorldIdProof(
     }
 
     console.error('[worldid] Verification failed:', message)
-    return { success: false, error: 'Proof verification failed' }
+
+    if (message.includes('ExpiredRoot') || message.includes('NonExistentRoot')) {
+      return { success: false, error: 'expired_root' }
+    }
+
+    if (
+      message.includes('fetch') ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('timeout') ||
+      message.includes('ETIMEDOUT') ||
+      message.includes('503') ||
+      message.includes('502') ||
+      message.includes('429')
+    ) {
+      return { success: false, error: 'network_error' }
+    }
+
+    return { success: false, error: 'invalid_proof' }
   }
 }
 
