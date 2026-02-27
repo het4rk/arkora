@@ -1,5 +1,10 @@
 # Arkora
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![CI](https://github.com/het4rk/arkora/actions/workflows/ci.yml/badge.svg)](https://github.com/het4rk/arkora/actions/workflows/ci.yml)
+
+**Open source.** MIT licensed. Contributions welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 **Twitter:** [@humansposting](https://x.com/humansposting)
 
 A provably human anonymous message board. Every voice is verified.
@@ -314,4 +319,4 @@ To report a vulnerability, see [SECURITY.md](./SECURITY.md). Do not open public 
 
 ## License
 
-MIT
+[MIT](./LICENSE) — Copyright © 2026 Arkora (by Hetark). Free to use, fork, and build on.
