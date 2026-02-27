@@ -40,6 +40,7 @@ export const posts = pgTable(
     countryCode: text('country_code'),
     // Number of unique reports - posts with 5+ are hidden from public feeds
     reportCount: integer('report_count').default(0).notNull(),
+    viewCount: integer('view_count').default(0).notNull(),
     // keccak256(id + title + body + nullifierHash) - tamper-evidence fingerprint set at creation.
     contentHash: text('content_hash'),
     // Poll fields - only set when type = 'poll'
@@ -151,6 +152,21 @@ export const postVotes = pgTable(
     pk: primaryKey({ columns: [table.postId, table.nullifierHash] }),
     // Separate index so "get all posts voted by user" doesn't scan from postId
     nullifierIdx: index('post_votes_nullifier_hash_idx').on(table.nullifierHash),
+  })
+)
+
+// One row per verified human per post - composite PK enforces deduplication
+export const postViews = pgTable(
+  'post_views',
+  {
+    postId: uuid('post_id')
+      .references(() => posts.id, { onDelete: 'cascade' })
+      .notNull(),
+    nullifierHash: text('nullifier_hash').notNull(),
+    viewedAt: timestamp('viewed_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.postId, table.nullifierHash] }),
   })
 )
 

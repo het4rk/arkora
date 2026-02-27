@@ -27,6 +27,10 @@ interface Props {
   authorKarmaScore?: number | null
 }
 
+function formatCount(n: number): string {
+  return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n)
+}
+
 export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, isBookmarked, pollResults, userVote, authorKarmaScore }: Props) {
   const router = useRouter()
   const { nullifierHash, setComposerQuotedPost, setComposerOpen } = useArkoraStore()
@@ -277,6 +281,15 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
               </svg>
             )}
           </button>
+          {post.viewCount > 0 && (
+            <div className="flex items-center gap-1 text-text-muted text-xs">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span>{formatCount(post.viewCount)}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5 text-text-muted text-xs">
             <span className="opacity-40 text-[10px]">›</span>
             <span>

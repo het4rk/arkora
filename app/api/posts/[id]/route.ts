@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPostById, deletePost } from '@/lib/db/posts'
+import { getPostById, deletePost, recordView } from '@/lib/db/posts'
 import { getRepliesByPostId } from '@/lib/db/replies'
 import { getNotesByPostId } from '@/lib/db/communityNotes'
 import { getPollResults, getUserVote } from '@/lib/db/polls'
@@ -28,6 +28,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
     }
 
     const nullifierHash = await getCallerNullifier()
+
+    // Fire-and-forget: record view without blocking the response
+    if (nullifierHash) void recordView(id, nullifierHash)
 
     // Fetch author karma + poll data in parallel
     const [authorKarmaScore, pollResultsRaw, userVoteRaw] = await Promise.all([

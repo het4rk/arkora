@@ -1,5 +1,5 @@
 import { db } from './index'
-import { posts, postVotes, humanUsers } from './schema'
+import { posts, postVotes, postViews, humanUsers } from './schema'
 import { eq, desc, lt, and, sql, aliasedTable, inArray } from 'drizzle-orm'
 import type { Post, BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
@@ -26,6 +26,7 @@ function toPost(
     downvotes: row.downvotes,
     replyCount: row.replyCount,
     quoteCount: row.quoteCount,
+    viewCount: row.viewCount,
     createdAt: row.createdAt,
     quotedPostId: row.quotedPostId ?? null,
     quotedPost: quoted ? toPost(quoted) : null,
@@ -169,6 +170,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
       imageUrl: (r['image_url'] as string | null) ?? null,
       upvotes: r['upvotes'] as number, downvotes: r['downvotes'] as number,
       replyCount: r['reply_count'] as number, quoteCount: r['quote_count'] as number,
+      viewCount: (r['view_count'] as number | null) ?? 0,
       createdAt: new Date(r['created_at'] as string),
       quotedPostId: (r['quoted_post_id'] as string | null) ?? null,
       quotedPost: null,
@@ -191,6 +193,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         imageUrl: (r['q_image_url'] as string | null) ?? null,
         upvotes: r['q_upvotes'] as number, downvotes: r['q_downvotes'] as number,
         replyCount: r['q_reply_count'] as number, quoteCount: r['q_quote_count'] as number,
+        viewCount: 0,
         createdAt: new Date(r['q_created_at'] as string),
         quotedPostId: (r['q_quoted_post_id'] as string | null) ?? null,
         quotedPost: null,
@@ -249,6 +252,20 @@ export async function getVoteByNullifier(
     .limit(1)
 
   return row ? { direction: row.direction } : null
+}
+
+/** Record a verified-human view. One row per (postId, nullifierHash) - deduped by composite PK. */
+export async function recordView(postId: string, nullifierHash: string): Promise<void> {
+  await db.execute(
+    sql`WITH ins AS (
+          INSERT INTO post_views (post_id, nullifier_hash)
+          VALUES (${postId}, ${nullifierHash})
+          ON CONFLICT (post_id, nullifier_hash) DO NOTHING
+        )
+        UPDATE posts
+        SET view_count = (SELECT COUNT(*) FROM post_views WHERE post_id = ${postId})
+        WHERE id = ${postId}`
+  )
 }
 
 export async function upsertVote(
@@ -429,6 +446,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
       imageUrl: (r['image_url'] as string | null) ?? null,
       upvotes: r['upvotes'] as number, downvotes: r['downvotes'] as number,
       replyCount: r['reply_count'] as number, quoteCount: r['quote_count'] as number,
+      viewCount: (r['view_count'] as number | null) ?? 0,
       createdAt: new Date(r['created_at'] as string),
       quotedPostId: (r['quoted_post_id'] as string | null) ?? null,
       quotedPost: null,
@@ -451,6 +469,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
         imageUrl: (r['q_image_url'] as string | null) ?? null,
         upvotes: r['q_upvotes'] as number, downvotes: r['q_downvotes'] as number,
         replyCount: r['q_reply_count'] as number, quoteCount: r['q_quote_count'] as number,
+        viewCount: 0,
         createdAt: new Date(r['q_created_at'] as string),
         quotedPostId: (r['q_quoted_post_id'] as string | null) ?? null,
         quotedPost: null,

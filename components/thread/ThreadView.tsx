@@ -326,6 +326,16 @@ export function ThreadView({ postId }: Props) {
                 </button>
               )}
               <BookmarkButton postId={post.id} />
+              {post.viewCount > 0 && (
+                <span className="text-text-muted text-xs flex items-center gap-1">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  {post.viewCount >= 1000 ? `${(post.viewCount / 1000).toFixed(1).replace(/\.0$/, '')}k` : post.viewCount}{' '}
+                  {post.viewCount === 1 ? 'view' : 'views'}
+                </span>
+              )}
               <span className="text-text-muted text-xs">
                 {post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}
               </span>
