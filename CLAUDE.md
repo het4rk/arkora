@@ -166,11 +166,27 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] Styled `@handle` spans in post body (ThreadView) and reply body (ReplyCard)
 - [x] `GET /api/users/search?q=<prefix>` autocomplete endpoint (rate limited 20/min)
 
+### Sprint 21 — Boards Expansion, Rooms UI Upgrade, Share, Live Rooms in Feed
+
+- [x] **40 featured boards** — expanded from 6; covers Tech, Finance, Entertainment, Science, Lifestyle, Community
+- [x] **BoardPicker component** (`components/ui/BoardPicker.tsx`) — collapsible search + scrollable chip grid; fuzzy dedup via `resolveBoard()` (synonym dict + Levenshtein ≤2); "+ #new" chip for genuinely new boards; Enter commits; used in PostComposer + CreateRoomSheet
+- [x] **Dynamic boards page** (`app/boards/page.tsx`) — fetches `/api/boards`, search filter, post counts
+- [x] **Live rooms in feed** (`components/feed/LiveRoomsStrip.tsx`) — horizontal strip at top of feed; auto-refreshes every 30s; filtered by active board; disappears when no rooms live
+- [x] **Voice-room style UI** (RoomView) — Clubhouse-style participant grid; each avatar pulses accent + animated equalizer bars for 4s after participant sends a message; host crown badge; mic-off badge when muted
+- [x] **Self-mute toggle** — users can mute themselves independent of host; shares same accent/glass visual language as speaking indicator
+- [x] **Share buttons everywhere** — `shareUrl()` utility in `lib/utils.ts`; uses `navigator.share()` on iOS/World App (native share sheet); clipboard fallback on desktop with check-mark feedback; added to ThreadCard (posts), RoomView header, RoomCard (from discovery page)
+- [x] **Max participants slider removed** — fixed at 100 server-side; no longer user-configurable
+- [x] **Profile picture upload** — avatar upload in Settings via Hippius S3; shown on profiles
+- [x] **Notification gaps** — `getUsersByHandles()` batch query; mention/quote/repost push notifications via World App notify API
+- [x] **CodeQL security fixes** — resolved 4 High alerts: UUID validation in polls/batch (CWE-915), nonce check ordering in SIWE auth (CWE-807), action param server-side only + nullifier_hash regex in verify route (CWE-807)
+- [x] **Sound wave animations** — `globals.css` keyframes + `.sound-bar` classes; RoomComposer shows waves while typing; RoomView header pulses when room is active
+
 ### Rooms (Phase 1 — Text-only, Ephemeral)
 - [x] Create/join/leave ephemeral text rooms (auto-expire after 2 hours)
 - [x] Identity chosen at join time (anonymous / alias / named)
 - [x] Real-time messages via Pusher presence channels (ephemeral, no DB storage)
 - [x] Host controls: mute / kick participants
+- [x] Self-mute (user-controlled, independent of host)
 - [x] Rooms discovery page (`/rooms`) with board filter
 - [x] Rooms link in LeftDrawer
 - [x] Pusher presence auth endpoint (`/api/pusher/auth`)
@@ -481,6 +497,7 @@ chore(deps): upgrade vitest to 4.0.18
 - [ ] Playwright E2E tests (post-launch)
 - [ ] Custom domain (`arkora.world` or similar)
 
+- [x] Sprint 21: 40 boards + BoardPicker + dynamic boards page; live rooms in feed (auto-refresh); voice-room style UI (participant grid, per-participant speaking state, self-mute); share buttons on posts + rooms; sound wave animations; profile picture upload; notification gaps (mention/quote/repost push); CodeQL High security fixes (4 alerts)
 - [x] Sprint 20 (open source + CI/CD): Vitest unit test suite (69 tests), MIT + CI badges, open source declaration, @sentry/cli build fix, signout cookie `secure: true`, Bittensor decentralization architecture in README, branch protection on main (enforced via GitHub API post-public), SDLC workflow documented
 - [x] Sprint 13: Onchain World ID verification (WorldIDRouter on World Chain), verifiedBlockNumber, identity merge fix
 - [x] Sprint 14: ArkoraNullifierRegistry.sol contract + server-side registration (lib/registry.ts), post SHA-256 content hashes (tamper evidence), registrationTxHash in settings UI
