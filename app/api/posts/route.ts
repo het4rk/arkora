@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPost, getPostNullifier } from '@/lib/db/posts'
-import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
+import { sanitizeLine, sanitizeText, parseMentions } from '@/lib/sanitize'
 import { getFeedFollowing } from '@/lib/db/follows'
-import { isVerifiedHuman } from '@/lib/db/users'
+import { isVerifiedHuman, getUsersByHandles } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { getCachedFeed, getCachedLocalFeed, getCachedHotFeed, invalidatePosts } from '@/lib/cache'
@@ -245,19 +245,37 @@ export async function POST(req: NextRequest) {
     })
     invalidatePosts()
 
-    // Notify quoted post author - fire-and-forget
-    if (quotedPostId) {
-      void (async () => {
-        try {
+    // Notify quoted/reposted author + @mentions - fire-and-forget
+    void (async () => {
+      try {
+        if (quotedPostId) {
           const quotedOwner = await getPostNullifier(quotedPostId)
           if (quotedOwner && quotedOwner !== nullifierHash) {
             const notifType = isRepost ? 'repost' : 'quote'
             await createNotification(quotedOwner, notifType, quotedPostId, nullifierHash)
             void pusherServer.trigger(`private-user-${quotedOwner}`, 'notif-count', { delta: 1 })
+            const label = isRepost ? 'reposted your post' : 'quoted your post'
+            void worldAppNotify(quotedOwner, isRepost ? 'New repost' : 'New quote', `Someone ${label}`, `/posts/${quotedPostId}`)
           }
-        } catch { /* non-critical */ }
-      })()
-    }
+        }
+
+        // @mention notifications (named-mode posts only - body may have @handles)
+        const rawBody = typeof body.body === 'string' ? body.body : ''
+        const handles = parseMentions(rawBody)
+        if (handles.length > 0) {
+          const mentioned = await getUsersByHandles(handles)
+          await Promise.all(
+            mentioned
+              .filter((u) => u.nullifierHash !== nullifierHash)
+              .map(async (u) => {
+                await createNotification(u.nullifierHash, 'mention', post.id, nullifierHash)
+                void pusherServer.trigger(`private-user-${u.nullifierHash}`, 'notif-count', { delta: 1 })
+                void worldAppNotify(u.nullifierHash, 'You were mentioned', 'Someone mentioned you in a post', `/posts/${post.id}`)
+              })
+          )
+        }
+      } catch { /* non-critical */ }
+    })()
 
     return NextResponse.json({ success: true, data: post }, { status: 201 })
   } catch (err) {
