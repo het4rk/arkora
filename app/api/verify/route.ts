@@ -8,7 +8,7 @@ import { rateLimit } from '@/lib/rateLimit'
 
 interface RequestBody {
   payload: ISuccessResult
-  action: string
+  action?: string  // accepted but ignored — server uses NEXT_PUBLIC_ACTION_ID env var
   walletAddress?: string
   signal?: string
 }
@@ -54,14 +54,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = (await req.json()) as RequestBody
-    const { payload, action, walletAddress, signal } = body
+    const { payload, walletAddress, signal } = body
 
-    if (!payload || !action) {
+    if (!payload) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       )
     }
+
+    // Ignore client-provided action — always verify against the server-configured action
+    // to prevent action manipulation attacks (attacker replaying a proof from a different action)
+    const action = process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman'
 
     // Validate walletAddress format if provided (EVM address: 0x + 40 hex chars)
     if (walletAddress !== undefined && walletAddress !== null && walletAddress !== '') {
@@ -80,7 +84,9 @@ export async function POST(req: NextRequest) {
         result.error?.toLowerCase().includes('already') ||
         result.error?.toLowerCase().includes('max_verifications')
 
-      if (alreadyVerified && payload.nullifier_hash) {
+      // Validate nullifier_hash format: 0x-prefixed hex (BN254 field element, up to 64 hex chars)
+      const NULLIFIER_RE = /^0x[0-9a-fA-F]{1,64}$/
+      if (alreadyVerified && payload.nullifier_hash && NULLIFIER_RE.test(payload.nullifier_hash)) {
         const existingUser = await getUserByNullifier(payload.nullifier_hash)
         if (existingUser) {
           const { nullifierHash: sessionHash, user: sessionUser } =

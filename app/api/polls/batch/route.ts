@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const postIdsParam = searchParams.get('postIds') ?? ''
-    const postIds = postIdsParam.split(',').filter(Boolean).slice(0, 50)
+    // Validate UUID format before using as object property keys (prevents remote property injection)
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    const postIds = postIdsParam.split(',').filter(Boolean).filter((id) => UUID_RE.test(id)).slice(0, 50)
 
     if (postIds.length === 0) {
       return NextResponse.json({ success: true, data: {} })

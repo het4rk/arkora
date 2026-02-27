@@ -162,7 +162,7 @@ export default function PrivacyPage() {
           <h2 className="text-base font-semibold text-text">11. Contact</h2>
           <p>
             For privacy inquiries or data requests, email us at{' '}
-            <a href="mailto:privacy@arkora.app" className="text-accent hover:underline">privacy@arkora.app</a>.
+            <a href="mailto:arkhet@arkora.info" className="text-accent hover:underline">arkhet@arkora.info</a>.
             You may also open an issue at our{' '}
             <a href="https://github.com/het4rk/arkora" className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">public repository</a>.
             We will respond within 30 days.
