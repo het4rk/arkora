@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const feed = searchParams.get('feed')
     const cursor = searchParams.get('cursor') ?? undefined
-    const limit = parseInt(searchParams.get('limit') ?? '10', 10)
+    const rawLimit = searchParams.get('limit') ?? '10'
+    const limit = /^\d+$/.test(rawLimit) ? Math.min(parseInt(rawLimit, 10), 50) : 10
 
     // Following feed - caller identity from cookie
     if (feed === 'following') {

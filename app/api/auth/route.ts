@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import {
   verifySiweMessage,
   type MiniAppWalletAuthSuccessPayload,
@@ -21,10 +22,24 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as RequestBody
     const { payload, nonce } = body
 
+    // Validate nonce format: must be 32 lowercase hex chars (UUID without hyphens)
+    if (!nonce || !/^[0-9a-f]{32}$/.test(nonce)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or expired nonce' },
+        { status: 400 }
+      )
+    }
+
     const cookieStore = await cookies()
     const storedNonce = cookieStore.get('siwe-nonce')?.value
 
-    if (!storedNonce || storedNonce !== nonce) {
+    // Constant-time comparison prevents timing oracle attacks
+    const storedBuf = Buffer.from(storedNonce ?? '', 'utf8')
+    const providedBuf = Buffer.from(nonce, 'utf8')
+    const nonceValid =
+      storedBuf.length === providedBuf.length && timingSafeEqual(storedBuf, providedBuf)
+
+    if (!storedNonce || !nonceValid) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired nonce' },
         { status: 400 }
