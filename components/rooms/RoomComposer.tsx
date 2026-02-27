@@ -53,6 +53,13 @@ export function RoomComposer({ roomId, isMuted, onSent }: RoomComposerProps) {
         <p className="text-[11px] text-text-secondary mb-2 text-center">{sendError}</p>
       )}
       <div className="flex items-center gap-2">
+      {draft.trim().length > 0 && (
+        <div className="flex items-end gap-[2.5px] text-accent shrink-0 sound-wave-active">
+          <span className="sound-bar sound-bar-2" />
+          <span className="sound-bar sound-bar-4" />
+          <span className="sound-bar sound-bar-3" />
+        </div>
+      )}
       <input
         ref={inputRef}
         type="text"
