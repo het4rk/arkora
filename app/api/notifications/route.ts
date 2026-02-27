@@ -59,6 +59,9 @@ export async function POST() {
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
+    if (!rateLimit(`notif-mark:${nullifierHash}`, 20, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
     await markAllRead(nullifierHash)
     return NextResponse.json({ success: true })
   } catch (err) {

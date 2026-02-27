@@ -7,11 +7,15 @@ import { rateLimit } from '@/lib/rateLimit'
 const VALID_IDENTITY_MODES = new Set(['anonymous', 'alias', 'named'])
 
 /** Returns the authenticated user from the session cookie. Used by ProfileView to refresh stale store data. */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const nullifierHash = await getCallerNullifier()
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+    const ip = req.headers.get('x-forwarded-for') ?? 'anon'
+    if (!rateLimit(`auth-user-get:${ip}`, 60, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
     const user = await getUserByNullifier(nullifierHash)
     if (!user) {
@@ -86,6 +90,10 @@ export async function PATCH(req: NextRequest) {
     const nullifierHash = await getCallerNullifier()
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!rateLimit(`auth-user-patch:${nullifierHash}`, 10, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const body = (await req.json()) as {

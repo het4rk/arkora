@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { kickParticipant } from '@/lib/db/rooms'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { rateLimit } from '@/lib/rateLimit'
 import { pusherServer } from '@/lib/pusher'
 
 // POST /api/rooms/[id]/kick
@@ -15,6 +16,10 @@ export async function POST(
     }
 
     const { id } = await params
+
+    if (!rateLimit(`room-kick:${id}:${callerHash}`, 10, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
     const body = (await req.json()) as { targetHash?: string }
 
     if (!body.targetHash) {
