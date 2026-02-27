@@ -317,3 +317,27 @@ h1, h2, h3, h4, h5, h6 {
   background: #fff;
   border-color: rgba(var(--accent-rgb), 0.45);
 }
+
+
+/* ─── Sound wave / voice activity bars ───────────────────────────────────────
+   Used in rooms to indicate live activity and typing state.               */
+@keyframes soundBar {
+  0%, 100% { transform: scaleY(0.25); opacity: 0.5; }
+  50%       { transform: scaleY(1);    opacity: 1;   }
+}
+
+/* ─── Sound wave bars (rooms) ────────────────────────────────────────────── */
+.sound-bar {
+  display: block;
+  width: 3px;
+  border-radius: 9999px;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: soundBar 1.1s ease-in-out infinite;
+}
+.sound-wave-active .sound-bar { animation-duration: 0.5s; }
+.sound-bar-1 { height: 8px;  animation-delay: 0ms; }
+.sound-bar-2 { height: 14px; animation-delay: 160ms; }
+.sound-bar-3 { height: 10px; animation-delay: 80ms; }
+.sound-bar-4 { height: 16px; animation-delay: 240ms; }
+.sound-bar-5 { height: 7px;  animation-delay: 40ms; }

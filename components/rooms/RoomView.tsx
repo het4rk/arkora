@@ -10,6 +10,19 @@ import { RoomParticipants } from '@/components/rooms/RoomParticipants'
 import { BoardTag } from '@/components/ui/BoardTag'
 import type { Room, RoomParticipant, RoomMessage } from '@/lib/types'
 
+// Animated equalizer bars — pulses faster when recently active
+function SoundWaveBars({ active, className = '' }: { active?: boolean; className?: string }) {
+  return (
+    <div className={`flex items-end gap-[2.5px] ${active ? 'sound-wave-active' : ''} ${className}`}>
+      <span className="sound-bar sound-bar-1" />
+      <span className="sound-bar sound-bar-2" />
+      <span className="sound-bar sound-bar-3" />
+      <span className="sound-bar sound-bar-4" />
+      <span className="sound-bar sound-bar-5" />
+    </div>
+  )
+}
+
 interface RoomViewProps {
   roomId: string
 }
@@ -26,12 +39,20 @@ export function RoomView({ roomId }: RoomViewProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasEnded, setHasEnded] = useState(false)
   const [connectionLost, setConnectionLost] = useState(false)
+  const [recentActivity, setRecentActivity] = useState(false)
+  const activityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pusherRef = useRef<InstanceType<typeof Pusher> | null>(null)
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
+
+  const flashActivity = useCallback(() => {
+    setRecentActivity(true)
+    if (activityTimerRef.current) clearTimeout(activityTimerRef.current)
+    activityTimerRef.current = setTimeout(() => setRecentActivity(false), 3000)
   }, [])
 
   // Load room details + check if we're already a participant
@@ -82,6 +103,7 @@ export function RoomView({ roomId }: RoomViewProps) {
           if (prev.some((m) => m.id === msg.id)) return prev
           return [...prev, msg]
         })
+        flashActivity()
         setTimeout(scrollToBottom, 50)
       })
 
@@ -141,8 +163,9 @@ export function RoomView({ roomId }: RoomViewProps) {
         pusher.disconnect()
         pusherRef.current = null
       }
+      if (activityTimerRef.current) clearTimeout(activityTimerRef.current)
     }
-  }, [nullifierHash, room, roomId, router, scrollToBottom])
+  }, [nullifierHash, room, roomId, router, scrollToBottom, flashActivity])
 
   async function handleMute(targetHash: string) {
     await fetch(`/api/rooms/${roomId}/mute`, {
@@ -221,8 +244,9 @@ export function RoomView({ roomId }: RoomViewProps) {
         <div className="flex-1 min-w-0">
           <p className="text-text font-semibold text-sm truncate">{room.title}</p>
           <div className="flex items-center gap-2 mt-0.5">
+            <SoundWaveBars active={recentActivity} className="text-accent shrink-0" />
             <BoardTag boardId={room.boardId} />
-            <span className="text-text-muted text-[10px]">
+            <span className="text-text-muted text-[10px] truncate">
               {myParticipant.displayHandle}
             </span>
           </div>
