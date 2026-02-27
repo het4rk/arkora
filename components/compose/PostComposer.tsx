@@ -285,7 +285,7 @@ export function PostComposer() {
                 onChange={(e) => setBody(e.target.value.slice(0, 10000))}
                 placeholder="Say more…"
                 rows={4}
-                className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed"
+                className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base resize-none leading-relaxed max-h-96 overflow-y-auto"
               />
             </div>
             {/* Add poll - only when not quoting */}

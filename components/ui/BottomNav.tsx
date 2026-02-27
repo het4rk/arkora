@@ -131,7 +131,7 @@ export function BottomNav() {
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
                 {unreadNotificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent ring-2 ring-background" />
                 )}
               </span>
               <span className={cn('text-[10px] font-medium', pathname === '/notifications' && 'text-accent')}>

@@ -92,7 +92,7 @@ export function BottomSheet({ isOpen, onClose, children, title, className }: Pro
               onTouchMove={onHandleTouchMove}
               onTouchEnd={onHandleTouchEnd}
             >
-              <div className="w-9 h-[3px] rounded-full bg-border/60" />
+              <div className="w-9 h-[3px] rounded-full bg-border/80" />
             </div>
 
             {title && (

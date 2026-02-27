@@ -440,13 +440,13 @@ export function SettingsView() {
                 <button
                   onClick={() => setLocationEnabled(!locationEnabled)}
                   className={cn(
-                    'relative w-11 h-6 rounded-full transition-colors shrink-0',
-                    locationEnabled ? 'bg-accent' : 'bg-white/10'
+                    'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
+                    locationEnabled ? 'bg-accent' : 'bg-white/[0.20]'
                   )}
                   aria-label="Toggle location sharing"
                 >
                   <span className={cn(
-                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200',
                     locationEnabled ? 'translate-x-5' : 'translate-x-0'
                   )} />
                 </button>
@@ -498,13 +498,13 @@ export function SettingsView() {
                   <button
                     onClick={() => opt.setter(!opt.value)}
                     className={cn(
-                      'relative w-11 h-6 rounded-full transition-colors shrink-0',
-                      opt.value ? 'bg-accent' : 'bg-white/10'
+                      'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
+                      opt.value ? 'bg-accent' : 'bg-white/[0.20]'
                     )}
                     aria-label={`Toggle ${opt.label.toLowerCase()} notifications`}
                   >
                     <span className={cn(
-                      'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                      'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200',
                       opt.value ? 'translate-x-5' : 'translate-x-0'
                     )} />
                   </button>
