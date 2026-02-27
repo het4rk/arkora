@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
-import { createPublicClient, http, type Hex } from 'viem'
+import { createPublicClient, http, keccak256, encodePacked, type Hex } from 'viem'
 import { worldchain } from 'viem/chains'
+
+function hashToField(hex: Hex): bigint {
+  return BigInt(keccak256(hex)) >> 8n
+}
+
+function computeExternalNullifierHash(appId: string, action: string): string {
+  const appIdHash = hashToField(encodePacked(['string'], [appId]))
+  const enh = hashToField(encodePacked(['uint256', 'string'], [appIdHash, action]))
+  return '0x' + enh.toString(16).padStart(64, '0')
+}
 
 /**
  * GET /api/verify/debug
@@ -8,19 +18,24 @@ import { worldchain } from 'viem/chains'
  * Hit this in your browser to see exactly what the server sees.
  */
 export async function GET() {
-  const appId = process.env.APP_ID ?? process.env.NEXT_PUBLIC_APP_ID
-  const actionId = process.env.NEXT_PUBLIC_ACTION_ID
+  // Use only NEXT_PUBLIC_APP_ID (same var as IDKit client) to ensure matching externalNullifierHash
+  const appId = process.env.NEXT_PUBLIC_APP_ID
+  const actionId = process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman'
   const rpc = process.env.WORLD_CHAIN_RPC ?? 'https://worldchain-mainnet.g.alchemy.com/public'
   const routerAddress = (process.env.WORLD_ID_ROUTER ?? '0x17B354dD2595411ff79041f930e491A4Df39A278') as Hex
 
+  const externalNullifierHash = appId
+    ? computeExternalNullifierHash(appId, actionId)
+    : 'CANNOT COMPUTE — NEXT_PUBLIC_APP_ID not set'
+
   const checks: Record<string, unknown> = {
     env: {
-      APP_ID: appId ? `${appId.slice(0, 8)}...${appId.slice(-4)}` : 'NOT SET',
-      NEXT_PUBLIC_APP_ID: process.env.NEXT_PUBLIC_APP_ID ? 'set' : 'NOT SET',
-      NEXT_PUBLIC_ACTION_ID: actionId ?? 'NOT SET (defaults to verifyhuman)',
+      NEXT_PUBLIC_APP_ID: appId ? `${appId.slice(0, 8)}...${appId.slice(-4)}` : 'NOT SET',
+      NEXT_PUBLIC_ACTION_ID: actionId,
       WORLD_CHAIN_RPC: process.env.WORLD_CHAIN_RPC ? 'custom' : 'public alchemy (default)',
       WORLD_ID_ROUTER: process.env.WORLD_ID_ROUTER ?? 'default (0x17B3...)',
     },
+    externalNullifierHash,
   }
 
   // Test RPC connectivity

@@ -104,23 +104,28 @@ export async function verifyWorldIdProof(
   action: string,
   signal?: string
 ): Promise<VerifyResult> {
-  const appId = (process.env.APP_ID ?? process.env.NEXT_PUBLIC_APP_ID) as `app_${string}`
+  // Always use NEXT_PUBLIC_APP_ID — this is the same var that IDKit uses client-side
+  // to generate the ZK proof's externalNullifierHash. Using any other var causes mismatch.
+  const appId = (process.env.NEXT_PUBLIC_APP_ID) as `app_${string}`
   const routerAddress = (process.env.WORLD_ID_ROUTER ??
     '0x17B354dD2595411ff79041f930e491A4Df39A278') as Hex
 
   if (!appId) {
-    console.error('[worldid] FATAL: No APP_ID or NEXT_PUBLIC_APP_ID env var!')
-    return { success: false, error: 'Server misconfiguration: APP_ID not set' }
+    console.error('[worldid] FATAL: NEXT_PUBLIC_APP_ID env var not set!')
+    return { success: false, error: 'Server misconfiguration: NEXT_PUBLIC_APP_ID not set' }
   }
-  console.log('[worldid] Verifying proof on-chain, appId:', appId, 'action:', action)
+
+  const externalNullifierHash = computeExternalNullifierHash(appId, action)
+  console.log('[worldid] appId:', appId, 'action:', action)
+  console.log('[worldid] externalNullifierHash:', '0x' + externalNullifierHash.toString(16))
 
   try {
     const root = BigInt(proof.merkle_root)
     const nullifierHash = BigInt(proof.nullifier_hash)
-    const externalNullifierHash = computeExternalNullifierHash(appId, action)
     const signalHash = hashToField(encodePacked(['string'], [signal ?? '']))
 
     console.log('[worldid] root:', proof.merkle_root.slice(0, 18) + '...', 'nh:', proof.nullifier_hash.slice(0, 18) + '...')
+    console.log('[worldid] proof.proof length:', proof.proof?.length, '(expected 514 for uint256[8])')
 
     const [decodedProof] = decodeAbiParameters(
       [{ type: 'uint256[8]' }],
