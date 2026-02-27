@@ -276,6 +276,7 @@ store/
 
 | Sprint | Shipped |
 | ------ | ------- |
+| 20 | Unit test suite (69 tests — sanitize, rateLimit, crypto/dm, karma, utils), signout cookie hardening, Bittensor/decentralization docs |
 | 19 | Comprehensive security audit (10 patches), Sentry error tracking, CI upgrade (Node 22), GitHub community files |
 | 18 | Production hardening: auth bypass fix, atomic votes, private Pusher channels, CSP hardening, account deletion cleanup |
 | 17 | UX polish: TipModal, ConversationView error states, PostComposer improvements, URL validation |
@@ -286,6 +287,18 @@ store/
 | 12 | Health check, CI pipeline, OG metadata, auth rate limiting, account deletion, legal pages |
 | 10–11 | Rooms Phase 1, sign-out persistence, vote reactions, repost, report auto-hide |
 | 7–9 | Sybil-resistant polls, Karma/reputation, Confessions board |
+
+---
+
+## Testing
+
+```bash
+pnpm test              # run all tests
+pnpm test:watch        # watch mode
+pnpm test:coverage     # coverage report
+```
+
+69 unit tests covering the pure utility layer: input sanitization, rate limiting, E2E DM encryption (Curve25519 + AES-256-GCM), karma tiers, and utility functions. Tests run in CI before lint and build.
 
 ---
 
