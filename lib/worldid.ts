@@ -57,66 +57,6 @@ function getClient() {
 }
 
 /**
- * Verifies a World ID proof via the Developer Portal cloud API.
- * This is the recommended path for IDKit (desktop/browser) flows.
- *
- * signal_hash must be computed identically to IDKit's internal hashToField:
- * keccak256(abi.encodePacked(signal)) >> 8, formatted as 0x-prefixed hex.
- */
-export async function verifyCloudProof(
-  proof: ISuccessResult,
-  action: string,
-  signal?: string
-): Promise<VerifyResult> {
-  const appId = process.env.APP_ID ?? process.env.NEXT_PUBLIC_APP_ID
-  if (!appId) {
-    console.error('[worldid] APP_ID env var not set')
-    return { success: false, error: 'Server misconfiguration' }
-  }
-
-  // Compute signal_hash the same way IDKit does: keccak256(abi.encodePacked(signal)) >> 8
-  const signalHashBigInt = hashToField(encodePacked(['string'], [signal ?? '']))
-  const signalHash = '0x' + signalHashBigInt.toString(16).padStart(64, '0')
-
-  try {
-    const res = await fetch(`https://developer.worldcoin.org/api/v2/verify/${appId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...proof,
-        action,
-        signal_hash: signalHash,
-      }),
-    })
-
-    const json = (await res.json()) as {
-      success?: boolean
-      code?: string
-      detail?: string
-      attribute?: string | null
-    }
-
-    console.log('[worldid cloud] Response:', res.status, JSON.stringify(json))
-
-    if (res.ok && json.success) {
-      return { success: true, nullifierHash: proof.nullifier_hash }
-    }
-
-    // Duplicate nullifier - user already verified
-    if (json.code === 'max_verifications_reached' || json.detail?.includes('already verified')) {
-      return { success: false, error: 'max_verifications_reached' }
-    }
-
-    console.error('[worldid cloud]', json.code, json.detail)
-    return { success: false, error: json.code ?? 'invalid_proof' }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[worldid cloud] Network error:', msg)
-    return { success: false, error: 'network_error' }
-  }
-}
-
-/**
  * Verifies a World ID proof against the WorldIDRouter contract on World Chain.
  * This is an eth_call (view function) - no gas, no transaction, no user signing.
  *
@@ -131,16 +71,29 @@ export async function verifyWorldIdProof(
   const routerAddress = (process.env.WORLD_ID_ROUTER ??
     '0x17B354dD2595411ff79041f930e491A4Df39A278') as Hex
 
+  console.log('[worldid on-chain] Starting verification with appId:', appId, 'action:', action)
+
   try {
     const root = BigInt(proof.merkle_root)
     const nullifierHash = BigInt(proof.nullifier_hash)
     const externalNullifierHash = computeExternalNullifierHash(appId, action)
     const signalHash = hashToField(encodePacked(['string'], [signal ?? '']))
 
+    console.log('[worldid on-chain] Params:', {
+      root: '0x' + root.toString(16).slice(0, 16) + '...',
+      nullifierHash: '0x' + nullifierHash.toString(16).slice(0, 16) + '...',
+      externalNullifierHash: '0x' + externalNullifierHash.toString(16).slice(0, 16) + '...',
+      signalHash: '0x' + signalHash.toString(16).slice(0, 16) + '...',
+      routerAddress,
+      proofLen: proof.proof.length,
+    })
+
     const [decodedProof] = decodeAbiParameters(
       [{ type: 'uint256[8]' }],
       proof.proof as Hex
     )
+
+    console.log('[worldid on-chain] Decoded proof, calling verifyProof on router...')
 
     await getClient().readContract({
       address: routerAddress,
@@ -150,11 +103,13 @@ export async function verifyWorldIdProof(
       args: [root, 1n, signalHash, nullifierHash, externalNullifierHash, decodedProof],
     })
 
+    console.log('[worldid on-chain] Proof verified successfully!')
     return { success: true, nullifierHash: proof.nullifier_hash }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
+    // Log the full error for debugging - truncate to avoid log spam
+    console.error('[worldid on-chain] FAILED:', message.slice(0, 500))
 
-    // InvalidNullifier() revert = nullifier was already used (duplicate verify attempt)
     if (
       message.includes('InvalidNullifier') ||
       message.toLowerCase().includes('already') ||
@@ -162,8 +117,6 @@ export async function verifyWorldIdProof(
     ) {
       return { success: false, error: 'max_verifications_reached' }
     }
-
-    console.error('[worldid] Verification failed:', message)
 
     if (message.includes('ExpiredRoot') || message.includes('NonExistentRoot')) {
       return { success: false, error: 'expired_root' }
@@ -181,7 +134,8 @@ export async function verifyWorldIdProof(
       return { success: false, error: 'network_error' }
     }
 
-    return { success: false, error: 'invalid_proof' }
+    // Return the raw message (truncated) so it surfaces to the client for debugging
+    return { success: false, error: `on_chain_failed: ${message.slice(0, 200)}` }
   }
 }
 

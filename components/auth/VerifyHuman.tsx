@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { useArkoraStore } from '@/store/useArkoraStore'
@@ -11,6 +11,18 @@ export function VerifyHuman() {
   const { isVerifySheetOpen, setVerifySheetOpen, isVerified } = useArkoraStore()
   const { status, error, setError, env, verify, handleDesktopVerify, onDesktopSuccess } = useVerification()
   const idkitOpenRef = useRef<(() => void) | null>(null)
+  // Tracks whether handleDesktopVerify set an error (avoids stale closure in onError)
+  const verifySetErrorRef = useRef(false)
+
+  const wrappedHandleVerify = useCallback(async (proof: ISuccessResult) => {
+    verifySetErrorRef.current = false
+    try {
+      await handleDesktopVerify(proof)
+    } catch (err) {
+      verifySetErrorRef.current = true
+      throw err
+    }
+  }, [handleDesktopVerify])
 
   if (isVerified) return null
 
@@ -59,15 +71,15 @@ export function VerifyHuman() {
           app_id={appId}
           action={actionId}
           verification_level={VerificationLevel.Orb}
-          handleVerify={(proof: ISuccessResult) => handleDesktopVerify(proof)}
+          handleVerify={wrappedHandleVerify}
           onSuccess={onDesktopSuccess}
           onError={(idkitError: IErrorState) => {
             console.error('[IDKit onError]', idkitError)
-            if (error) {
-              // Our handleVerify already set a friendly error - keep it
-            } else {
+            if (!verifySetErrorRef.current) {
+              // IDKit error not from our handleVerify (e.g., bridge failure)
               setError(idkitError?.message ?? 'Verification was declined. Please try again.')
             }
+            verifySetErrorRef.current = false
             setTimeout(() => setVerifySheetOpen(true), 100)
           }}
         >
