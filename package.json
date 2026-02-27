@@ -43,6 +43,7 @@
       "fast-xml-parser": ">=5.3.8"
     },
     "onlyBuiltDependencies": [
+      "@sentry/cli",
       "esbuild",
       "sharp",
       "unrs-resolver"
