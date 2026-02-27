@@ -7,12 +7,13 @@ import { BottomSheet } from '@/components/ui/BottomSheet'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { usePost } from '@/hooks/usePost'
 import { generateAlias } from '@/lib/session'
-import { FEATURED_BOARDS, boardLabel, normalizeBoard, resolveBoard } from '@/lib/boards'
+import { FEATURED_BOARDS } from '@/lib/boards'
 import { ANONYMOUS_BOARDS } from '@/lib/types'
 import { cn, haptic } from '@/lib/utils'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { QuotedPost } from '@/components/ui/QuotedPost'
 import { PollOptionInputs, type PollOption } from '@/components/compose/PollOptionInputs'
+import { BoardPicker } from '@/components/ui/BoardPicker'
 
 export function PostComposer() {
   const router = useRouter()
@@ -38,10 +39,6 @@ export function PostComposer() {
   const pollIdCounter = useRef(2)
   const [pollOptions, setPollOptions] = useState<PollOption[]>([{ id: 0, text: '' }, { id: 1, text: '' }])
   const [pollDuration, setPollDuration] = useState<24 | 72 | 168>(72)
-  // Custom board input state
-  const [showCustomBoard, setShowCustomBoard] = useState(false)
-  const [customBoardInput, setCustomBoardInput] = useState('')
-  const customBoardRef = useRef<HTMLInputElement>(null)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
 
   // Ensure alias exists when mode is selected
@@ -87,14 +84,6 @@ export function PostComposer() {
       return username ?? user?.pseudoHandle ?? shortWallet()
     }
     return undefined
-  }
-
-  function commitCustomBoard() {
-    if (!customBoardInput.trim()) { setShowCustomBoard(false); return }
-    const resolved = resolveBoard(customBoardInput.trim(), allBoards.map((b) => b.id))
-    setBoardId(resolved)
-    setShowCustomBoard(false)
-    setCustomBoardInput('')
   }
 
   function removePoll() {
@@ -154,8 +143,6 @@ export function PostComposer() {
   if (!isComposerOpen) return null
 
   const isAnonymousBoard = ANONYMOUS_BOARDS.has(boardId)
-  // Board not in featured list - user created it
-  const isCustomBoardActive = !FEATURED_BOARDS.some((b) => b.id === boardId)
 
   return (
     <BottomSheet
@@ -167,77 +154,8 @@ export function PostComposer() {
 
         {/* Board selector */}
         <div>
-          <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-3">Board</p>
-          <div className="flex flex-wrap gap-2">
-            {allBoards.map((board) => (
-              <button
-                type="button"
-                key={board.id}
-                onClick={() => { setBoardId(board.id); setShowCustomBoard(false) }}
-                className={cn(
-                  'flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--r-full)] text-sm font-medium transition-all active:scale-95',
-                  boardId === board.id
-                    ? 'bg-accent text-background shadow-sm shadow-accent/30'
-                    : 'glass text-text-secondary'
-                )}
-              >
-                <span>#{board.label ?? boardLabel(board.id)}</span>
-              </button>
-            ))}
-
-            {/* Custom board chip - shown when user selected a custom board */}
-            {isCustomBoardActive && (
-              <button
-                type="button"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--r-full)] text-sm font-medium bg-accent text-background shadow-sm shadow-accent/30"
-              >
-                <span>#{boardLabel(boardId)}</span>
-              </button>
-            )}
-
-            {/* New board button */}
-            {!showCustomBoard && (
-              <button
-                type="button"
-                onClick={() => { setShowCustomBoard(true); setTimeout(() => customBoardRef.current?.focus(), 50) }}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--r-full)] text-sm font-medium glass text-text-muted/70 active:scale-95 transition-all"
-              >
-                <span className="text-xs">+</span>
-                <span>New</span>
-              </button>
-            )}
-          </div>
-
-          {/* Custom board input */}
-          {showCustomBoard && (
-            <div className="mt-2 flex gap-2">
-              <input
-                ref={customBoardRef}
-                type="text"
-                value={customBoardInput}
-                onChange={(e) => setCustomBoardInput(e.target.value.slice(0, 30))}
-                onKeyDown={(e) => { if (e.key === 'Enter') commitCustomBoard() }}
-                placeholder="Topic name…"
-                className="glass-input flex-1 rounded-[var(--r-md)] px-3 py-2 text-sm min-w-0"
-              />
-              <button
-                type="button"
-                onClick={commitCustomBoard}
-                disabled={!customBoardInput.trim()}
-                className="px-3 py-2 bg-accent text-background text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40 shrink-0"
-              >
-                Add
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowCustomBoard(false); setCustomBoardInput('') }}
-                className="px-3 py-2 glass text-text-muted text-sm font-semibold rounded-[var(--r-md)] active:opacity-60 shrink-0"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-
+          <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2.5">Board</p>
+          <BoardPicker selected={boardId} allBoards={allBoards} onChange={setBoardId} />
           {isAnonymousBoard && (
             <p className="mt-2.5 text-[11px] text-text-muted flex items-center gap-1">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>

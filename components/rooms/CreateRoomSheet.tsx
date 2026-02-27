@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useArkoraStore } from '@/store/useArkoraStore'
-import { BOARDS } from '@/lib/types'
+import { FEATURED_BOARDS } from '@/lib/boards'
+import { BoardPicker } from '@/components/ui/BoardPicker'
 import type { BoardId } from '@/lib/types'
 
 interface CreateRoomSheetProps {
@@ -111,29 +112,19 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
                 <label className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] block mb-2">
                   Board
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {BOARDS.map((b) => (
-                    <button
-                      key={b.id}
-                      onClick={() => setBoardId(b.id)}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-[var(--r-full)] text-xs font-medium border transition-all active:scale-95 ${
-                        boardId === b.id
-                          ? 'bg-accent/15 border-accent/40 text-accent'
-                          : 'glass text-text-secondary'
-                      }`}
-                    >
-                      <span>#{b.id}</span>
-                    </button>
-                  ))}
-                </div>
+                <BoardPicker selected={boardId} allBoards={FEATURED_BOARDS} onChange={setBoardId} />
               </div>
 
               {/* Max participants */}
               <div className="mb-5">
-                <label className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] block mb-2">
+                <label
+                  htmlFor="max-participants"
+                  className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] block mb-2"
+                >
                   Max participants: {maxParticipants}
                 </label>
                 <input
+                  id="max-participants"
                   type="range"
                   min={2}
                   max={200}
@@ -141,6 +132,7 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
                   value={maxParticipants}
                   onChange={(e) => setMaxParticipants(Number(e.target.value))}
                   className="w-full accent-accent"
+                  aria-label={`Max participants: ${maxParticipants}`}
                 />
                 <div className="flex justify-between text-[10px] text-text-muted mt-0.5">
                   <span>2</span><span>200</span>
@@ -152,6 +144,7 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
               )}
 
               <button
+                type="button"
                 onClick={() => void handleCreate()}
                 disabled={!title.trim() || isCreating}
                 className="w-full bg-accent text-background font-semibold py-3.5 rounded-[var(--r-lg)] text-sm active:scale-[0.98] disabled:opacity-50 transition-all"
