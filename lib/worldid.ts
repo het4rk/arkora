@@ -9,6 +9,8 @@ import {
 import { worldchain } from 'viem/chains'
 import type { ISuccessResult } from '@worldcoin/minikit-js'
 
+type VerifyResult = { success: boolean; nullifierHash?: string; error?: string }
+
 const WORLD_ID_ABI = [
   {
     name: 'verifyProof',
@@ -55,6 +57,60 @@ function getClient() {
 }
 
 /**
+ * Verifies a World ID proof via the Developer Portal cloud API.
+ * This is the recommended path for IDKit (desktop/browser) flows.
+ */
+export async function verifyCloudProof(
+  proof: ISuccessResult,
+  action: string,
+  signal?: string
+): Promise<VerifyResult> {
+  const appId = process.env.APP_ID
+  if (!appId) {
+    console.error('[worldid] APP_ID env var not set')
+    return { success: false, error: 'Server misconfiguration' }
+  }
+
+  try {
+    const res = await fetch(`https://developer.worldcoin.org/api/v2/verify/${appId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nullifier_hash: proof.nullifier_hash,
+        merkle_root: proof.merkle_root,
+        proof: proof.proof,
+        verification_level: proof.verification_level ?? 'orb',
+        action,
+        signal_hash: signal ?? '',
+      }),
+    })
+
+    const json = (await res.json()) as {
+      success?: boolean
+      code?: string
+      detail?: string
+      attribute?: string | null
+    }
+
+    if (res.ok && json.success) {
+      return { success: true, nullifierHash: proof.nullifier_hash }
+    }
+
+    // Duplicate nullifier - user already verified
+    if (json.code === 'max_verifications_reached' || json.detail?.includes('already verified')) {
+      return { success: false, error: 'max_verifications_reached' }
+    }
+
+    console.error('[worldid cloud]', json.code, json.detail)
+    return { success: false, error: json.code ?? 'invalid_proof' }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[worldid cloud] Network error:', msg)
+    return { success: false, error: 'network_error' }
+  }
+}
+
+/**
  * Verifies a World ID proof against the WorldIDRouter contract on World Chain.
  * This is an eth_call (view function) - no gas, no transaction, no user signing.
  *
@@ -64,7 +120,7 @@ export async function verifyWorldIdProof(
   proof: ISuccessResult,
   action: string,
   signal?: string
-): Promise<{ success: boolean; nullifierHash?: string; error?: string }> {
+): Promise<VerifyResult> {
   const appId = process.env.APP_ID as `app_${string}`
   const routerAddress = (process.env.WORLD_ID_ROUTER ??
     '0x17B354dD2595411ff79041f930e491A4Df39A278') as Hex

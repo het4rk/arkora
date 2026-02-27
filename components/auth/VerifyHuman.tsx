@@ -9,7 +9,7 @@ import { IDKitWidget, VerificationLevel, type ISuccessResult, type IErrorState }
 
 export function VerifyHuman() {
   const { isVerifySheetOpen, setVerifySheetOpen, isVerified } = useArkoraStore()
-  const { status, error, env, verify, handleDesktopVerify, onDesktopSuccess } = useVerification()
+  const { status, error, setError, env, verify, handleDesktopVerify, onDesktopSuccess } = useVerification()
   const idkitOpenRef = useRef<(() => void) | null>(null)
 
   if (isVerified) return null
@@ -61,7 +61,13 @@ export function VerifyHuman() {
           verification_level={VerificationLevel.Orb}
           handleVerify={(proof: ISuccessResult) => handleDesktopVerify(proof)}
           onSuccess={onDesktopSuccess}
-          onError={(_error: IErrorState) => {
+          onError={(idkitError: IErrorState) => {
+            console.error('[IDKit onError]', idkitError)
+            if (error) {
+              // Our handleVerify already set a friendly error - keep it
+            } else {
+              setError(idkitError?.message ?? 'Verification was declined. Please try again.')
+            }
             setTimeout(() => setVerifySheetOpen(true), 100)
           }}
         >

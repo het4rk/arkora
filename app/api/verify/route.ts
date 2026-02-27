@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { type ISuccessResult } from '@worldcoin/minikit-js'
-import { verifyWorldIdProof, getLatestWorldChainBlock } from '@/lib/worldid'
+import { verifyCloudProof, verifyWorldIdProof, getLatestWorldChainBlock } from '@/lib/worldid'
 import { getOrCreateUser, getUserByNullifier, setWorldIdVerified, setRegistrationTxHash } from '@/lib/db/users'
 import { registerNullifierOnchain } from '@/lib/registry'
 import { walletToNullifier } from '@/lib/serverAuth'
@@ -63,7 +63,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const result = await verifyWorldIdProof(payload, action, signal)
+    // Try cloud verification first (recommended for IDKit desktop flows),
+    // fall back to on-chain if cloud is unavailable
+    let result = await verifyCloudProof(payload, action, signal)
+    if (!result.success && result.error !== 'max_verifications_reached') {
+      console.log('[verify] Cloud verification failed, trying on-chain:', result.error)
+      result = await verifyWorldIdProof(payload, action, signal)
+    }
 
     if (!result.success || !result.nullifierHash) {
       // Graceful path: Worldcoin rejects duplicate nullifiers with "already verified".

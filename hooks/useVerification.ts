@@ -46,6 +46,7 @@ function isMobileDevice(): boolean {
 interface UseVerificationReturn {
   status: VerificationStatus
   error: string | null
+  setError: (err: string | null) => void
   env: VerifyEnvironment
   /** @deprecated use env === 'minikit' */
   isMiniKit: boolean
@@ -213,6 +214,7 @@ export function useVerification(): UseVerificationReturn {
   return {
     status,
     error,
+    setError,
     env,
     isMiniKit: env === 'minikit',
     verify,
