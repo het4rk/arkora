@@ -5,7 +5,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useVerification } from '@/hooks/useVerification'
-import { IDKitWidget, VerificationLevel, type ISuccessResult, type IErrorState } from '@worldcoin/idkit'
+import { IDKitWidget, VerificationLevel, useIDKit, type ISuccessResult, type IErrorState } from '@worldcoin/idkit'
 
 export function VerifyHuman() {
   const { isVerifySheetOpen, setVerifySheetOpen, isVerified } = useArkoraStore()
@@ -13,6 +13,9 @@ export function VerifyHuman() {
   const idkitOpenRef = useRef<(() => void) | null>(null)
   // Tracks whether handleDesktopVerify set an error (avoids stale closure in onError)
   const verifySetErrorRef = useRef(false)
+  // IDKit's setOpen lets us auto-close the IDKit modal on verify failure,
+  // which triggers onError → shows our custom error sheet instead of IDKit's generic screen.
+  const { setOpen: idkitSetOpen } = useIDKit()
 
   const wrappedHandleVerify = useCallback(async (proof: ISuccessResult) => {
     console.log('[IDKit] handleVerify called - proof received from World App')
@@ -23,9 +26,12 @@ export function VerifyHuman() {
     } catch (err) {
       console.error('[IDKit] handleVerify threw:', err instanceof Error ? err.message : err)
       verifySetErrorRef.current = true
+      // Auto-dismiss IDKit's generic error screen so our custom error sheet shows instead.
+      // IDKit's onOpenChange(false) fires onError callbacks, which re-open our sheet.
+      setTimeout(() => idkitSetOpen(false), 50)
       throw err
     }
-  }, [handleDesktopVerify])
+  }, [handleDesktopVerify, idkitSetOpen])
 
   if (isVerified) return null
 

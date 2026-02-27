@@ -119,63 +119,84 @@ export async function verifyWorldIdProof(
   console.log('[worldid] appId:', appId, 'action:', action)
   console.log('[worldid] externalNullifierHash:', '0x' + externalNullifierHash.toString(16))
 
-  try {
-    const root = BigInt(proof.merkle_root)
-    const nullifierHash = BigInt(proof.nullifier_hash)
-    const signalHash = hashToField(encodePacked(['string'], [signal ?? '']))
+  const root = BigInt(proof.merkle_root)
+  const nullifierHash = BigInt(proof.nullifier_hash)
+  const signalHash = hashToField(encodePacked(['string'], [signal ?? '']))
 
-    console.log('[worldid] root:', proof.merkle_root.slice(0, 18) + '...', 'nh:', proof.nullifier_hash.slice(0, 18) + '...')
-    console.log('[worldid] proof.proof length:', proof.proof?.length, '(expected 514 for uint256[8])')
+  console.log('[worldid] root:', proof.merkle_root.slice(0, 18) + '...', 'nh:', proof.nullifier_hash.slice(0, 18) + '...')
+  console.log('[worldid] proof.proof length:', proof.proof?.length, '(expected 514 for uint256[8])')
 
-    const [decodedProof] = decodeAbiParameters(
-      [{ type: 'uint256[8]' }],
-      proof.proof as Hex
-    )
+  const [decodedProof] = decodeAbiParameters(
+    [{ type: 'uint256[8]' }],
+    proof.proof as Hex
+  )
 
-    await getClient().readContract({
-      address: routerAddress,
-      abi: WORLD_ID_ABI,
-      functionName: 'verifyProof',
-      args: [root, 1n, signalHash, nullifierHash, externalNullifierHash, decodedProof],
-    })
+  // Retry on NonExistentRoot — the root may not have propagated to our RPC yet.
+  // World App generates the proof against the latest tree; a few seconds' lag is common.
+  const MAX_ATTEMPTS = 3
+  let lastContractError: string | null = null
 
-    console.log('[worldid] Proof verified successfully!')
-    return { success: true, nullifierHash: proof.nullifier_hash }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    const contractError = identifyContractError(message)
-    console.error('[worldid] FAILED:', contractError ?? message.slice(0, 500))
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      await getClient().readContract({
+        address: routerAddress,
+        abi: WORLD_ID_ABI,
+        functionName: 'verifyProof',
+        args: [root, 1n, signalHash, nullifierHash, externalNullifierHash, decodedProof],
+      })
+      console.log(`[worldid] Proof verified successfully on attempt ${attempt}`)
+      return { success: true, nullifierHash: proof.nullifier_hash }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      const contractError = identifyContractError(message)
+      lastContractError = contractError
+      console.error(`[worldid] Attempt ${attempt} FAILED:`, contractError ?? message.slice(0, 200))
 
-    // Root issues - user's proof references a Merkle root the contract doesn't recognize
-    if (contractError === 'NonExistentRoot' || contractError === 'ExpiredRoot' || contractError === 'InvalidRoot') {
-      return { success: false, error: 'expired_root' }
+      // Retry only on NonExistentRoot (root propagation lag). All other errors are deterministic.
+      if (contractError === 'NonExistentRoot' || contractError === 'InvalidRoot') {
+        if (attempt < MAX_ATTEMPTS) {
+          console.log(`[worldid] NonExistentRoot — waiting 3s before retry ${attempt + 1}/${MAX_ATTEMPTS}`)
+          await new Promise<void>((r) => setTimeout(r, 3000))
+          continue
+        }
+        // All retries exhausted — root genuinely not found
+        return { success: false, error: 'expired_root' }
+      }
+
+      // Nullifier already used on-chain
+      if (contractError === 'InvalidNullifier') {
+        return { success: false, error: 'max_verifications_reached' }
+      }
+
+      // Root expired (not just non-existent — no point retrying)
+      if (contractError === 'ExpiredRoot') {
+        return { success: false, error: 'expired_root' }
+      }
+
+      // ZK proof math didn't check out
+      if (contractError === 'InvalidProof') {
+        return { success: false, error: 'invalid_proof' }
+      }
+
+      // Network / RPC errors
+      if (
+        message.includes('fetch') ||
+        message.includes('ECONNREFUSED') ||
+        message.includes('timeout') ||
+        message.includes('ETIMEDOUT') ||
+        message.includes('503') ||
+        message.includes('502') ||
+        message.includes('429')
+      ) {
+        return { success: false, error: 'network_error' }
+      }
+
+      return { success: false, error: `on_chain_failed: ${contractError ?? message.slice(0, 200)}` }
     }
-
-    // Nullifier already used on-chain (user already verified for this action)
-    if (contractError === 'InvalidNullifier') {
-      return { success: false, error: 'max_verifications_reached' }
-    }
-
-    // ZK proof math didn't check out
-    if (contractError === 'InvalidProof') {
-      return { success: false, error: 'invalid_proof' }
-    }
-
-    // Network / RPC errors
-    if (
-      message.includes('fetch') ||
-      message.includes('ECONNREFUSED') ||
-      message.includes('timeout') ||
-      message.includes('ETIMEDOUT') ||
-      message.includes('503') ||
-      message.includes('502') ||
-      message.includes('429')
-    ) {
-      return { success: false, error: 'network_error' }
-    }
-
-    return { success: false, error: `on_chain_failed: ${contractError ?? message.slice(0, 200)}` }
   }
+
+  // Unreachable — all code paths inside the loop return. TypeScript needs this.
+  return { success: false, error: 'expired_root' }
 }
 
 /**
