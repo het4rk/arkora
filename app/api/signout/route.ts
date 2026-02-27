@@ -10,7 +10,7 @@ export async function POST() {
 
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'strict' as const,
     path: '/',
     maxAge: 0, // expire immediately
