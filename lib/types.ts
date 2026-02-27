@@ -1,16 +1,10 @@
-export type BoardId = 'arkora' | 'technology' | 'markets' | 'politics' | 'worldchain' | 'confessions'
+/** Any normalized board slug — can be a featured board or a user-created one. */
+export type BoardId = string
 
-export const BOARDS: { id: BoardId; label: string; emoji: string }[] = [
-  { id: 'arkora', label: 'Arkora', emoji: '🏛️' },
-  { id: 'technology', label: 'Technology', emoji: '⚡' },
-  { id: 'markets', label: 'Markets', emoji: '📈' },
-  { id: 'politics', label: 'Politics', emoji: '🗳️' },
-  { id: 'worldchain', label: 'World Chain', emoji: '🌐' },
-  { id: 'confessions', label: 'Confessions', emoji: '🤫' },
-]
+export { FEATURED_BOARDS as BOARDS } from '@/lib/boards'
 
 /** Boards where posts are force-anonymous regardless of the user's identity mode. */
-export const ANONYMOUS_BOARDS: Set<BoardId> = new Set(['confessions'])
+export const ANONYMOUS_BOARDS: Set<string> = new Set(['confessions'])
 
 export interface Post {
   id: string

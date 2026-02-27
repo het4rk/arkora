@@ -296,8 +296,8 @@ export function ProfileView() {
                 </div>
               </div>
 
-              {/* Set display name — shown when user has no World App username or pseudoHandle */}
-              {needsHandle() && !handleEditMode && (
+              {/* Set display name — only on desktop/IDKit (no World App username available) */}
+              {!MiniKit.isInstalled() && needsHandle() && !handleEditMode && (
                 <button
                   onClick={() => { setHandleDraft(''); setHandleEditMode(true) }}
                   className="text-accent text-[11px] font-medium mb-2 active:opacity-60 transition-opacity"
@@ -305,7 +305,7 @@ export function ProfileView() {
                   + Set display name
                 </button>
               )}
-              {handleEditMode && (
+              {!MiniKit.isInstalled() && handleEditMode && (
                 <div className="flex gap-2 mb-3">
                   <input
                     type="text"

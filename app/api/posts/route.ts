@@ -9,7 +9,8 @@ import { getCachedFeed, getCachedLocalFeed, getCachedHotFeed, invalidatePosts } 
 import { createNotification } from '@/lib/db/notifications'
 import { pusherServer } from '@/lib/pusher'
 import { worldAppNotify } from '@/lib/worldAppNotify'
-import { BOARDS, ANONYMOUS_BOARDS } from '@/lib/types'
+import { ANONYMOUS_BOARDS } from '@/lib/types'
+import { FEATURED_BOARDS, resolveBoard, normalizeBoard } from '@/lib/boards'
 import type { BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 
 /** Extract the viewer's country code from standard edge/CDN headers. Falls back to 'US' in dev. */
@@ -22,7 +23,7 @@ function getCountryCode(req: NextRequest): string | null {
   )
 }
 
-const VALID_BOARD_IDS = new Set(BOARDS.map((b) => b.id))
+const FEATURED_IDS = FEATURED_BOARDS.map((b) => b.id)
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
     // Hot feed — Wilson-score time-decay ranking, no cursor pagination
     if (feed === 'hot') {
       const rawBoardId = searchParams.get('boardId')
-      const hotBoardId = rawBoardId && VALID_BOARD_IDS.has(rawBoardId as BoardId) ? rawBoardId : undefined
+      const hotBoardId = rawBoardId ? normalizeBoard(rawBoardId) : undefined
       const hotPosts = await getCachedHotFeed(hotBoardId)
       return NextResponse.json({ success: true, data: hotPosts })
     }
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
         lat: lat !== undefined && !isNaN(lat) ? lat : undefined,
         lng: lng !== undefined && !isNaN(lng) ? lng : undefined,
         radiusMiles,
-        boardId: rawBoardId && VALID_BOARD_IDS.has(rawBoardId as BoardId) ? (rawBoardId as BoardId) : undefined,
+        boardId: rawBoardId ? normalizeBoard(rawBoardId) : undefined,
         cursor,
         limit,
       }
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
 
     const rawBoardId = searchParams.get('boardId')
     const params: FeedParams = {
-      boardId: rawBoardId && VALID_BOARD_IDS.has(rawBoardId as BoardId) ? (rawBoardId as BoardId) : undefined,
+      boardId: rawBoardId ? normalizeBoard(rawBoardId) : undefined,
       cursor,
       limit,
     }
@@ -160,13 +161,8 @@ export async function POST(req: NextRequest) {
     const title = isRepost ? '' : sanitizeLine(rawTitle ?? '')
     const postBody = (isPoll || isRepost) ? '' : sanitizeText(rawBody ?? '')
 
-    if (!VALID_BOARD_IDS.has(rawBoardId as BoardId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid board' },
-        { status: 400 }
-      )
-    }
-    const boardId = rawBoardId as BoardId
+    // Resolve board — normalizes, applies synonyms, tolerates typos
+    const boardId = resolveBoard(rawBoardId ?? 'arkora', FEATURED_IDS)
 
     // Force-anonymous on boards like Confessions — strip handle regardless of identity mode
     const pseudoHandle = ANONYMOUS_BOARDS.has(boardId)
