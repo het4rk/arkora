@@ -108,6 +108,10 @@ export async function verifyWorldIdProof(
   const routerAddress = (process.env.WORLD_ID_ROUTER ??
     '0x17B354dD2595411ff79041f930e491A4Df39A278') as Hex
 
+  if (!appId) {
+    console.error('[worldid] FATAL: No APP_ID or NEXT_PUBLIC_APP_ID env var!')
+    return { success: false, error: 'Server misconfiguration: APP_ID not set' }
+  }
   console.log('[worldid] Verifying proof on-chain, appId:', appId, 'action:', action)
 
   try {
