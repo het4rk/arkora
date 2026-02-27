@@ -177,13 +177,11 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           </h2>
         )}
 
-        {/* Only pass nullifierHash when the user posted non-anonymously.
-            Anonymous posts (pseudoHandle null) must never link to a profile. */}
         {post.type !== 'repost' && (
           <div className="flex items-center gap-2 flex-wrap">
             <HumanBadge
               label={displayName}
-              nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
+              nullifierHash={post.nullifierHash}
               size="md"
             />
             {authorKarmaScore != null && <KarmaBadge score={authorKarmaScore} />}

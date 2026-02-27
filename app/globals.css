@@ -22,12 +22,12 @@
   --accent-hover: #E0E0E0;
 
   /* iOS 26 Liquid Glass tokens */
-  --glass-bg:     rgba(255,255,255,0.07);
-  --glass-border: rgba(255,255,255,0.13);
-  --glass-shine:  rgba(255,255,255,0.20);
-  --glass-shadow: rgba(0,0,0,0.60);
-  --glass-blur:   58px;
-  --glass-sat:    190%;
+  --glass-bg:     rgba(255,255,255,0.055);
+  --glass-border: rgba(255,255,255,0.14);
+  --glass-shine:  rgba(255,255,255,0.28);
+  --glass-shadow: rgba(0,0,0,0.22);
+  --glass-blur:   80px;
+  --glass-sat:    200%;
 
   /* Spatial system */
   --r-sm:   12px;
@@ -153,9 +153,9 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid var(--glass-border);
   box-shadow:
     inset 0 1.5px 0 var(--glass-shine),   /* top specular highlight */
-    inset 0 -1px 0 rgba(0,0,0,0.15),      /* bottom depth shadow */
-    0 20px 60px var(--glass-shadow),       /* elevation shadow */
-    0 0 0 0.5px rgba(255,255,255,0.04);   /* outer glow */
+    inset 0 -1px 0 rgba(0,0,0,0.10),      /* bottom depth shadow */
+    0 8px 32px var(--glass-shadow),        /* elevation shadow */
+    0 0 0 0.5px rgba(255,255,255,0.06);   /* outer glow */
 }
 
 /* Liquid glass — iridescent tint for navigation & prominent surfaces */
@@ -180,15 +180,15 @@ h1, h2, h3, h4, h5, h6 {
 .glass-nav {
   background: linear-gradient(
     to top,
-    rgba(10,10,10,0.82)    0%,
-    rgba(255,255,255,0.07) 100%
+    rgba(10,10,10,0.65)    0%,
+    rgba(255,255,255,0.08) 100%
   );
-  backdrop-filter: blur(62px) saturate(180%);
-  -webkit-backdrop-filter: blur(62px) saturate(180%);
-  border-top: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(72px) saturate(200%);
+  -webkit-backdrop-filter: blur(72px) saturate(200%);
+  border-top: 1px solid rgba(255,255,255,0.14);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.13),
-    0 -4px 30px rgba(0,0,0,0.28);
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    0 -4px 24px rgba(0,0,0,0.16);
   /* Extend background into the home indicator safe area so no gap shows */
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -196,37 +196,37 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="light"] .glass-nav {
   background: linear-gradient(
     to top,
-    rgba(245,245,247,0.88) 0%,
-    rgba(255,255,255,0.6)  100%
+    rgba(245,245,247,0.82) 0%,
+    rgba(255,255,255,0.55) 100%
   );
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.95),
-    0 -4px 20px rgba(0,0,0,0.08);
+    0 -4px 20px rgba(0,0,0,0.06);
 }
 
 /* Navigation bar — anchored top */
 .glass-nav-top {
   background: linear-gradient(
     to bottom,
-    rgba(10,10,10,0.82)    0%,
-    rgba(255,255,255,0.07) 100%
+    rgba(10,10,10,0.65)    0%,
+    rgba(255,255,255,0.08) 100%
   );
-  backdrop-filter: blur(62px) saturate(180%);
-  -webkit-backdrop-filter: blur(62px) saturate(180%);
-  border-bottom: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(72px) saturate(200%);
+  -webkit-backdrop-filter: blur(72px) saturate(200%);
+  border-bottom: 1px solid rgba(255,255,255,0.14);
   box-shadow:
-    inset 0 -1px 0 rgba(255,255,255,0.13),
-    0 4px 30px rgba(0,0,0,0.28);
+    inset 0 -1px 0 rgba(255,255,255,0.16),
+    0 4px 24px rgba(0,0,0,0.16);
 }
 
 [data-theme="light"] .glass-nav-top {
   background: linear-gradient(
     to bottom,
-    rgba(245,245,247,0.88) 0%,
-    rgba(255,255,255,0.6)  100%
+    rgba(245,245,247,0.82) 0%,
+    rgba(255,255,255,0.55) 100%
   );
   border-bottom: 1px solid rgba(0,0,0,0.06);
-  box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
 }
 
 /* Padding for content below the fixed top bar (56px) + device safe area */
@@ -236,24 +236,24 @@ h1, h2, h3, h4, h5, h6 {
 .glass-sidebar {
   background: linear-gradient(
     175deg,
-    rgba(255,255,255,0.09)  0%,
-    rgba(255,255,255,0.075) 40%,
-    rgba(255,255,255,0.07)  100%
+    rgba(255,255,255,0.10)  0%,
+    rgba(255,255,255,0.085) 40%,
+    rgba(255,255,255,0.075) 100%
   );
-  backdrop-filter: blur(72px) saturate(200%);
-  -webkit-backdrop-filter: blur(72px) saturate(200%);
-  border-right: 1px solid rgba(255,255,255,0.13);
+  backdrop-filter: blur(80px) saturate(200%);
+  -webkit-backdrop-filter: blur(80px) saturate(200%);
+  border-right: 1px solid rgba(255,255,255,0.15);
   box-shadow:
-    inset -1px 0 0 rgba(255,255,255,0.06),
-    inset  0 1px 0 rgba(255,255,255,0.16),
-    6px 0 48px rgba(0,0,0,0.42);
+    inset -1px 0 0 rgba(255,255,255,0.08),
+    inset  0 1px 0 rgba(255,255,255,0.20),
+    6px 0 40px rgba(0,0,0,0.20);
 }
 
 [data-theme="light"] .glass-sidebar {
-  background: rgba(255,255,255,0.70);
+  background: rgba(255,255,255,0.62);
   border-right: 1px solid rgba(255,255,255,0.85);
   box-shadow:
-    6px 0 40px rgba(0,0,0,0.10),
+    6px 0 32px rgba(0,0,0,0.08),
     inset -1px 0 0 rgba(255,255,255,0.9);
 }
 
@@ -261,38 +261,38 @@ h1, h2, h3, h4, h5, h6 {
 .glass-sheet {
   background: linear-gradient(
     to bottom,
-    rgba(255,255,255,0.09) 0%,
-    rgba(18,18,18,0.93)    72%
+    rgba(255,255,255,0.10) 0%,
+    rgba(18,18,18,0.72)    72%
   );
-  backdrop-filter: blur(62px) saturate(180%);
-  -webkit-backdrop-filter: blur(62px) saturate(180%);
-  border-top: 1px solid rgba(255,255,255,0.13);
+  backdrop-filter: blur(72px) saturate(200%);
+  -webkit-backdrop-filter: blur(72px) saturate(200%);
+  border-top: 1px solid rgba(255,255,255,0.16);
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.18),
-    0 -8px 64px rgba(0,0,0,0.52);
+    inset 0 1.5px 0 rgba(255,255,255,0.22),
+    0 -8px 48px rgba(0,0,0,0.20);
 }
 [data-theme="light"] .glass-sheet {
-  background: rgba(244,244,246,0.90);
+  background: rgba(244,244,246,0.82);
   border-top: 1px solid rgba(255,255,255,0.92);
-  box-shadow: 0 -4px 40px rgba(0,0,0,0.08);
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.06);
 }
 
 /* Composer bar — like nav but with input area */
 .glass-compose {
   background: linear-gradient(
     to top,
-    rgba(8,8,8,0.92)       0%,
-    rgba(255,255,255,0.08) 100%
+    rgba(8,8,8,0.72)       0%,
+    rgba(255,255,255,0.09) 100%
   );
-  backdrop-filter: blur(54px) saturate(180%);
-  -webkit-backdrop-filter: blur(54px) saturate(180%);
-  border-top: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(62px) saturate(200%);
+  -webkit-backdrop-filter: blur(62px) saturate(200%);
+  border-top: 1px solid rgba(255,255,255,0.14);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.15),
-    0 -4px 24px rgba(0,0,0,0.28);
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    0 -4px 24px rgba(0,0,0,0.16);
 }
 [data-theme="light"] .glass-compose {
-  background: rgba(244,244,246,0.92);
+  background: rgba(244,244,246,0.85);
   border-top: 1px solid rgba(255,255,255,0.90);
 }
 

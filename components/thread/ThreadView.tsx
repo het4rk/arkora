@@ -237,11 +237,10 @@ export function ThreadView({ postId }: Props) {
             {post.title}
           </h1>
 
-          {/* Only navigate to profile / show social actions on non-anonymous posts */}
           <div className="flex items-center gap-2 flex-wrap">
             <HumanBadge
               label={displayName}
-              nullifierHash={post.pseudoHandle ? post.nullifierHash : null}
+              nullifierHash={post.nullifierHash}
               size="md"
             />
             {post.pseudoHandle && <KarmaBadge score={authorKarmaScore} />}

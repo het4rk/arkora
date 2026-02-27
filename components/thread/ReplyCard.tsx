@@ -94,7 +94,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
       {/* Top row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <HumanBadge label={displayName} size="sm" />
+          <HumanBadge label={displayName} nullifierHash={reply.nullifierHash} size="sm" />
           <InlineFollowButton targetHash={reply.nullifierHash} />
         </div>
         <div className="flex items-center gap-2.5">
