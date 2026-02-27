@@ -433,7 +433,8 @@ Known limitation: rate limiter is in-process (resets on Vercel cold start). Fine
 - [ ] MCP / public API for verified-human poll data (post-launch, novel data product)
 - [ ] Rooms Phase 2 — audio (WebRTC or LiveKit)
 - [ ] Admin moderation queue for reports
-- [ ] Testing (Vitest unit + Playwright E2E)
+- [x] Testing — 69 Vitest unit tests covering sanitize, rateLimit, crypto/dm, karma, utils (`pnpm test`)
+- [ ] Playwright E2E tests (post-launch)
 - [ ] Custom domain (`arkora.world` or similar)
 
 - [x] Sprint 13: Onchain World ID verification (WorldIDRouter on World Chain), verifiedBlockNumber, identity merge fix

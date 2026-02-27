@@ -79,11 +79,13 @@ Scope is optional but helpful: `feat(rooms)`, `fix(dm)`, `chore(deps)`, `securit
 
 1. Branch from `main`
 2. Keep PRs focused — one logical change per PR
-3. Run `pnpm exec tsc --noEmit` and `pnpm exec next lint` locally — CI will catch failures
+3. Run `pnpm test`, `pnpm exec tsc --noEmit`, and `pnpm exec next lint` locally — CI will catch failures
 4. Fill out the PR template completely
 5. Request review from @hetark
 
 CI checks that must pass:
+
+- Tests: 69 unit tests passing (`pnpm test`)
 - TypeScript: zero errors (`tsc --noEmit`)
 - ESLint: zero warnings (`next lint`)
 - Build: `next build` succeeds
