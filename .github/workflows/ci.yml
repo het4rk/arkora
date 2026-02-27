@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -43,6 +43,7 @@ jobs:
           NEXT_PUBLIC_APP_ID: app_placeholder
           NEXT_PUBLIC_ACTION_ID: verifyhuman
           APP_ID: app_placeholder
+          NEXT_PUBLIC_WORLD_APP_ID: app_placeholder
           NEXT_PUBLIC_CHAIN_ID: '480'
           NEXT_PUBLIC_WC_RPC: https://worldchain-mainnet.g.alchemy.com/public
           HIPPIUS_ACCESS_KEY_ID: placeholder
@@ -50,3 +51,4 @@ jobs:
           HIPPIUS_BUCKET: arkora-uploads
           HIPPIUS_S3_ENDPOINT: https://s3.hippius.com
           HIPPIUS_PUBLIC_URL: https://s3.hippius.com
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}

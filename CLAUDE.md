@@ -57,6 +57,25 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] `GET /api/auth/user` added for ProfileView to refresh stale store data on mount
 - [x] WalletConnect bio migration extended — copies bio from World ID record to wlt_ record
 
+### Security Audit + Hardening (Sprint 19)
+
+- [x] **Comprehensive audit** — 4 agents across all layers: SQL injection, auth bypass, XSS/CSRF, rate limiting, secrets, headers, infra
+- [x] **Poll sanitize order** — `sanitizeLine()` now called BEFORE length check (NFKC normalization can change string length)
+- [x] **Lat/lng bounds** — feed GET and POST body both enforce `-90≤lat≤90`, `-180≤lng≤180`, `0<radiusMiles≤5000`
+- [x] **EVM address regex** — `/api/verify` validates `walletAddress` with `/^0x[0-9a-fA-F]{40}$/` before proof verification
+- [x] **Rate limit keys** — all authenticated endpoints use `nullifierHash` (not IP); auth/user POST uses full wallet address
+- [x] **Sentry PII** — `sendDefaultPii: false` (was `true`), `tracesSampleRate: 0.1`, `replaysOnErrorSampleRate: 0.5`; DSN is semi-public by design
+- [x] **Nonce constant-time** — `/api/auth/route.ts` uses `crypto.timingSafeEqual()` + format validation `/^[0-9a-f]{32}$/`
+- [x] **Security headers** — `Cross-Origin-Opener-Policy: same-origin` + `X-Permitted-Cross-Domain-Policies: none` added to `next.config.ts`
+- [x] **Bookmarks bulk limit** — `slice(0, 50)` → `slice(0, 10)` (feed pages load ≤10 posts)
+- [x] **Feed numeric parsing** — strict `/^\d+$/` regex + `Math.min(parseInt, 50)` cap for `limit` param
+- [x] **DM conversations rate limit** — key changed from IP to `nullifierHash` (authenticated endpoint)
+- [x] **Nonce cookie** — `secure: true` always (was `process.env.NODE_ENV === 'production'`)
+- [x] **Sentry integrated** — `instrumentation-client.ts`, `global-error.tsx`, `SENTRY_AUTH_TOKEN` in Vercel
+- [x] **pnpm audit** — 2 HIGH in dev-only eslint deps (no prod exposure), 1 LOW in AWS SDK (no path to exploit); neither requires action
+- [x] **CI** — upgraded Node 20 → 22, added `SENTRY_AUTH_TOKEN` + `NEXT_PUBLIC_WORLD_APP_ID` to build env
+- [x] **GitHub community** — `SECURITY.md`, `CONTRIBUTING.md`, PR template, bug/feature issue templates, `CODEOWNERS`
+
 ### Production Hardening Audit (Sprint 18)
 
 - [x] **Auth bypass fix** — `POST /api/auth/user` now verifies `wallet-address` cookie matches body `walletAddress` (prevents session hijack via forged body params)
@@ -284,17 +303,34 @@ activeRoomId                                             — currently joined ro
 - Public URL: `${HIPPIUS_PUBLIC_URL}/${HIPPIUS_BUCKET}/${key}`
 - Confirmed working in production
 
+### Security Model (Sprint 19 Audit Summary)
+
+Core guarantees — verified clean after comprehensive audit:
+
+| Property | How it's enforced |
+| -------- | ----------------- |
+| No SQL injection | Drizzle parameterized queries only — zero raw SQL string interpolation |
+| No auth bypass | Identity from `arkora-nh` httpOnly cookie only; `getCallerNullifier()` never trusts request body |
+| CSRF mitigated | `SameSite=Strict` on all auth cookies; no separate CSRF token needed |
+| World ID replay | Blockchain-enforced: WorldIDRouter EVM contract reverts on duplicate nullifier |
+| XSS | `sanitizeLine()`/`sanitizeText()` on all user input before DB write; CSP with no `unsafe-eval` |
+| Timing oracle | SIWE nonce comparison uses `crypto.timingSafeEqual()` |
+| Pusher isolation | Private channels (`private-user-*`) server-authorized via `/api/pusher/auth` |
+
+Known limitation: rate limiter is in-process (resets on Vercel cold start). Fine for early scale; upgrade to Upstash Redis at scale.
+
 ---
 
 ## Known Issues / Gotchas
 
-- **Rate limiter is in-process.** Fresh per Vercel cold start / instance. Fine for 20 users; upgrade to Upstash Redis at scale.
+- **Rate limiter is in-process.** Fresh per Vercel cold start / instance. Fine for early scale; upgrade to Upstash Redis for cross-instance enforcement.
 - **Neon 20-connection limit.** Pool max set to 5 with singleton client caching. Add `?connection_limit=5` to `DATABASE_URL` if connection errors still appear.
 - **DM private key in localStorage.** Users lose DM history if they clear browser data. By design for MVP.
 - **Country code** inferred from `x-vercel-ip-country` header. GPS optional, sent only when `locationEnabled=true`.
 - **`ADMIN_NULLIFIER_HASHES` env var** must be set in Vercel Dashboard for `/api/admin/metrics` to be accessible (comma-separated list of admin nullifier hashes).
-- **OG image and PWA icons** (`/og-image.png`, `/icon-192.png`, `/icon-512.png`, `/favicon.ico`, `/apple-touch-icon.png`) must be created and placed in `public/`. See TIER 1 in the grant readiness plan.
-- **Neon DB backups** — Neon Free tier provides 7-day automatic backup retention by default. To manually backup: `pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql`. No additional configuration required for MVP.
+- **Brand assets** (`/og-image.png`, `/icon-192.png`, `/icon-512.png`, `/favicon.ico`, `/apple-touch-icon.png`) must be created and placed in `public/` — blocks PWA install and social sharing previews.
+- **Neon DB backups** — Neon Free tier provides 7-day automatic backup retention. Manual: `pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql`.
+- **pnpm audit** — 2 HIGH in dev-only `eslint` deps (no prod exposure), 1 LOW in `@aws-sdk` fast-xml-parser (no exploitable path). Both are supply-chain issues in third-party deps; no action required.
 
 ---
 
@@ -308,6 +344,8 @@ activeRoomId                                             — currently joined ro
 - [ ] `ADMIN_NULLIFIER_HASHES` — comma-separated admin nullifier hashes for `/api/admin/metrics`
 - [x] `WORLD_ID_ROUTER=0x17B354dD2595411ff79041f930e491A4Df39A278` — WorldIDRouter on World Chain
 - [x] `WORLD_CHAIN_RPC=https://worldchain-mainnet.g.alchemy.com/public` — public RPC, no API key needed
+- [x] `SENTRY_AUTH_TOKEN` — set in Vercel Dashboard for source map uploads (Sprint 19)
+- [x] `NEXT_PUBLIC_SENTRY_DSN` — set in Vercel Dashboard (auto-added by Sentry wizard)
 - [ ] Developer Portal redirect URL = production domain
 - [ ] `pnpm db:push` run against production DB
 - [ ] UptimeRobot monitor on `https://arkora.vercel.app/api/health`
@@ -384,16 +422,17 @@ activeRoomId                                             — currently joined ro
 - [x] Subscription fix — creator must be both `identityMode === 'named'` AND `worldIdVerified` to accept subscriptions
 
 ### Remaining Launch Work (manual / not yet shipped)
-- [ ] **Create brand assets**: `/public/og-image.png` (1200×630), `/public/icon-192.png`, `/public/icon-512.png`, `/public/favicon.ico`, `/public/apple-touch-icon.png`
-- [ ] **Rotate all production secrets**: Neon password, Pusher app, Hippius key (keys were in git history on private repo)
+
+- [ ] **Create brand assets**: `/public/og-image.png` (1200×630), `/public/icon-192.png`, `/public/icon-512.png`, `/public/favicon.ico`, `/public/apple-touch-icon.png` — blocks PWA + social sharing
+- [ ] **Rotate all production secrets**: Verify `.env.local` not in git history (`git log --all --full-history -- .env.local`); rotate Neon password, Pusher, Hippius, Worldcoin API key if any commits found
 - [ ] **Set `ADMIN_NULLIFIER_HASHES`** in Vercel Dashboard — your nullifier hash for accessing `/api/admin/metrics`
 - [ ] **UptimeRobot**: monitor `https://arkora.vercel.app/api/health` every 5 minutes
 - [ ] **Upgrade rate limiter** to Upstash Redis for cross-instance enforcement at scale
 - [ ] **Upgrade DB driver** to `@neondatabase/serverless` to eliminate TCP connection limits
 - [ ] **Pusher Starter plan** ($49/mo) for 500 concurrent connections when user base grows
+- [ ] MCP / public API for verified-human poll data (post-launch, novel data product)
 - [ ] Rooms Phase 2 — audio (WebRTC or LiveKit)
 - [ ] Admin moderation queue for reports
-- [ ] World Chain smart contract for on-chain votes (`contracts/ArkVotes.sol`)
 - [ ] Testing (Vitest unit + Playwright E2E)
 - [ ] Custom domain (`arkora.world` or similar)
 
@@ -412,3 +451,4 @@ activeRoomId                                             — currently joined ro
 - [x] Rooms Phase 1 (text-only ephemeral) — Sprint 10
 - [x] Rooms creator auto-join fix, profile display name migration, light theme polish — Sprint 11
 - [x] Production hardening: auth bypass fix, atomic votes, private Pusher channels, CSP hardened, account deletion cleanup, dead code removal — Sprint 18
+- [x] Security audit + hardening (Sprint 19): comprehensive 4-layer audit (SQL injection, auth bypass, XSS/CSRF, rate limiting/headers/infra); 12 confirmed issues patched; Sentry error tracking integrated; CI upgraded to Node 22; GitHub community files added

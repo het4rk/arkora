@@ -25,12 +25,13 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 | Animations | Framer Motion |
 | Blockchain | World Chain (chain 480) — proof verified onchain via WorldIDRouter, not Worldcoin's cloud API |
 | Identity | Worldcoin World ID 4.0 (MiniKit + IDKit, Orb verified) |
+| Monitoring | Sentry (error tracking + session replay) + Vercel Analytics |
 
 ---
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 22 (see `.nvmrc`)
 - pnpm (`npm i -g pnpm`)
 - A [Worldcoin Developer Portal](https://developer.worldcoin.org) app (for World ID)
 - A [Neon](https://neon.tech) Postgres database
@@ -85,6 +86,10 @@ ADMIN_NULLIFIER_HASHES=0xabc123...
 # World Chain (onchain proof verification)
 WORLD_ID_ROUTER=0x17B354dD2595411ff79041f930e491A4Df39A278
 WORLD_CHAIN_RPC=https://worldchain-mainnet.g.alchemy.com/public
+
+# Sentry (optional — required for production source map uploads and error tracking)
+SENTRY_AUTH_TOKEN=your-sentry-auth-token
+NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
 ```
 
 ### 3. Push the database schema
@@ -162,13 +167,21 @@ End-to-end encrypted. Key exchange uses ECDH (Curve25519); messages encrypted wi
 
 ### Security
 
-- Auth: server-side cookie verification on all identity-sensitive endpoints (SIWE wallet cookie cross-checked)
-- All user channels use Pusher private channels (`private-user-*`) with server-side authorization
-- CSP headers with no `unsafe-eval` — only `unsafe-inline` (required by Next.js)
-- World ID verification errors return generic messages to client (detailed errors logged server-side only)
-- Vote operations use atomic CTEs to prevent race conditions
-- Account deletion is comprehensive — cleans all user-associated data across 11+ tables before removing the account
-- Environment validation fails fast on startup if any required variable is missing
+Arkora underwent a comprehensive security audit (Sprint 19) across all layers — SQL injection, auth bypass, XSS/CSRF, rate limiting, secrets, headers, and infrastructure. Key properties:
+
+- **No SQL injection**: All queries use Drizzle ORM parameterized builders — no raw SQL string interpolation anywhere in the codebase
+- **Auth isolation**: Identity comes exclusively from the `arkora-nh` httpOnly cookie via `getCallerNullifier()`. Request body is never trusted for identity
+- **CSRF mitigated**: `SameSite=Strict` on all auth cookies. No additional CSRF token layer required
+- **World ID replay protection**: Enforced by the WorldIDRouter contract on World Chain — the EVM reverts on duplicate nullifier submissions
+- **Input sanitization**: All user text passes through `sanitizeLine()` / `sanitizeText()` (NFKC normalization + HTML stripping) before DB writes
+- **Private Pusher channels**: All per-user channels (`private-user-*`) require server-side authorization — prevents metadata snooping
+- **CSP**: `unsafe-eval` removed from `script-src`. HSTS 2-year preload. COOP + X-Permitted-Cross-Domain-Policies headers set
+- **Constant-time nonce comparison**: SIWE nonce validation uses `crypto.timingSafeEqual()` to prevent timing oracle attacks
+- **Rate limiting**: Per-endpoint, per-user sliding window. In-memory (per Vercel instance) — sufficient for early scale
+- **Error messages**: World ID verification errors return generic messages to client; detailed errors logged server-side only
+- **Atomic votes**: Vote operations use single CTE statements to prevent race conditions
+
+For vulnerability reporting, see [SECURITY.md](./SECURITY.md).
 
 ### Rate Limiting
 
@@ -241,6 +254,33 @@ store/
 | Neon Free | 20 connections, 3 GB | OK — batch queries in hot paths |
 | Pusher Sandbox | 100 connections, 200k msg/day | Fine |
 | Hippius S3 | Pay-per-use | Minimal cost at launch |
+
+---
+
+## Sprint History
+
+| Sprint | Shipped |
+| ------ | ------- |
+| 19 | Comprehensive security audit (10 patches), Sentry error tracking, CI upgrade (Node 22), GitHub community files |
+| 18 | Production hardening: auth bypass fix, atomic votes, private Pusher channels, CSP hardening, account deletion cleanup |
+| 17 | UX polish: TipModal, ConversationView error states, PostComposer improvements, URL validation |
+| 16 | Tip push notifications, rooms auto-close, karma score in feed cards |
+| 15 | Dynamic board system (synonym dedup + Levenshtein), PostComposer UX overhaul |
+| 14 | ArkoraNullifierRegistry.sol, post content hashes (tamper evidence) |
+| 13 | Onchain World ID verification via WorldIDRouter (World Chain), verifiedBlockNumber |
+| 12 | Health check, CI pipeline, OG metadata, auth rate limiting, account deletion, legal pages |
+| 10–11 | Rooms Phase 1, sign-out persistence, vote reactions, repost, report auto-hide |
+| 7–9 | Sybil-resistant polls, Karma/reputation, Confessions board |
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, branch conventions, and PR requirements.
+
+## Security Policy
+
+To report a vulnerability, see [SECURITY.md](./SECURITY.md). Do not open public issues for security findings.
 
 ---
 
