@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
     const posts = await getCachedFeed(params)
     return NextResponse.json({ success: true, data: posts })
   } catch (err) {
-    console.error('[posts GET]', err)
+    console.error('[posts GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Failed to fetch posts' },
       { status: 500 }
@@ -254,7 +254,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: post }, { status: 201 })
   } catch (err) {
-    console.error('[posts POST]', err)
+    console.error('[posts POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Failed to create post' },
       { status: 500 }

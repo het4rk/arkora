@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const posts = await getBookmarksByNullifier(nullifierHash)
     return NextResponse.json({ success: true, data: posts })
   } catch (err) {
-    console.error('[bookmarks GET]', err)
+    console.error('[bookmarks GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch bookmarks' }, { status: 500 })
   }
 }
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     const isBookmarked = await toggleBookmark(nullifierHash, postId)
     return NextResponse.json({ success: true, data: { isBookmarked } })
   } catch (err) {
-    console.error('[bookmarks POST]', err)
+    console.error('[bookmarks POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to toggle bookmark' }, { status: 500 })
   }
 }

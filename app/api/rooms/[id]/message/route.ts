@@ -65,7 +65,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: message })
   } catch (err) {
-    console.error('[rooms/[id]/message POST]', err)
+    console.error('[rooms/[id]/message POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to send message' }, { status: 500 })
   }
 }

@@ -16,12 +16,12 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 |---|---|
 | Framework | Next.js 15 (App Router, Turbopack) |
 | Database | Neon Postgres + Drizzle ORM |
-| Auth | SIWE (Sign-In with Ethereum) + NextAuth + World MiniKit |
+| Auth | SIWE (Sign-In with Ethereum) + World MiniKit + IDKit |
 | Real-time | Pusher Channels |
 | File storage | Hippius S3 (decentralized, S3-compatible) |
 | State | Zustand (with localStorage persistence) |
 | Animations | Framer Motion |
-| Blockchain | World Chain (viem, onchain proof verification) |
+| Blockchain | World Chain (chain 480) — proof verified onchain via WorldIDRouter, not Worldcoin's cloud API |
 | Identity | Worldcoin World ID 4.0 (MiniKit + IDKit, Orb verified) |
 
 ---
@@ -62,10 +62,6 @@ NEXT_PUBLIC_WC_RPC=https://worldchain-mainnet.g.alchemy.com/public
 # Database (Neon Postgres)
 DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
 
-# NextAuth
-NEXTAUTH_SECRET=your-32-char-random-secret
-NEXTAUTH_URL=http://localhost:3000
-
 # Pusher
 PUSHER_APP_ID=your-pusher-app-id
 PUSHER_KEY=your-pusher-key
@@ -83,6 +79,10 @@ HIPPIUS_PUBLIC_URL=https://s3.hippius.com
 
 # Admin metrics (comma-separated nullifier hashes that can access /api/admin/metrics)
 ADMIN_NULLIFIER_HASHES=0xabc123...
+
+# World Chain (onchain proof verification)
+WORLD_ID_ROUTER=0x17B354dD2595411ff79041f930e491A4Df39A278
+WORLD_CHAIN_RPC=https://worldchain-mainnet.g.alchemy.com/public
 ```
 
 ### 3. Push the database schema
@@ -113,7 +113,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 1. Push to GitHub and import the repo in the Vercel dashboard.
 2. Add all environment variables from the table above.
-3. Set `NEXTAUTH_URL` to your production domain, e.g. `https://arkora.vercel.app`.
+3. Set `NEXT_PUBLIC_APP_ID` and `APP_ID` to your Worldcoin Developer Portal app ID.
 4. Deploy.
 
 **Developer Portal**: After deploying, update the **Redirect URL** in your Worldcoin Developer Portal to `https://your-domain.vercel.app`.

@@ -40,7 +40,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       },
     })
   } catch (err) {
-    console.error('[u/[id] GET]', err)
+    console.error('[u/[id] GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch profile' }, { status: 500 })
   }
 }

@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data })
   } catch (err) {
-    console.error('[polls/batch GET]', err)
+    console.error('[polls/batch GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch poll data' }, { status: 500 })
   }
 }

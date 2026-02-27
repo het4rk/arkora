@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     setCookieOnResponse(res, sessionHash)
     return res
   } catch (err) {
-    console.error('[verify/route]', err)
+    console.error('[verify/route]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

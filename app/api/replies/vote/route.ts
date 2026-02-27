@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: counts })
   } catch (err) {
-    console.error('[replies/vote POST]', err)
+    console.error('[replies/vote POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to vote' }, { status: 500 })
   }
 }

@@ -49,7 +49,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[DELETE /api/user]', err)
+    console.error('[DELETE /api/user]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Deletion failed' }, { status: 500 })
   }
 }

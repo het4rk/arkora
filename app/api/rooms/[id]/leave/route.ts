@@ -18,7 +18,7 @@ export async function POST(
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[rooms/[id]/leave POST]', err)
+    console.error('[rooms/[id]/leave POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to leave room' }, { status: 500 })
   }
 }

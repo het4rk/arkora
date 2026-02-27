@@ -36,7 +36,7 @@ export async function POST(
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[rooms/[id]/kick POST]', err)
+    console.error('[rooms/[id]/kick POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to kick participant' }, { status: 500 })
   }
 }

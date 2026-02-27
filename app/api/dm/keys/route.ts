@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     await upsertDmKey(nullifierHash, publicKey)
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[dm/keys POST]', err)
+    console.error('[dm/keys POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to register key' }, { status: 500 })
   }
 }

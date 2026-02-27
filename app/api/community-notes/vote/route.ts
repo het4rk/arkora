@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       : await voteOnNote(noteId, nullifierHash, helpful)
     return NextResponse.json({ success: true, data: note })
   } catch (err) {
-    console.error('[community-notes/vote POST]', err)
+    console.error('[community-notes/vote POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to vote on note' }, { status: 500 })
   }
 }

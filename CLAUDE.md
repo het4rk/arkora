@@ -30,7 +30,7 @@ pnpm db:seed          # Seed database (reads .env.local)
 - **Database**: Neon Postgres via Drizzle ORM (`lib/db/schema.ts`)
 - **Real-time**: Pusher (server `lib/pusher.ts`, client `pusher-js`)
 - **Auth**: World ID MiniKit (`@worldcoin/minikit-js`, `@worldcoin/minikit-react`) + IDKit (`@worldcoin/idkit`) for desktop
-- **Blockchain**: viem on World Chain (ArkVotes.sol)
+- **Blockchain**: viem on World Chain (WorldIDRouter onchain proof verification, chain 480)
 - **Crypto**: `@noble/curves` (Curve25519 ECDH), `@noble/hashes` (HKDF-SHA256), Web Crypto (AES-256-GCM)
 - **File storage**: Hippius S3 (`lib/storage/hippius.ts`, S3-compatible)
 - **Animations**: Framer Motion
@@ -38,6 +38,23 @@ pnpm db:seed          # Seed database (reads .env.local)
 ---
 
 ## What's Been Built (Shipped Features)
+
+### Onchain World ID Verification (Sprint 13)
+
+- [x] `lib/worldid.ts` — rewrote from `verifyCloudProof` (Worldcoin cloud API) to viem `readContract` against WorldIDRouter on World Chain mainnet (chain 480)
+- [x] WorldIDRouter address: `0x17B354dD2595411ff79041f930e491A4Df39A278` (World Chain mainnet)
+- [x] `hashToField(hex) = BigInt(keccak256(hex)) >> 8n` — matches IDKit-core v2.1.0 exactly
+- [x] `computeExternalNullifierHash(appId, action)` — double hashToField matching World App ZK proof computation
+- [x] `getLatestWorldChainBlock()` helper — records block number at time of verification
+- [x] `verifiedBlockNumber` bigint column added to `humanUsers` — populated on new verifications
+- [x] Profile + Settings show "Verified on World Chain · block #N" with Worldscan link
+- [x] Public profiles show "Verified on World Chain" badge linked to worldscan.org/address/{wallet}
+- [x] `WORLD_ID_ROUTER` and `WORLD_CHAIN_RPC` added to required env vars and `.env.example`
+- [x] TypeScript target bumped ES2017 → ES2020 for BigInt literal support
+- [x] Developer Portal Engine changed to "Onchain" (no longer "Cloud")
+- [x] Identity merge fix: `/api/profile` fetches posts/replies for both World ID + wlt_ linked identities
+- [x] `GET /api/auth/user` added for ProfileView to refresh stale store data on mount
+- [x] WalletConnect bio migration extended — copies bio from World ID record to wlt_ record
 
 ### Confessions Board (Sprint 9)
 - [x] `'confessions'` added to `BoardId` type + `BOARDS` array (emoji 🤫)
@@ -216,7 +233,7 @@ activeRoomId                                             — currently joined ro
 
 ### Database Schema (Key Tables)
 
-- `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode, **karmaScore** (integer); indexed on `pseudoHandle` for mention autocomplete
+- `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode, **karmaScore** (integer), **verifiedBlockNumber** (bigint, nullable — set at World ID verification time); indexed on `pseudoHandle` for mention autocomplete
 - `posts` — id, title, body, boardId, nullifierHash, pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId, `type` ('text'|'poll'|'repost'), `pollOptions` (JSONB), `pollEndsAt`, `reportCount` (integer, default 0)
 - `pollVotes` — id, postId (FK→posts cascade), nullifierHash, optionIndex; UNIQUE(postId, nullifierHash) enforces sybil resistance
 - `replies` — id, postId, parentReplyId, content, nullifierHash, pseudoHandle, upvotes, downvotes
@@ -266,8 +283,10 @@ activeRoomId                                             — currently joined ro
 - [ ] `PUSHER_*` + `NEXT_PUBLIC_PUSHER_*` vars
 - [ ] `HIPPIUS_*` vars
 - [ ] `NEXT_PUBLIC_APP_ID` / `APP_ID` matching Developer Portal
-- [ ] `WORLDCOIN_API_KEY` — World App push notifications (Worldcoin Developer Portal)
+- [ ] `WORLDCOIN_API_KEY` — World App push notifications (Worldcoin Developer Portal) — code exists in `lib/worldAppNotify.ts`, just needs the key in Vercel Dashboard
 - [ ] `ADMIN_NULLIFIER_HASHES` — comma-separated admin nullifier hashes for `/api/admin/metrics`
+- [x] `WORLD_ID_ROUTER=0x17B354dD2595411ff79041f930e491A4Df39A278` — WorldIDRouter on World Chain
+- [x] `WORLD_CHAIN_RPC=https://worldchain-mainnet.g.alchemy.com/public` — public RPC, no API key needed
 - [ ] Developer Portal redirect URL = production domain
 - [ ] `pnpm db:push` run against production DB
 - [ ] UptimeRobot monitor on `https://arkora.vercel.app/api/health`
@@ -289,6 +308,7 @@ activeRoomId                                             — currently joined ro
 | `lib/crypto/dm.ts` | ECDH key gen + AES-256-GCM encrypt/decrypt |
 | `lib/storage/hippius.ts` | S3 upload adapter |
 | `lib/pusher.ts` | Server-side Pusher trigger |
+| `lib/worldid.ts` | Onchain World ID proof verification via WorldIDRouter (viem readContract, no cloud API) |
 | `lib/worldAppNotify.ts` | World App native push notification helper (Worldcoin API, fire-and-forget) |
 | `hooks/useVerification.ts` | World ID verify flow (MiniKit mobile + IDKit desktop) |
 | `app/api/auth/wallet/route.ts` | SIWE verify + issue session cookies |
@@ -355,6 +375,8 @@ activeRoomId                                             — currently joined ro
 - [ ] World Chain smart contract for on-chain votes (`contracts/ArkVotes.sol`)
 - [ ] Testing (Vitest unit + Playwright E2E)
 - [ ] Custom domain (`arkora.world` or similar)
+
+- [x] Sprint 13: Onchain World ID verification (WorldIDRouter on World Chain), verifiedBlockNumber, identity merge fix
 
 ### Previous Sprints
 - [x] World App native push notifications via Worldcoin API (`lib/worldAppNotify.ts`)

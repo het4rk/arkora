@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       walletAddress: payload.address,
     })
   } catch (err) {
-    console.error('[auth/route]', err)
+    console.error('[auth/route]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Authentication failed' },
       { status: 500 }

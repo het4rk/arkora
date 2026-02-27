@@ -117,7 +117,7 @@ export async function GET() {
       },
     })
   } catch (err) {
-    console.error('[GET /api/admin/metrics]', err)
+    console.error('[GET /api/admin/metrics]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

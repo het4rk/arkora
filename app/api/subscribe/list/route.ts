@@ -26,7 +26,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data })
   } catch (err) {
-    console.error('[subscribe/list GET]', err)
+    console.error('[subscribe/list GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch subscriptions' }, { status: 500 })
   }
 }

@@ -36,7 +36,7 @@ export async function POST(
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[rooms/[id]/mute POST]', err)
+    console.error('[rooms/[id]/mute POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to mute participant' }, { status: 500 })
   }
 }

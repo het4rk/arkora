@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const messages = await getDmMessages(myHash, otherHash, cursor, since)
     return NextResponse.json({ success: true, data: messages })
   } catch (err) {
-    console.error('[dm/messages GET]', err)
+    console.error('[dm/messages GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch messages' }, { status: 500 })
   }
 }
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { id } }, { status: 201 })
   } catch (err) {
-    console.error('[dm/messages POST]', err)
+    console.error('[dm/messages POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to send message' }, { status: 500 })
   }
 }

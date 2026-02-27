@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     // Client uses optimistic updates — no need to re-fetch the post
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[vote POST]', err)
+    console.error('[vote POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Failed to cast vote' },
       { status: 500 }

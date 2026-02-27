@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { notifications: enriched, unreadCount } })
   } catch (err) {
-    console.error('[notifications GET]', err)
+    console.error('[notifications GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch notifications' }, { status: 500 })
   }
 }
@@ -62,7 +62,7 @@ export async function POST() {
     await markAllRead(nullifierHash)
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[notifications POST]', err)
+    console.error('[notifications POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to mark read' }, { status: 500 })
   }
 }

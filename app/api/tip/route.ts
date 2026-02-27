@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     await recordTip(senderHash, recipientHash, recipient.walletAddress, amountWld, txId)
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[tip POST]', err)
+    console.error('[tip POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to record tip' }, { status: 500 })
   }
 }

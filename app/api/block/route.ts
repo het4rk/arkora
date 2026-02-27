@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { blocked: true } }, { status: 201 })
   } catch (err) {
-    console.error('[block POST]', err)
+    console.error('[block POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to update block' }, { status: 500 })
   }
 }
@@ -71,7 +71,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: rows.map((r) => r.blockedHash) })
   } catch (err) {
-    console.error('[block GET]', err)
+    console.error('[block GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch blocks' }, { status: 500 })
   }
 }

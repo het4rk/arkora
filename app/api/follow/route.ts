@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { followerCount, followingCount, isFollowing: following } })
   } catch (err) {
-    console.error('[follow GET]', err)
+    console.error('[follow GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch follow data' }, { status: 500 })
   }
 }
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ success: true, data: { isFollowing: isNowFollowing } })
   } catch (err) {
-    console.error('[follow POST]', err)
+    console.error('[follow POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to toggle follow' }, { status: 500 })
   }
 }

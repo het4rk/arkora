@@ -12,7 +12,7 @@ export async function GET() {
     const conversations = await getConversations(nullifierHash)
     return NextResponse.json({ success: true, data: conversations })
   } catch (err) {
-    console.error('[dm/conversations GET]', err)
+    console.error('[dm/conversations GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch conversations' }, { status: 500 })
   }
 }

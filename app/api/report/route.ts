@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { reported: true } }, { status: 201 })
   } catch (err) {
-    console.error('[report POST]', err)
+    console.error('[report POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to submit report' }, { status: 500 })
   }
 }

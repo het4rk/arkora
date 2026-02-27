@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const results = await searchPosts(q, limit)
     return NextResponse.json({ success: true, data: results })
   } catch (err) {
-    console.error('[search GET]', err)
+    console.error('[search GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Search failed' },
       { status: 500 }

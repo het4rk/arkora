@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -28,8 +29,9 @@ export function Avatar({ avatarUrl, label, size = 'md', className }: Props) {
       )}
     >
       {avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={avatarUrl} alt={label ?? 'Avatar'} className="w-full h-full object-cover" />
+        <span className="relative w-full h-full">
+          <Image src={avatarUrl} alt={label ?? 'Avatar'} fill className="object-cover" />
+        </span>
       ) : (
         <span>{initials}</span>
       )}

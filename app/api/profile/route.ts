@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: false, error: 'Invalid tab' }, { status: 400 })
   } catch (err) {
-    console.error('[profile GET]', err)
+    console.error('[profile GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Failed to fetch profile data' },
       { status: 500 }

@@ -25,7 +25,7 @@ export async function DELETE(_req: Request, { params }: Params) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[replies/[id] DELETE]', err)
+    console.error('[replies/[id] DELETE]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Failed to delete reply' },
       { status: 500 }

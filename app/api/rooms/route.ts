@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const activeRooms = await getRooms(boardId)
     return NextResponse.json({ success: true, data: activeRooms })
   } catch (err) {
-    console.error('[rooms GET]', err)
+    console.error('[rooms GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch rooms' }, { status: 500 })
   }
 }
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     const room = await createRoom(callerHash, hostHandle, title, rawBoardId as BoardId, maxParticipants)
     return NextResponse.json({ success: true, data: room }, { status: 201 })
   } catch (err) {
-    console.error('[rooms POST]', err)
+    console.error('[rooms POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to create room' }, { status: 500 })
   }
 }

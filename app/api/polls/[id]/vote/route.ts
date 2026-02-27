@@ -49,7 +49,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const results = await getPollResults(id)
     return NextResponse.json({ success: true, data: { results, userVote: optionIndex } })
   } catch (err) {
-    console.error('[polls/[id]/vote POST]', err)
+    console.error('[polls/[id]/vote POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to record vote' }, { status: 500 })
   }
 }

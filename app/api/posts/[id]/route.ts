@@ -41,7 +41,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
     return NextResponse.json({ success: true, data: { post, replies, notes, pollResults, userVote, authorKarmaScore } })
   } catch (err) {
-    console.error('[posts/[id] GET]', err)
+    console.error('[posts/[id] GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Failed to fetch post' },
       { status: 500 }
@@ -69,7 +69,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     invalidatePosts()
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[posts/[id] DELETE]', err)
+    console.error('[posts/[id] DELETE]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Failed to delete post' },
       { status: 500 }

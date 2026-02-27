@@ -54,7 +54,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: participant })
   } catch (err) {
-    console.error('[rooms/[id]/join POST]', err)
+    console.error('[rooms/[id]/join POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to join room' }, { status: 500 })
   }
 }

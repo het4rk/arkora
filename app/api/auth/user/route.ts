@@ -19,7 +19,7 @@ export async function GET() {
     }
     return NextResponse.json({ success: true, user })
   } catch (err) {
-    console.error('[auth/user GET]', err)
+    console.error('[auth/user GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     })
     return res
   } catch (err) {
-    console.error('[auth/user]', err)
+    console.error('[auth/user]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -118,7 +118,7 @@ export async function PATCH(req: NextRequest) {
     }
     return NextResponse.json({ success: true, user })
   } catch (err) {
-    console.error('[auth/user PATCH]', err)
+    console.error('[auth/user PATCH]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to update user' }, { status: 500 })
   }
 }

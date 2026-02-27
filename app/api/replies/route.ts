@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: reply }, { status: 201 })
   } catch (err) {
-    console.error('[replies POST]', err)
+    console.error('[replies POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Failed to create reply' },
       { status: 500 }

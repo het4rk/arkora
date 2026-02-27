@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('[subscribe GET]', err)
+    console.error('[subscribe GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch subscription' }, { status: 500 })
   }
 }
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('[subscribe POST]', err)
+    console.error('[subscribe POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to subscribe' }, { status: 500 })
   }
 }
@@ -114,7 +114,7 @@ export async function DELETE(req: NextRequest) {
     await cancelSubscription(callerHash, creatorHash)
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[subscribe DELETE]', err)
+    console.error('[subscribe DELETE]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to cancel subscription' }, { status: 500 })
   }
 }

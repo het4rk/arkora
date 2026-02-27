@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const note = await createCommunityNote(postId, sanitizeText(body), submitterNullifierHash)
     return NextResponse.json({ success: true, data: note }, { status: 201 })
   } catch (err) {
-    console.error('[community-notes POST]', err)
+    console.error('[community-notes POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to submit note' }, { status: 500 })
   }
 }

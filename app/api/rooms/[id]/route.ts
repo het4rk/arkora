@@ -19,7 +19,7 @@ export async function GET(
     const participants = await getActiveParticipants(id)
     return NextResponse.json({ success: true, data: { room, participants } })
   } catch (err) {
-    console.error('[rooms/[id] GET]', err)
+    console.error('[rooms/[id] GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch room' }, { status: 500 })
   }
 }
@@ -50,7 +50,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[rooms/[id] DELETE]', err)
+    console.error('[rooms/[id] DELETE]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to end room' }, { status: 500 })
   }
 }

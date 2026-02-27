@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const authResponse = pusherServer.authorizeChannel(socketId, channel, presenceData)
     return NextResponse.json(authResponse)
   } catch (err) {
-    console.error('[pusher/auth POST]', err)
+    console.error('[pusher/auth POST]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Auth failed' }, { status: 500 })
   }
 }

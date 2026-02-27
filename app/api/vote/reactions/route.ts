@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { upvoters, downvoters } })
   } catch (err) {
-    console.error('[vote/reactions GET]', err)
+    console.error('[vote/reactions GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch reactions' }, { status: 500 })
   }
 }
