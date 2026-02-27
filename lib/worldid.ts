@@ -11,6 +11,8 @@ import type { ISuccessResult } from '@worldcoin/minikit-js'
 
 type VerifyResult = { success: boolean; nullifierHash?: string; error?: string }
 
+// Error selectors from the World ID Router / Semaphore contracts.
+// Viem needs these to decode custom revert reasons; without them it only shows hex.
 const WORLD_ID_ABI = [
   {
     name: 'verifyProof',
@@ -26,7 +28,26 @@ const WORLD_ID_ABI = [
     ],
     outputs: [],
   },
+  // Custom errors so viem can decode revert reasons
+  { type: 'error', name: 'InvalidRoot', inputs: [] },
+  { type: 'error', name: 'NonExistentRoot', inputs: [] },
+  { type: 'error', name: 'ExpiredRoot', inputs: [] },
+  { type: 'error', name: 'InvalidNullifier', inputs: [] },
+  { type: 'error', name: 'InvalidProof', inputs: [] },
+  { type: 'error', name: 'GroupDoesNotExist', inputs: [] },
+  { type: 'error', name: 'MismatchedInputLengths', inputs: [] },
 ] as const
+
+// Error selectors (keccak256 of signature, first 4 bytes) for fallback matching
+// when viem can't decode (e.g., errors from delegated contracts not in our ABI)
+const ERROR_SELECTORS: Record<string, string> = {
+  '0x504570e3': 'InvalidRoot',
+  '0xddae3b71': 'NonExistentRoot',
+  '0x3ae7359e': 'ExpiredRoot',
+  '0x5d904cb2': 'InvalidNullifier',
+  '0x09bde339': 'InvalidProof',
+  '0x69128538': 'GroupDoesNotExist',
+}
 
 /**
  * hashToField mirrors the ByteHasher.hashToField() function in Worldcoin's
@@ -57,6 +78,22 @@ function getClient() {
 }
 
 /**
+ * Extracts the decoded error name from a contract revert.
+ * Checks both viem-decoded names and raw hex selectors.
+ */
+function identifyContractError(message: string): string | null {
+  // Check for viem-decoded error names
+  for (const name of ['InvalidRoot', 'NonExistentRoot', 'ExpiredRoot', 'InvalidNullifier', 'InvalidProof', 'GroupDoesNotExist']) {
+    if (message.includes(name)) return name
+  }
+  // Check for raw hex selectors (when viem can't decode)
+  for (const [selector, name] of Object.entries(ERROR_SELECTORS)) {
+    if (message.includes(selector)) return name
+  }
+  return null
+}
+
+/**
  * Verifies a World ID proof against the WorldIDRouter contract on World Chain.
  * This is an eth_call (view function) - no gas, no transaction, no user signing.
  *
@@ -71,7 +108,7 @@ export async function verifyWorldIdProof(
   const routerAddress = (process.env.WORLD_ID_ROUTER ??
     '0x17B354dD2595411ff79041f930e491A4Df39A278') as Hex
 
-  console.log('[worldid on-chain] Starting verification with appId:', appId, 'action:', action)
+  console.log('[worldid] Verifying proof on-chain, appId:', appId, 'action:', action)
 
   try {
     const root = BigInt(proof.merkle_root)
@@ -79,49 +116,43 @@ export async function verifyWorldIdProof(
     const externalNullifierHash = computeExternalNullifierHash(appId, action)
     const signalHash = hashToField(encodePacked(['string'], [signal ?? '']))
 
-    console.log('[worldid on-chain] Params:', {
-      root: '0x' + root.toString(16).slice(0, 16) + '...',
-      nullifierHash: '0x' + nullifierHash.toString(16).slice(0, 16) + '...',
-      externalNullifierHash: '0x' + externalNullifierHash.toString(16).slice(0, 16) + '...',
-      signalHash: '0x' + signalHash.toString(16).slice(0, 16) + '...',
-      routerAddress,
-      proofLen: proof.proof.length,
-    })
+    console.log('[worldid] root:', proof.merkle_root.slice(0, 18) + '...', 'nh:', proof.nullifier_hash.slice(0, 18) + '...')
 
     const [decodedProof] = decodeAbiParameters(
       [{ type: 'uint256[8]' }],
       proof.proof as Hex
     )
 
-    console.log('[worldid on-chain] Decoded proof, calling verifyProof on router...')
-
     await getClient().readContract({
       address: routerAddress,
       abi: WORLD_ID_ABI,
       functionName: 'verifyProof',
-      // groupId 1 = Orb-level verification
       args: [root, 1n, signalHash, nullifierHash, externalNullifierHash, decodedProof],
     })
 
-    console.log('[worldid on-chain] Proof verified successfully!')
+    console.log('[worldid] Proof verified successfully!')
     return { success: true, nullifierHash: proof.nullifier_hash }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    // Log the full error for debugging - truncate to avoid log spam
-    console.error('[worldid on-chain] FAILED:', message.slice(0, 500))
+    const contractError = identifyContractError(message)
+    console.error('[worldid] FAILED:', contractError ?? message.slice(0, 500))
 
-    if (
-      message.includes('InvalidNullifier') ||
-      message.toLowerCase().includes('already') ||
-      message.toLowerCase().includes('max_verifications')
-    ) {
-      return { success: false, error: 'max_verifications_reached' }
-    }
-
-    if (message.includes('ExpiredRoot') || message.includes('NonExistentRoot')) {
+    // Root issues - user's proof references a Merkle root the contract doesn't recognize
+    if (contractError === 'NonExistentRoot' || contractError === 'ExpiredRoot' || contractError === 'InvalidRoot') {
       return { success: false, error: 'expired_root' }
     }
 
+    // Nullifier already used on-chain (user already verified for this action)
+    if (contractError === 'InvalidNullifier') {
+      return { success: false, error: 'max_verifications_reached' }
+    }
+
+    // ZK proof math didn't check out
+    if (contractError === 'InvalidProof') {
+      return { success: false, error: 'invalid_proof' }
+    }
+
+    // Network / RPC errors
     if (
       message.includes('fetch') ||
       message.includes('ECONNREFUSED') ||
@@ -134,8 +165,7 @@ export async function verifyWorldIdProof(
       return { success: false, error: 'network_error' }
     }
 
-    // Return the raw message (truncated) so it surfaces to the client for debugging
-    return { success: false, error: `on_chain_failed: ${message.slice(0, 200)}` }
+    return { success: false, error: `on_chain_failed: ${contractError ?? message.slice(0, 200)}` }
   }
 }
 
