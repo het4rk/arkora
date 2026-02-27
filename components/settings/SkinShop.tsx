@@ -172,13 +172,11 @@ export function SkinShop() {
                 <div
                   className={cn(
                     'w-9 h-9 rounded-full border-2 transition-all flex-shrink-0',
-                    hexActive ? 'border-text' : hexOwned ? 'border-border' : 'border-border/50'
+                    hexActive ? 'border-text' : hexOwned ? 'border-border' : 'border-border/50',
+                    hexOwned
+                      ? 'bg-[conic-gradient(#EF4444,#F59E0B,#22C55E,#3B82F6,#A855F7,#EF4444)]'
+                      : 'bg-border/30'
                   )}
-                  style={{
-                    background: hexOwned
-                      ? `conic-gradient(#EF4444, #F59E0B, #22C55E, #3B82F6, #A855F7, #EF4444)`
-                      : 'rgba(var(--clr-border), 0.3)',
-                  }}
                 >
                   {!hexOwned && (
                     <div className="w-full h-full flex items-center justify-center">
@@ -211,6 +209,7 @@ export function SkinShop() {
                     type="color"
                     value={hexInput}
                     onChange={(e) => handleHexChange(e.target.value)}
+                    aria-label="Accent color picker"
                     className="w-8 h-8 rounded-lg border-0 cursor-pointer bg-transparent"
                   />
                   <input
@@ -218,6 +217,7 @@ export function SkinShop() {
                     value={hexInput}
                     onChange={(e) => handleHexChange(e.target.value)}
                     placeholder="#6366F1"
+                    aria-label="Hex color value"
                     maxLength={7}
                     className="glass-input flex-1 text-sm font-mono px-3 py-2 rounded-lg"
                   />
@@ -237,15 +237,13 @@ export function SkinShop() {
         {confirmSkinData && (
           <div className="flex flex-col items-center text-center gap-5 py-4">
             <div
-              className="w-16 h-16 rounded-full border-2 border-border"
-              style={{
-                backgroundColor: confirmSkinData.id === 'hex'
-                  ? undefined
-                  : confirmSkinData.hex,
-                background: confirmSkinData.id === 'hex'
-                  ? 'conic-gradient(#EF4444, #F59E0B, #22C55E, #3B82F6, #A855F7, #EF4444)'
-                  : undefined,
-              }}
+              className={cn(
+                'w-16 h-16 rounded-full border-2 border-border',
+                confirmSkinData.id === 'hex'
+                  ? 'bg-[conic-gradient(#EF4444,#F59E0B,#22C55E,#3B82F6,#A855F7,#EF4444)]'
+                  : ''
+              )}
+              style={confirmSkinData.id !== 'hex' ? { backgroundColor: confirmSkinData.hex } : undefined}
             />
             <div>
               <p className="text-text font-bold text-lg">

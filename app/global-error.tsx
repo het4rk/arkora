@@ -1,5 +1,7 @@
 'use client'
 
+import './globals.css'
+
 interface Props {
   error: Error & { digest?: string }
   reset: () => void
@@ -8,14 +10,14 @@ interface Props {
 export default function GlobalError({ error, reset }: Props) {
   return (
     <html lang="en">
-      <body style={{ background: '#0a0a0a', color: '#fff', fontFamily: 'system-ui, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', padding: '24px', textAlign: 'center' }}>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 16 }}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-        <p style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Something went wrong</p>
-        <p style={{ color: '#888', fontSize: 13, marginBottom: 4, maxWidth: 320 }}>An unexpected error occurred. Please try again.</p>
-        {error.digest && <p style={{ color: '#555', fontSize: 11, marginBottom: 24 }}>digest: {error.digest}</p>}
+      <body className="bg-[#0a0a0a] text-white font-[system-ui,sans-serif] flex flex-col items-center justify-center min-h-dvh p-6 text-center">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-4"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+        <p className="font-bold text-lg mb-2">Something went wrong</p>
+        <p className="text-[#888] text-[13px] mb-1 max-w-xs">An unexpected error occurred. Please try again.</p>
+        {error.digest && <p className="text-[#555] text-[11px] mb-6">digest: {error.digest}</p>}
         <button
           onClick={reset}
-          style={{ background: '#ffffff', color: '#0a0a0a', border: 'none', borderRadius: 12, padding: '12px 24px', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+          className="bg-white text-[#0a0a0a] border-0 rounded-xl px-6 py-3 font-semibold text-sm cursor-pointer"
         >
           Try again
         </button>

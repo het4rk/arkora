@@ -52,6 +52,7 @@ export function ImagePicker({ onUpload, onClear, previewUrl, className }: Props)
         ref={fileRef}
         type="file"
         accept="image/jpeg,image/png,image/gif,image/webp"
+        aria-label="Upload image"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0]

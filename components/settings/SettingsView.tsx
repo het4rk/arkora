@@ -469,6 +469,7 @@ export function SettingsView() {
                     const opt = RADIUS_OPTIONS[parseInt(e.target.value)]
                     if (opt !== undefined) setLocationRadius(opt)
                   }}
+                  aria-label="Local feed radius"
                   className="w-full accent-[var(--accent)] cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-text-muted/60 px-0.5">
