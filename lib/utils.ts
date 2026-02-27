@@ -59,7 +59,7 @@ export async function shareUrl(
   haptic('light')
   if (typeof navigator !== 'undefined' && navigator.share) {
     try {
-      await navigator.share({ title, text, url })
+      await navigator.share({ title, url, ...(text !== undefined && { text }) })
       return 'shared'
     } catch {
       // User dismissed the sheet - not an error we surface
