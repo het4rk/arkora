@@ -155,8 +155,8 @@ export async function verifyWorldIdProof(
       // Retry only on NonExistentRoot (root propagation lag). All other errors are deterministic.
       if (contractError === 'NonExistentRoot' || contractError === 'InvalidRoot') {
         if (attempt < MAX_ATTEMPTS) {
-          console.log(`[worldid] NonExistentRoot — waiting 3s before retry ${attempt + 1}/${MAX_ATTEMPTS}`)
-          await new Promise<void>((r) => setTimeout(r, 3000))
+          console.log(`[worldid] NonExistentRoot — waiting 1s before retry ${attempt + 1}/${MAX_ATTEMPTS}`)
+          await new Promise<void>((r) => setTimeout(r, 1000))
           continue
         }
         // All retries exhausted — root genuinely not found

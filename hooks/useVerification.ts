@@ -177,6 +177,7 @@ export function useVerification(): UseVerificationReturn {
             payload: proof,
             action: process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman',
           }),
+          signal: AbortSignal.timeout(15000),
         })
       } catch {
         const msg = 'Network error. Please check your connection and try again.'
