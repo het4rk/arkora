@@ -95,6 +95,17 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] **World ID error leak** — `lib/worldid.ts` returns generic "Proof verification failed" to client, logs detailed error server-side only
 - [x] **toPost() type cast** — fixed repost type from `'text' | 'poll'` to `'text' | 'poll' | 'repost'` in follows.ts, bookmarks.ts, search.ts
 
+### Public Developer API + Impressions (Sprint 22)
+
+- [x] **Impressions/views tracking** — `post_views` table (composite PK: postId + nullifierHash) + `view_count` denormalized counter on posts; atomic CTE: `INSERT ON CONFLICT DO NOTHING` + `UPDATE posts SET view_count = COUNT(*)`; fire-and-forget in GET `/api/posts/[id]`; eye icon + count shown in ThreadCard + ThreadView feed cards; `formatCount` helper (1k abbreviation)
+- [x] **Public Developer API** — `GET /api/v1/posts`, `GET /api/v1/polls`, `GET /api/v1/boards`, `GET /api/v1/stats`; cursor-based pagination; CORS headers; all data from World ID-verified humans; nullifierHash/walletAddress/lat/lng never exposed
+- [x] **API key management** — `api_keys` DB table; key format `ark_` + 32 random bytes hex (68 chars total); SHA-256 hash stored in DB, raw shown once; max 5 active keys per verified user; `POST/GET /api/v1/keys`, `DELETE /api/v1/keys/[id]`; `lastUsedAt` updated fire-and-forget on each request
+- [x] **API key UI in Settings** — "Developer API" section (verified users only); create key with label; raw key revealed in copy-able code block with one-time warning; list existing keys with create date + last-used; revoke button per key; base URL + auth header shown as reference
+- [x] **Anonymous profile navigation** — `HumanBadge` now always navigates to profile (removed block for anonymous Human # posts); `nullifierHash` passed to HumanBadge in ThreadCard, ThreadView, ReplyCard
+- [x] **Glass transparency** — reduced background alphas and shadow opacities across glass-sheet, glass-compose, glass-nav, glass-nav-top, glass-sidebar; increased blur radius
+- [x] **Poll button visibility** — PostComposer "Add poll" is now a glass pill button (was tiny muted 11px text)
+- [x] **Multiple toPost mappers** — any change to Post interface requires updating 5 locations: `lib/db/posts.ts` (standard + hot feed raw SQL + local feed raw SQL), `lib/db/bookmarks.ts`, `lib/db/follows.ts`, `lib/db/search.ts`
+
 ### Confessions Board (Sprint 9)
 - [x] `'confessions'` added to `BoardId` type + `BOARDS` array (emoji 🤫)
 - [x] `ANONYMOUS_BOARDS` set in `lib/types.ts` — boards where posts are force-anonymous server-side
@@ -302,6 +313,7 @@ activeRoomId                                             — currently joined ro
 - `reports` — post/reply reports with reason
 - `rooms` — id, title, boardId, hostHash, hostHandle, maxParticipants, isLive, createdAt, endsAt, messageCount
 - `room_participants` — id, roomId (FK→rooms cascade), nullifierHash, displayHandle, identityMode, joinedAt, leftAt, isMuted, isCoHost
+- `api_keys` — id (uuid PK), nullifierHash (owner), keyHash (SHA-256 of raw key, unique), label, createdAt, lastUsedAt, revokedAt; max 5 active per user; raw key shown once on creation
 
 ### Pusher Setup
 
@@ -417,7 +429,15 @@ Known limitation: rate limiter is in-process (resets on Vercel cold start). Fine
 | `hooks/useMentionAutocomplete.ts` | Mention detection + debounced search hook |
 | `components/rooms/RoomView.tsx` | Main room UI (Pusher presence subscription) |
 | `components/rooms/RoomsDiscovery.tsx` | Rooms list + create sheet |
-| `components/settings/SettingsView.tsx` | Full settings (identity, appearance, notifications, location, account, subs) |
+| `components/settings/SettingsView.tsx` | Full settings (identity, appearance, notifications, location, account, subs, API keys) |
+| `lib/db/apiKeys.ts` | `createApiKey`, `validateApiKey`, `revokeApiKey`, `getApiKeysByOwner`, `countActiveKeysByOwner` |
+| `lib/apiKeyAuth.ts` | `requireApiKey()` middleware - validates X-API-Key / Bearer header for v1 routes |
+| `app/api/v1/keys/route.ts` | Create (POST) / list (GET) API keys (World ID auth required) |
+| `app/api/v1/keys/[id]/route.ts` | Revoke API key (DELETE, World ID auth required) |
+| `app/api/v1/posts/route.ts` | Public posts feed (API key auth, CORS enabled) |
+| `app/api/v1/polls/route.ts` | Public polls with live vote counts (API key auth, CORS enabled) |
+| `app/api/v1/boards/route.ts` | Board list with post counts (API key auth, CORS enabled) |
+| `app/api/v1/stats/route.ts` | Aggregate platform stats (API key auth, CORS enabled) |
 | `next.config.ts` | remotePatterns, CSP headers, HSTS |
 
 ---

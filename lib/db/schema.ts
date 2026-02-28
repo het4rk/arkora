@@ -449,3 +449,23 @@ export const roomParticipants = pgTable(
 
 export type DbRoom = typeof rooms.$inferSelect
 export type DbRoomParticipant = typeof roomParticipants.$inferSelect
+
+// ── Public API Keys ───────────────────────────────────────────────────────────
+export const apiKeys = pgTable(
+  'api_keys',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    nullifierHash: text('nullifier_hash').notNull(),
+    keyHash: text('key_hash').notNull(),       // SHA-256 of the raw key; raw shown only at creation
+    label: text('label').default('').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    lastUsedAt: timestamp('last_used_at'),
+    revokedAt: timestamp('revoked_at'),
+  },
+  (table) => ({
+    nullifierIdx: index('api_keys_nullifier_idx').on(table.nullifierHash),
+    keyHashIdx: uniqueIndex('api_keys_key_hash_idx').on(table.keyHash),
+  })
+)
+
+export type DbApiKey = typeof apiKeys.$inferSelect

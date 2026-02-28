@@ -61,6 +61,74 @@ export function SettingsView() {
   const [cropFile, setCropFile] = useState<File | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
+  // ── API Keys state ─────────────────────────────────────────────────────────
+  interface ApiKey {
+    id: string
+    label: string
+    createdAt: string
+    lastUsedAt: string | null
+    revokedAt: string | null
+  }
+  const [apiKeysList, setApiKeysList] = useState<ApiKey[]>([])
+  const [apiKeysLoading, setApiKeysLoading] = useState(false)
+  const [newKeyLabel, setNewKeyLabel] = useState('')
+  const [creatingKey, setCreatingKey] = useState(false)
+  const [newKeyResult, setNewKeyResult] = useState<{ id: string; key: string; label: string } | null>(null)
+  const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null)
+  const [keyCopied, setKeyCopied] = useState(false)
+  const [showKeyForm, setShowKeyForm] = useState(false)
+
+  useEffect(() => {
+    if (!nullifierHash || !isVerified) return
+    setApiKeysLoading(true)
+    void fetch('/api/v1/keys')
+      .then((r) => r.json())
+      .then((j: { success: boolean; data?: ApiKey[] }) => {
+        if (j.success && j.data) setApiKeysList(j.data)
+      })
+      .finally(() => setApiKeysLoading(false))
+  }, [nullifierHash, isVerified])
+
+  async function createApiKey() {
+    setCreatingKey(true)
+    try {
+      const res = await fetch('/api/v1/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: newKeyLabel.trim() }),
+      })
+      const json = (await res.json()) as { success: boolean; data?: { id: string; label: string; createdAt: string; key: string }; error?: string }
+      if (!json.success || !json.data) return
+      setNewKeyResult({ id: json.data.id, key: json.data.key, label: json.data.label })
+      setNewKeyLabel('')
+      setShowKeyForm(false)
+      setApiKeysList((prev) => [
+        { id: json.data!.id, label: json.data!.label, createdAt: json.data!.createdAt, lastUsedAt: null, revokedAt: null },
+        ...prev,
+      ])
+    } finally {
+      setCreatingKey(false)
+    }
+  }
+
+  async function revokeApiKey(id: string) {
+    setRevokingKeyId(id)
+    try {
+      const res = await fetch(`/api/v1/keys/${id}`, { method: 'DELETE' })
+      const json = (await res.json()) as { success: boolean }
+      if (json.success) setApiKeysList((prev) => prev.filter((k) => k.id !== id))
+    } finally {
+      setRevokingKeyId(null)
+    }
+  }
+
+  function copyKey(key: string) {
+    void navigator.clipboard.writeText(key).then(() => {
+      setKeyCopied(true)
+      setTimeout(() => setKeyCopied(false), 2000)
+    })
+  }
+
   // ── Subscriptions state ───────────────────────────────────────────────────
   interface SubRow {
     creatorHash: string
@@ -657,6 +725,144 @@ export function SettingsView() {
                   ))}
                 </div>
               )}
+            </section>
+          )}
+
+          {/* ── Developer API ──────────────────────────────────── */}
+          {isVerified && (
+            <section className="space-y-3">
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Developer API</p>
+
+              {/* New key revealed - shown once */}
+              {newKeyResult && (
+                <div className="glass rounded-[var(--r-lg)] p-4 space-y-3 border border-accent/20">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-text text-sm font-semibold">Key created</p>
+                      <p className="text-text-muted text-xs mt-0.5">Copy it now - it will not be shown again.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNewKeyResult(null)}
+                      className="text-text-muted/50 active:opacity-60 transition-opacity mt-0.5 shrink-0"
+                      aria-label="Dismiss"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-black/30 rounded-[var(--r-md)] px-3 py-2 text-[11px] font-mono text-accent break-all leading-relaxed min-w-0">
+                      {newKeyResult.key}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => copyKey(newKeyResult.key)}
+                      className="shrink-0 flex items-center gap-1.5 px-3 py-2 glass rounded-[var(--r-md)] text-xs font-semibold text-text-secondary active:scale-95 transition-all"
+                    >
+                      {keyCopied ? (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                      ) : (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                      )}
+                      <span>{keyCopied ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Create key form */}
+              {showKeyForm && !newKeyResult && (
+                <div className="glass rounded-[var(--r-lg)] p-4 space-y-3">
+                  <p className="text-text text-sm font-semibold">New API key</p>
+                  <input
+                    type="text"
+                    value={newKeyLabel}
+                    onChange={(e) => setNewKeyLabel(e.target.value.slice(0, 64))}
+                    placeholder="Label (optional)"
+                    className="glass-input w-full rounded-[var(--r-md)] px-3 py-2.5 text-sm"
+                    autoFocus
+                    onKeyDown={(e) => { if (e.key === 'Enter') void createApiKey() }}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void createApiKey()}
+                      disabled={creatingKey}
+                      className="flex-1 py-2.5 bg-accent text-background text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
+                    >
+                      {creatingKey ? 'Creating…' : 'Create key'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowKeyForm(false); setNewKeyLabel('') }}
+                      className="flex-1 py-2.5 glass text-text-secondary text-sm font-semibold rounded-[var(--r-md)] active:opacity-70 transition-opacity"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Existing keys list */}
+              {apiKeysLoading ? (
+                <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm animate-pulse">Loading…</div>
+              ) : apiKeysList.length === 0 && !showKeyForm ? (
+                <div className="glass rounded-[var(--r-lg)] px-4 py-4 space-y-2">
+                  <p className="text-text-secondary text-sm">No API keys yet.</p>
+                  <p className="text-text-muted text-xs leading-relaxed">
+                    API keys let you query Arkora&apos;s verified-human data programmatically. Only verified users can create keys.
+                  </p>
+                </div>
+              ) : apiKeysList.length > 0 ? (
+                <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
+                  {apiKeysList.map((k) => (
+                    <div key={k.id} className="px-4 py-3.5 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-text text-sm font-medium truncate">{k.label || 'Untitled key'}</p>
+                        <p className="text-text-muted text-xs mt-0.5">
+                          Created {new Date(k.createdAt).toLocaleDateString()}
+                          {k.lastUsedAt ? ` · Last used ${new Date(k.lastUsedAt).toLocaleDateString()}` : ' · Never used'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void revokeApiKey(k.id)}
+                        disabled={revokingKeyId === k.id}
+                        className="shrink-0 px-3 py-1.5 glass rounded-[var(--r-full)] text-xs text-text-muted font-semibold active:scale-95 transition-all disabled:opacity-40"
+                      >
+                        {revokingKeyId === k.id ? '…' : 'Revoke'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Create button - shown when no form open */}
+              {!showKeyForm && !newKeyResult && apiKeysList.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => setShowKeyForm(true)}
+                  className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-text-secondary text-sm font-medium active:opacity-70 transition-opacity"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span>New API key</span>
+                </button>
+              )}
+
+              {/* Docs link */}
+              <div className="glass rounded-[var(--r-lg)] px-4 py-3 flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-text-muted text-xs">Base URL</p>
+                  <p className="text-text text-xs font-mono mt-0.5">https://arkora.vercel.app/api/v1</p>
+                </div>
+                <div className="text-text-muted text-xs">
+                  <code className="text-[11px] bg-black/20 px-2 py-1 rounded font-mono">X-API-Key: ark_...</code>
+                </div>
+              </div>
             </section>
           )}
 
