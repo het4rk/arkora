@@ -17,6 +17,7 @@ export interface UseVoiceRoomReturn {
   joinVoice: () => void
   leaveVoice: () => void
   toggleMic: () => void
+  forceMuteMic: () => void // Called externally (e.g. host-mute event) to silence the track
 }
 
 /**
@@ -114,5 +115,13 @@ export function useVoiceRoom(roomId: string, nullifierHash: string | null): UseV
     setIsMicMuted(next)
   }, [isMicMuted])
 
-  return { voiceState, isMicMuted, speakingSet, voiceError, joinVoice, leaveVoice, toggleMic }
+  // Silences the mic without toggling - called when host mutes this participant
+  const forceMuteMic = useCallback(() => {
+    const lkRoom = lkRoomRef.current
+    if (!lkRoom) return
+    void lkRoom.localParticipant.setMicrophoneEnabled(false)
+    setIsMicMuted(true)
+  }, [])
+
+  return { voiceState, isMicMuted, speakingSet, voiceError, joinVoice, leaveVoice, toggleMic, forceMuteMic }
 }

@@ -124,7 +124,7 @@ export function RoomView({ roomId }: RoomViewProps) {
   const [showChat, setShowChat] = useState(false)
 
   // Voice (LiveKit)
-  const { voiceState, isMicMuted, speakingSet: voiceSpeakingSet, voiceError, joinVoice, leaveVoice, toggleMic } =
+  const { voiceState, isMicMuted, speakingSet: voiceSpeakingSet, voiceError, joinVoice, leaveVoice, toggleMic, forceMuteMic } =
     useVoiceRoom(roomId, nullifierHash)
 
   // Fallback speaking state (4s timer) used when voice is not active
@@ -267,6 +267,8 @@ export function RoomView({ roomId }: RoomViewProps) {
           )
           if (data.targetHash === nullifierHash) {
             setMyParticipant((prev) => prev ? { ...prev, isMuted: true } : prev)
+            // Silence the LiveKit mic track immediately - host-muted users must not transmit
+            forceMuteMic()
           }
         })
 
@@ -278,6 +280,7 @@ export function RoomView({ roomId }: RoomViewProps) {
         })
 
         channel.bind('room-ended', () => {
+          leaveVoice()
           setHasEnded(true)
         })
 
