@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type JSX } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { haptic } from '@/lib/utils'
 
