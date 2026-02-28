@@ -23,7 +23,7 @@ export async function createApiKey(
   return { ...row!, raw }
 }
 
-/** Lists all API keys for a user (without keyHash). */
+/** Lists active (non-revoked) API keys for a user (without keyHash). */
 export async function getApiKeysByOwner(nullifierHash: string) {
   return db
     .select({
@@ -31,10 +31,9 @@ export async function getApiKeysByOwner(nullifierHash: string) {
       label: apiKeys.label,
       createdAt: apiKeys.createdAt,
       lastUsedAt: apiKeys.lastUsedAt,
-      revokedAt: apiKeys.revokedAt,
     })
     .from(apiKeys)
-    .where(eq(apiKeys.nullifierHash, nullifierHash))
+    .where(and(eq(apiKeys.nullifierHash, nullifierHash), isNull(apiKeys.revokedAt)))
     .orderBy(desc(apiKeys.createdAt))
 }
 

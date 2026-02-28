@@ -67,7 +67,6 @@ export function SettingsView() {
     label: string
     createdAt: string
     lastUsedAt: string | null
-    revokedAt: string | null
   }
   const [apiKeysList, setApiKeysList] = useState<ApiKey[]>([])
   const [apiKeysLoading, setApiKeysLoading] = useState(false)
@@ -77,6 +76,7 @@ export function SettingsView() {
   const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null)
   const [keyCopied, setKeyCopied] = useState(false)
   const [showKeyForm, setShowKeyForm] = useState(false)
+  const [keyError, setKeyError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!nullifierHash || !isVerified) return
@@ -91,6 +91,7 @@ export function SettingsView() {
 
   async function createApiKey() {
     setCreatingKey(true)
+    setKeyError(null)
     try {
       const res = await fetch('/api/v1/keys', {
         method: 'POST',
@@ -98,14 +99,19 @@ export function SettingsView() {
         body: JSON.stringify({ label: newKeyLabel.trim() }),
       })
       const json = (await res.json()) as { success: boolean; data?: { id: string; label: string; createdAt: string; key: string }; error?: string }
-      if (!json.success || !json.data) return
+      if (!json.success || !json.data) {
+        setKeyError(json.error ?? 'Failed to create key')
+        return
+      }
       setNewKeyResult({ id: json.data.id, key: json.data.key, label: json.data.label })
       setNewKeyLabel('')
       setShowKeyForm(false)
       setApiKeysList((prev) => [
-        { id: json.data!.id, label: json.data!.label, createdAt: json.data!.createdAt, lastUsedAt: null, revokedAt: null },
+        { id: json.data!.id, label: json.data!.label, createdAt: json.data!.createdAt, lastUsedAt: null },
         ...prev,
       ])
+    } catch {
+      setKeyError('Network error - try again')
     } finally {
       setCreatingKey(false)
     }
@@ -113,10 +119,17 @@ export function SettingsView() {
 
   async function revokeApiKey(id: string) {
     setRevokingKeyId(id)
+    setKeyError(null)
     try {
       const res = await fetch(`/api/v1/keys/${id}`, { method: 'DELETE' })
-      const json = (await res.json()) as { success: boolean }
-      if (json.success) setApiKeysList((prev) => prev.filter((k) => k.id !== id))
+      const json = (await res.json()) as { success: boolean; error?: string }
+      if (json.success) {
+        setApiKeysList((prev) => prev.filter((k) => k.id !== id))
+      } else {
+        setKeyError(json.error ?? 'Failed to revoke key')
+      }
+    } catch {
+      setKeyError('Network error - try again')
     } finally {
       setRevokingKeyId(null)
     }
@@ -851,6 +864,11 @@ export function SettingsView() {
                   </svg>
                   <span>New API key</span>
                 </button>
+              )}
+
+              {/* Error display */}
+              {keyError && (
+                <p className="text-xs text-text-secondary px-1">{keyError}</p>
               )}
 
               {/* Docs link */}
