@@ -344,7 +344,7 @@ export function Feed() {
               </div>
               <button
                 onClick={() => useArkoraStore.getState().setVerifySheetOpen(true)}
-                className="bg-accent text-background text-xs font-semibold px-3.5 py-2.5 rounded-[var(--r-md)] active:scale-95 active:bg-accent-hover transition-all shrink-0"
+                className="border border-accent/50 text-accent text-xs font-semibold px-3.5 py-2.5 rounded-[var(--r-md)] active:scale-95 active:opacity-70 transition-all shrink-0"
               >
                 Verify →
               </button>
