@@ -13,7 +13,7 @@ Arkora is a World App miniapp where users post, vote, and converse anonymously �
 
 World ID Orb proofs are validated directly on World Chain via the WorldIDRouter smart contract — not on Worldcoin's centralized servers. Proof validation is settled by blockchain consensus.
 
-**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers (shown in feed cards + profiles) · Post impressions (view count, deduped per verified human) · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs, tips, mentions) · Community Notes · Bookmarks · 40 boards with fuzzy search + dynamic creation · Multi-entity search (boards, people, posts) with prefix-first matching · Following feed · Local feed (GPS radius) · E2E encrypted DMs (with block enforcement) · @ mentions · Live ephemeral Rooms with Clubhouse-style participant grid + speaking indicators (auto-close when last person leaves) · Live rooms strip in main feed · Native share sheet on posts and rooms · Profile picture upload · Block / report / moderation (auto-hide at 5 reports) · WLD tips (with push notification to recipient) & subscriptions · Private Pusher channels (server-authorized) · Light + dark theme · GDPR-compliant account deletion (comprehensive data cleanup) · Privacy Policy + Terms of Service · **Public Developer API** (verified-human data, API key auth, CORS)
+**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote, perpetual or timed) · Human Karma & reputation tiers (shown in feed cards + profiles) · Post impressions (view count, deduped per verified human) · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs, tips, mentions) · Community Notes · Bookmarks · 40 boards with fuzzy search + dynamic creation · Multi-entity search (boards, people, posts) with prefix-first matching · Following feed · Local feed (GPS radius) · E2E encrypted DMs (with block enforcement) · @ mentions · Live ephemeral Rooms with Clubhouse-style participant grid + speaking indicators (auto-close when last person leaves) · Live rooms strip in main feed · Native share sheet on posts and rooms · Profile picture upload · Block / report / moderation (auto-hide at 5 reports) · WLD tips (with push notification to recipient) & subscriptions · Skin shop (accent color skins, 1 WLD each) · Font shop (7 Google Fonts, 1 WLD each) · Server-synced preferences (theme, notifications, location persist across devices) · Private Pusher channels (server-authorized) · Light + dark theme · GDPR-compliant account deletion (comprehensive data cleanup) · Privacy Policy + Terms of Service · **Public Developer API** (verified-human data, API key auth, CORS)
 
 ## Developer API
 
@@ -307,7 +307,10 @@ store/
 
 | Sprint | Shipped |
 | ------ | ------- |
-| 20 | Unit test suite (69 tests — sanitize, rateLimit, crypto/dm, karma, utils), signout cookie hardening, Bittensor/decentralization docs |
+| 24 | Font shop (7 Google Fonts, 1 WLD each), perpetual polls, server-synced preferences, CodeQL fixes |
+| 23 | Multi-entity search (boards + people + posts), World ID action cleanup, ESLint v9 migration |
+| 22 | Public Developer API (posts, polls, boards, stats), API key management, post impressions/view counts |
+| 20 | Unit test suite (69 tests - sanitize, rateLimit, crypto/dm, karma, utils), signout cookie hardening, Bittensor/decentralization docs |
 | 19 | Comprehensive security audit (10 patches), Sentry error tracking, CI upgrade (Node 22), GitHub community files |
 | 18 | Production hardening: auth bypass fix, atomic votes, private Pusher channels, CSP hardening, account deletion cleanup |
 | 17 | UX polish: TipModal, ConversationView error states, PostComposer improvements, URL validation |

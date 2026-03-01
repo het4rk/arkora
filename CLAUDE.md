@@ -132,7 +132,7 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] `GET /api/posts/[id]` returns `authorKarmaScore` for the ThreadView to display
 
 ### Polls (Sprint 7 — Sybil-Resistant)
-- [x] Poll type on posts — question + 2–4 options + duration (24h / 3d / 7d)
+- [x] Poll type on posts — question + 2-4 options + duration (24h / 3d / 7d / Forever perpetual)
 - [x] DB: `type`, `pollOptions` (JSONB), `pollEndsAt` columns on `posts`; new `pollVotes` table with `UNIQUE(postId, nullifierHash)` — one verified human, one vote, cryptographically enforced
 - [x] `POST /api/polls/[id]/vote` — casts vote, returns updated results
 - [x] `GET /api/posts/[id]` extended — returns `pollResults` + `userVote` for poll posts
@@ -234,6 +234,8 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] Tips (one-time WLD token payments)
 - [x] Subscriptions (recurring WLD-based creator subscriptions)
 - [x] Subscription management in Settings
+- [x] Skin shop (accent color skins purchasable for 1 WLD)
+- [x] Font shop (7 Google Fonts purchasable for 1 WLD each)
 
 ### Auth & Onboarding
 - [x] World App walletAuth (SIWE) — auto-triggers after onboarding
@@ -293,20 +295,24 @@ Cookie names: `arkora-nh`, `wallet-address`, `siwe-nonce`. Server reads identity
 walletAddress, nullifierHash, isVerified, user          — auth state
 identityMode, persistentAlias                            — identity prefs
 theme, hasOnboarded                                      — app prefs
+activeSkinId, customHex, ownedSkins                      — skin/accent color
+activeFontId, ownedFonts                                 — font preference
 locationEnabled, locationRadius                          — location prefs
 notifyReplies, notifyDms, notifyFollows, notifyFollowedPosts — notification prefs
 dmPrivateKey                                             — DM encryption (client-only)
 optimisticVotes, unreadNotificationCount                 — ephemeral UI
-isComposerOpen, isDrawerOpen, isSearchOpen, …            — UI toggles
+isComposerOpen, isDrawerOpen, isSearchOpen, ...          — UI toggles
 activeBoard                                              — current board filter
 activeRoomId                                             — currently joined room (non-persisted)
 ```
 
-`signOut()` clears auth state, sets `hasExplicitlySignedOut: true`, preserves preferences (theme, identity, location, notification prefs). `hasExplicitlySignedOut` (persisted) prevents WalletConnect from silently re-authing on next mount.
+`signOut()` clears auth state, sets `hasExplicitlySignedOut: true`, resets skin/font to defaults, preserves preferences (theme, identity, location, notification prefs). `hasExplicitlySignedOut` (persisted) prevents WalletConnect from silently re-authing on next mount.
+
+All user preferences (theme, notifications, location, skin, font) are synced server-side in `humanUsers` table. On login, `SessionHydrator` fetches `/api/preferences`, `/api/skins`, `/api/fonts` and hydrates the Zustand store. On toggle/change, `SettingsView` fires a fire-and-forget `PATCH /api/preferences` (or skin/font-specific endpoints) so changes persist across devices.
 
 ### Database Schema (Key Tables)
 
-- `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode, **karmaScore** (integer), **verifiedBlockNumber** (bigint, nullable — set at World ID verification time); indexed on `pseudoHandle` for mention autocomplete
+- `humanUsers` — nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode, **karmaScore** (integer), **verifiedBlockNumber** (bigint, nullable), **activeSkinId**, **customHex**, **activeFontId**, **theme**, **notifyReplies/Dms/Follows/FollowedPosts** (booleans), **locationEnabled** (boolean), **locationRadius** (integer); indexed on `pseudoHandle` for mention autocomplete
 - `posts` — id, title, body, boardId, nullifierHash, pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId, `type` ('text'|'poll'|'repost'), `pollOptions` (JSONB), `pollEndsAt`, `reportCount` (integer, default 0)
 - `pollVotes` — id, postId (FK→posts cascade), nullifierHash, optionIndex; UNIQUE(postId, nullifierHash) enforces sybil resistance
 - `replies` — id, postId, parentReplyId, content, nullifierHash, pseudoHandle, upvotes, downvotes
@@ -314,6 +320,8 @@ activeRoomId                                             — currently joined ro
 - `dmKeys` — nullifierHash, publicKey (Curve25519)
 - `dmMessages` — id, senderHash, recipientHash, ciphertext, nonce
 - `notifications` — userId, type (`reply`/`follow`/`dm`/`mention`/`like`/`quote`/`repost`), referenceId, actorHash, read
+- `skinPurchases` — buyerHash, skinId, amountWld, txId; unique(buyerHash, skinId)
+- `fontPurchases` — buyerHash, fontId, amountWld, txId; unique(buyerHash, fontId)
 - `subscriptions`, `tips` — monetization
 - `communityNotes`, `communityNoteVotes` — fact-check system
 - `blocks` — blocker/blocked user pairs
@@ -441,6 +449,14 @@ Known limitation: rate limiter is in-process (resets on Vercel cold start). Fine
 | `components/rooms/RoomView.tsx` | Main room UI (Pusher presence subscription) |
 | `components/rooms/RoomsDiscovery.tsx` | Rooms list + create sheet |
 | `components/settings/SettingsView.tsx` | Full settings (identity, appearance, notifications, location, account, subs, API keys) |
+| `components/settings/FontShop.tsx` | Font preview cards + purchase flow (mirrors SkinShop) |
+| `components/providers/FontProvider.tsx` | Injects Google Fonts `<link>` + sets `--font-override` CSS var |
+| `lib/fonts.ts` | Font catalog (7 entries), `getFontById()`, `isValidFontId()` |
+| `lib/db/fonts.ts` | Font DB queries: `recordFontPurchase`, `getOwnedFonts`, `setActiveFont` |
+| `app/api/fonts/route.ts` | GET owned fonts + active font |
+| `app/api/fonts/activate/route.ts` | PATCH switch active font |
+| `app/api/fonts/purchase/route.ts` | POST record font purchase + auto-activate |
+| `app/api/preferences/route.ts` | GET/PATCH synced preferences (theme, notifications, location) |
 | `lib/db/apiKeys.ts` | `createApiKey`, `validateApiKey`, `revokeApiKey`, `getApiKeysByOwner`, `countActiveKeysByOwner` |
 | `lib/apiKeyAuth.ts` | `requireApiKey()` middleware - validates X-API-Key / Bearer header for v1 routes |
 | `app/api/v1/keys/route.ts` | Create (POST) / list (GET) API keys (World ID auth required) |
@@ -528,6 +544,7 @@ chore(deps): upgrade vitest to 4.0.18
 - [ ] Playwright E2E tests (post-launch)
 - [ ] Custom domain (`arkora.world` or similar)
 
+- [x] Sprint 24: Font shop (7 Google Fonts at 1 WLD each, mirrors skin purchase flow); perpetual polls (Forever duration, pollEndsAt=null); server-synced preferences (theme, notifications, location persist across devices via /api/preferences); feed SVG alignment fix; CodeQL remote-property-injection fix (polls/batch uses Map); feed tabs useMemo lint fix
 - [x] Sprint 21: 40 boards + BoardPicker + dynamic boards page; live rooms in feed (auto-refresh); voice-room style UI (participant grid, per-participant speaking state, self-mute); share buttons on posts + rooms; sound wave animations; profile picture upload; notification gaps (mention/quote/repost push); CodeQL High security fixes (4 alerts)
 - [x] Sprint 20 (open source + CI/CD): Vitest unit test suite (69 tests), MIT + CI badges, open source declaration, @sentry/cli build fix, signout cookie `secure: true`, Bittensor decentralization architecture in README, branch protection on main (enforced via GitHub API post-public), SDLC workflow documented
 - [x] Sprint 13: Onchain World ID verification (WorldIDRouter on World Chain), verifiedBlockNumber, identity merge fix
