@@ -39,5 +39,5 @@ export const getCachedHotFeed = unstable_cache(
 
 /** Call after creating or deleting a post to flush feed caches. */
 export function invalidatePosts(): void {
-  revalidateTag('posts')
+  revalidateTag('posts', {})
 }
