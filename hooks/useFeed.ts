@@ -36,13 +36,17 @@ export function useFeed(
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Use a ref for cursor so fetchPosts doesn't need it in its dep array,
-  // eliminating the stale-closure problem and unnecessary re-creations.
   const cursorRef = useRef<string | undefined>(undefined)
+  // Cache posts per feed mode so tab switches show cached data instantly
+  const postCacheRef = useRef<Map<FeedMode, Post[]>>(new Map())
+  const prevBoardRef = useRef(boardId)
 
   const applyPage = useCallback((fetched: Post[], reset: boolean) => {
-    setPosts((prev) => (reset ? fetched : [...prev, ...fetched]))
-    // Hot feed is a ranked snapshot - no pagination
+    setPosts((prev) => {
+      const next = reset ? fetched : [...prev, ...fetched]
+      postCacheRef.current.set(feedMode, next)
+      return next
+    })
     setHasMore(feedMode !== 'hot' && fetched.length === FEED_LIMIT)
     if (fetched.length > 0) {
       const last = fetched[fetched.length - 1]
@@ -113,10 +117,22 @@ export function useFeed(
   }, [isLoadingMore, hasMore, fetchPosts])
 
   useEffect(() => {
+    // Clear cache when board changes (different board = different posts)
+    if (prevBoardRef.current !== boardId) {
+      postCacheRef.current.clear()
+      prevBoardRef.current = boardId
+    }
     cursorRef.current = undefined
-    setPosts([])
+    // Show cached posts immediately if available (prevents skeleton flash on tab switch)
+    const cached = postCacheRef.current.get(feedMode)
+    if (cached && cached.length > 0) {
+      setPosts(cached)
+      setIsLoading(false)
+    } else {
+      setPosts([])
+      setIsLoading(true)
+    }
     setHasMore(true)
-    setIsLoading(true)
     setError(null)
     void fetchPosts(true).finally(() => setIsLoading(false))
   }, [boardId, feedMode, fetchPosts])

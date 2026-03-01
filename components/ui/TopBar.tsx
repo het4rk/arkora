@@ -45,11 +45,6 @@ export function TopBar() {
               <line x1="0" y1="13" x2="20" y2="13" />
             </svg>
           </button>
-
-          {/* Wordmark - centered */}
-          <span className="absolute left-1/2 -translate-x-1/2 text-base font-bold tracking-[-0.03em] text-text select-none">
-            Arkora
-          </span>
         </div>
         </div>
       </header>

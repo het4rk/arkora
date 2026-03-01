@@ -38,7 +38,7 @@ export function PostComposer() {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const pollIdCounter = useRef(2)
   const [pollOptions, setPollOptions] = useState<PollOption[]>([{ id: 0, text: '' }, { id: 1, text: '' }])
-  const [pollDuration, setPollDuration] = useState<24 | 72 | 168>(72)
+  const [pollDuration, setPollDuration] = useState<0 | 24 | 72 | 168>(72)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
 
   // Ensure alias exists when mode is selected
@@ -243,7 +243,7 @@ export function PostComposer() {
             <div>
               <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">Duration</p>
               <div className="flex gap-2">
-                {([24, 72, 168] as const).map((d) => (
+                {([24, 72, 168, 0] as const).map((d) => (
                   <button
                     type="button"
                     key={d}
@@ -253,7 +253,7 @@ export function PostComposer() {
                       pollDuration === d ? 'bg-accent text-background shadow-sm shadow-accent/30' : 'glass text-text-secondary'
                     )}
                   >
-                    {d === 24 ? '24h' : d === 72 ? '3 days' : '7 days'}
+                    {d === 0 ? 'Forever' : d === 24 ? '24h' : d === 72 ? '3 days' : '7 days'}
                   </button>
                 ))}
               </div>

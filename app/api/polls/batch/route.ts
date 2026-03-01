@@ -28,16 +28,16 @@ export async function GET(req: NextRequest) {
       nullifierHash ? getUserVotesBatch(postIds, nullifierHash) : Promise.resolve({} as Record<string, number>),
     ])
 
-    // Use null-prototype object to prevent prototype pollution via property injection
-    const data: Record<string, { results: PollResult[]; userVote: number | null }> = Object.create(null)
+    // Use Map to avoid prototype pollution (CodeQL js/remote-property-injection)
+    const dataMap = new Map<string, { results: PollResult[]; userVote: number | null }>()
     for (const postId of postIds) {
-      data[postId] = {
+      dataMap.set(postId, {
         results: resultsMap[postId] ?? [],
         userVote: userVotesMap[postId] !== undefined ? userVotesMap[postId]! : null,
-      }
+      })
     }
 
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json({ success: true, data: Object.fromEntries(dataMap) })
   } catch (err) {
     console.error('[polls/batch GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json({ success: false, error: 'Failed to fetch poll data' }, { status: 500 })

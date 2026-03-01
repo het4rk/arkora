@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { HumanUser, BoardId, Post } from '@/lib/types'
 import type { SkinId } from '@/lib/skins'
+import type { FontId } from '@/lib/fonts'
 
 export type IdentityMode = 'anonymous' | 'alias' | 'named'
 export type Theme = 'dark' | 'light'
@@ -25,6 +26,8 @@ interface ArkoraState {
   activeSkinId: SkinId
   customHex: string | null
   ownedSkins: SkinId[]
+  activeFontId: FontId
+  ownedFonts: FontId[]
 
   // Onboarding
   hasOnboarded: boolean
@@ -91,6 +94,8 @@ interface ArkoraState {
   setHasExplicitlySignedOut: (v: boolean) => void
   setActiveSkin: (skinId: SkinId, customHex?: string | null) => void
   setOwnedSkins: (skins: SkinId[]) => void
+  setActiveFont: (fontId: FontId) => void
+  setOwnedFonts: (fonts: FontId[]) => void
   setUser: (user: HumanUser) => void
   reset: () => void
   signOut: () => void
@@ -107,6 +112,8 @@ const initialState = {
   activeSkinId: 'monochrome' as SkinId,
   customHex: null as string | null,
   ownedSkins: [] as SkinId[],
+  activeFontId: 'system' as FontId,
+  ownedFonts: [] as FontId[],
   hasOnboarded: false,
   activeBoard: null,
   activeRoomId: null,
@@ -197,6 +204,10 @@ export const useArkoraStore = create<ArkoraState>()(
 
       setOwnedSkins: (skins) => set({ ownedSkins: skins }),
 
+      setActiveFont: (fontId) => set({ activeFontId: fontId }),
+
+      setOwnedFonts: (fonts) => set({ ownedFonts: fonts }),
+
       setUser: (user) => set({ user }),
 
       reset: () => set(initialState),
@@ -219,6 +230,8 @@ export const useArkoraStore = create<ArkoraState>()(
           activeSkinId: 'monochrome' as SkinId,
           customHex: null,
           ownedSkins: [],
+          activeFontId: 'system' as FontId,
+          ownedFonts: [],
           hasExplicitlySignedOut: true,
         }),
     }),
@@ -235,6 +248,8 @@ export const useArkoraStore = create<ArkoraState>()(
         activeSkinId: state.activeSkinId,
         customHex: state.customHex,
         ownedSkins: state.ownedSkins,
+        activeFontId: state.activeFontId,
+        ownedFonts: state.ownedFonts,
         hasOnboarded: state.hasOnboarded,
         locationEnabled: state.locationEnabled,
         locationRadius: state.locationRadius,

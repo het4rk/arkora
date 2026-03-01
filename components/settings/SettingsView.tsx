@@ -8,6 +8,7 @@ import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkora
 import { generateAlias } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { SkinShop } from '@/components/settings/SkinShop'
+import { FontShop } from '@/components/settings/FontShop'
 import { Avatar } from '@/components/ui/Avatar'
 import { AvatarCropper } from '@/components/ui/AvatarCropper'
 
@@ -52,6 +53,15 @@ export function SettingsView() {
     signOut,
     hasExplicitlySignedOut, setHasExplicitlySignedOut,
   } = useArkoraStore()
+
+  // Fire-and-forget sync of preference changes to the server
+  const syncPref = (patch: Record<string, unknown>) => {
+    void fetch('/api/preferences', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    }).catch(() => null)
+  }
 
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -415,7 +425,7 @@ export function SettingsView() {
               {THEMES.map((t) => (
                 <button
                   key={t.value}
-                  onClick={() => setTheme(t.value)}
+                  onClick={() => { setTheme(t.value); syncPref({ theme: t.value }) }}
                   className={cn(
                     'flex-1 flex flex-col items-center gap-2 py-4 rounded-[var(--r-lg)] border transition-all active:scale-95',
                     theme === t.value
@@ -437,6 +447,9 @@ export function SettingsView() {
 
           {/* ── Accent Color (Skin Shop) ─────────────────────────── */}
           <SkinShop />
+
+          {/* ── Font ──────────────────────────────────────────────── */}
+          <FontShop />
 
           {/* ── Account ──────────────────────────────────────────── */}
           <section className="space-y-3">
@@ -632,7 +645,7 @@ export function SettingsView() {
                   <p className="text-text-muted text-xs mt-0.5 leading-tight">Your posts will appear in nearby Local feeds</p>
                 </div>
                 <button
-                  onClick={() => setLocationEnabled(!locationEnabled)}
+                  onClick={() => { setLocationEnabled(!locationEnabled); syncPref({ locationEnabled: !locationEnabled }) }}
                   className={cn(
                     'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
                     locationEnabled ? 'bg-accent' : 'bg-white/[0.20]'
@@ -661,7 +674,7 @@ export function SettingsView() {
                   value={radiusIndexOf(locationRadius)}
                   onChange={(e) => {
                     const opt = RADIUS_OPTIONS[parseInt(e.target.value)]
-                    if (opt !== undefined) setLocationRadius(opt)
+                    if (opt !== undefined) { setLocationRadius(opt); syncPref({ locationRadius: opt }) }
                   }}
                   aria-label="Local feed radius"
                   className="w-full accent-[var(--accent)] cursor-pointer"
@@ -679,10 +692,10 @@ export function SettingsView() {
             <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Notifications</p>
             <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
               {([
-                { label: 'Replies', sub: 'When someone replies to your post', value: notifyReplies, setter: setNotifyReplies },
-                { label: 'Direct messages', sub: 'When you receive a new DM', value: notifyDms, setter: setNotifyDms },
-                { label: 'Follows', sub: 'When someone follows you', value: notifyFollows, setter: setNotifyFollows },
-                { label: 'Following posts', sub: 'When someone you follow posts', value: notifyFollowedPosts, setter: setNotifyFollowedPosts },
+                { label: 'Replies', sub: 'When someone replies to your post', value: notifyReplies, setter: setNotifyReplies, key: 'notifyReplies' },
+                { label: 'Direct messages', sub: 'When you receive a new DM', value: notifyDms, setter: setNotifyDms, key: 'notifyDms' },
+                { label: 'Follows', sub: 'When someone follows you', value: notifyFollows, setter: setNotifyFollows, key: 'notifyFollows' },
+                { label: 'Following posts', sub: 'When someone you follow posts', value: notifyFollowedPosts, setter: setNotifyFollowedPosts, key: 'notifyFollowedPosts' },
               ] as const).map((opt) => (
                 <div key={opt.label} className="px-4 py-3.5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -690,7 +703,7 @@ export function SettingsView() {
                     <p className="text-text-muted text-xs mt-0.5 leading-tight">{opt.sub}</p>
                   </div>
                   <button
-                    onClick={() => opt.setter(!opt.value)}
+                    onClick={() => { opt.setter(!opt.value); syncPref({ [opt.key]: !opt.value }) }}
                     className={cn(
                       'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
                       opt.value ? 'bg-accent' : 'bg-white/[0.20]'

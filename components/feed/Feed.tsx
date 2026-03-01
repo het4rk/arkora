@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback, type TouchEvent as ReactTouchEvent } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo, type TouchEvent as ReactTouchEvent } from 'react'
 import { useFeed, type FeedMode } from '@/hooks/useFeed'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { ThreadCard } from './ThreadCard'
@@ -23,9 +23,18 @@ function radiusIndexOf(miles: number): number {
   return idx >= 0 ? idx : 4  // default to 50mi (index 4)
 }
 
+const SWIPE_COMMIT = 40
+
 export function Feed() {
   const { activeBoard, nullifierHash, isVerified, locationRadius, setLocationRadius } = useArkoraStore()
   const [feedMode, setFeedMode] = useState<FeedMode>('new')
+
+  // Available tabs (Following only for verified users)
+  const availableTabs = useMemo<FeedMode[]>(
+    () => ['new', ...(isVerified ? ['following' as FeedMode] : []), 'local'],
+    [isVerified]
+  )
+  const currentTabIndex = availableTabs.indexOf(feedMode)
 
   // Local feed - viewer GPS coords (requested on demand)
   const [viewerCoords, setViewerCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -37,8 +46,6 @@ export function Feed() {
     if (feedMode !== 'local') return
     if (viewerCoords || locationDenied) return
     setLocationRequesting(true)
-    // Secondary timeout: if user leaves permission prompt open indefinitely,
-    // the geolocation `timeout` option only fires post-grant - so we need our own timer.
     const fallbackTimer = setTimeout(() => {
       setLocationDenied(true)
       setLocationRequesting(false)
@@ -88,44 +95,74 @@ export function Feed() {
       .catch(() => null)
   }, [])
 
-  // Pull-to-refresh state
+  // ---- Touch gesture state (pull-to-refresh + horizontal tab swipe) ----
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const touchStartY = useRef(0)
+  const [swipeDelta, setSwipeDelta] = useState(0)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const gestureRef = useRef<'horizontal' | 'vertical' | null>(null)
   const PULL_THRESHOLD = 80
 
   const handleTouchStart = useCallback((e: ReactTouchEvent) => {
     const touch = e.touches[0]
     if (!touch) return
-    if (scrollRef.current && scrollRef.current.scrollTop <= 0) {
-      touchStartY.current = touch.clientY
-    } else {
-      touchStartY.current = 0
-    }
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
+    gestureRef.current = null
   }, [])
 
   const handleTouchMove = useCallback((e: ReactTouchEvent) => {
     const touch = e.touches[0]
-    if (!touch || !touchStartY.current || isRefreshing) return
-    const delta = touch.clientY - touchStartY.current
-    if (delta > 0 && scrollRef.current && scrollRef.current.scrollTop <= 0) {
-      // Dampen the pull distance
-      setPullDistance(Math.min(delta * 0.4, 120))
+    const start = touchStartRef.current
+    if (!touch || !start || isRefreshing) return
+
+    const dx = touch.clientX - start.x
+    const dy = touch.clientY - start.y
+
+    // Determine gesture direction on first significant movement
+    if (gestureRef.current === null && (Math.abs(dx) + Math.abs(dy) > 10)) {
+      gestureRef.current = Math.abs(dx) > Math.abs(dy) * 1.5 ? 'horizontal' : 'vertical'
     }
-  }, [isRefreshing])
+
+    if (gestureRef.current === 'horizontal') {
+      // Clamp swipe: don't allow swiping past first/last tab
+      const canSwipeLeft = currentTabIndex < availableTabs.length - 1
+      const canSwipeRight = currentTabIndex > 0
+      if ((dx < 0 && canSwipeLeft) || (dx > 0 && canSwipeRight)) {
+        setSwipeDelta(dx * 0.3)
+      }
+    } else if (gestureRef.current === 'vertical') {
+      // Pull-to-refresh (only when scrolled to top)
+      if (dy > 0 && scrollRef.current && scrollRef.current.scrollTop <= 0) {
+        setPullDistance(Math.min(dy * 0.4, 120))
+      }
+    }
+  }, [isRefreshing, currentTabIndex, availableTabs.length])
 
   const handleTouchEnd = useCallback(async () => {
-    if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
-      setIsRefreshing(true)
-      haptic('medium')
-      await refresh()
-      setIsRefreshing(false)
+    if (gestureRef.current === 'horizontal') {
+      if (swipeDelta < -SWIPE_COMMIT && currentTabIndex < availableTabs.length - 1) {
+        haptic('light')
+        setFeedMode(availableTabs[currentTabIndex + 1]!)
+      } else if (swipeDelta > SWIPE_COMMIT && currentTabIndex > 0) {
+        haptic('light')
+        setFeedMode(availableTabs[currentTabIndex - 1]!)
+      }
+      setSwipeDelta(0)
+    } else {
+      // Pull-to-refresh
+      if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
+        setIsRefreshing(true)
+        haptic('medium')
+        await refresh()
+        setIsRefreshing(false)
+      }
+      setPullDistance(0)
     }
-    setPullDistance(0)
-    touchStartY.current = 0
-  }, [pullDistance, isRefreshing, refresh])
+    touchStartRef.current = null
+    gestureRef.current = null
+  }, [swipeDelta, pullDistance, isRefreshing, refresh, currentTabIndex, availableTabs])
 
-  // Batch-fetch bookmark state for all visible posts in a single request
+  // Batch-fetch bookmark state for all visible posts
   const fetchBookmarks = useCallback((postIds: string[], userHash: string) => {
     if (postIds.length === 0 || !userHash) return
     const ids = postIds.join(',')
@@ -181,59 +218,44 @@ export function Feed() {
     }
   }, [feedMode, locationRadius, viewerCoords, refresh])
 
-  if (isLoading) {
-    return (
-      <div className="h-[calc(100dvh-56px)] overflow-y-auto pt-14">
-        <FeedSkeleton />
-        <FeedSkeleton />
-        <FeedSkeleton />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
-        <div>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-          <p className="font-semibold text-text mb-1">Failed to load feed</p>
-          <p className="text-sm">{error}</p>
-        </div>
-      </div>
-    )
-  }
-
   const showLocalPrompt = feedMode === 'local' && !locationRequesting && locationDenied
   const showLocalLoading = feedMode === 'local' && locationRequesting
-
   const hasLocalCoords = feedMode === 'local' && !!viewerCoords
+
+  // Swipe visual feedback styles
+  const swipeStyle = swipeDelta !== 0
+    ? { transform: `translateX(${swipeDelta}px)`, opacity: 1 - Math.abs(swipeDelta) / 300 }
+    : { transform: 'translateX(0)', transition: 'transform 0.2s ease-out' }
 
   return (
     <>
-      {/* Feed mode toggle - positioned below TopBar (56px) + safe area */}
+      {/* Feed mode tabs - inside TopBar row, centered */}
       <div
-        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 64px)' }}
-        className="fixed left-1/2 -translate-x-1/2 z-20 flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg"
+        style={{ top: 'env(safe-area-inset-top, 0px)' }}
+        className="fixed left-1/2 -translate-x-1/2 z-30 flex items-center h-14"
       >
-        {(['new', ...(isVerified ? ['following'] : []), 'local'] as FeedMode[]).map((mode) => (
-          <button
-            key={mode}
-            onClick={() => { haptic('light'); setFeedMode(mode) }}
-            className={cn(
-              'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all',
-              feedMode === mode ? 'bg-accent text-background shadow-sm' : 'text-text-muted'
-            )}
-          >
-            {mode === 'new' ? 'New' : mode === 'following' ? 'Following' : 'Local'}
-          </button>
-        ))}
+        <div className="flex items-center glass rounded-full px-1 py-1 gap-0.5 shadow-lg">
+          {availableTabs.map((mode) => (
+            <button
+              key={mode}
+              onClick={() => { haptic('light'); setFeedMode(mode) }}
+              className={cn(
+                'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all',
+                feedMode === mode ? 'bg-accent text-background shadow-sm' : 'text-text-muted'
+              )}
+            >
+              {mode === 'new' ? 'New' : mode === 'following' ? 'Following' : 'Local'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Radius slider - shown below tab bar when Local is active and location granted */}
+      {/* Radius slider - shown below TopBar when Local is active and location granted */}
       {hasLocalCoords && (
-        <div style={{ top: 'calc(env(safe-area-inset-top, 0px) + 112px)' }} className="fixed left-1/2 -translate-x-1/2 z-20 glass rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
+        <div style={{ top: 'calc(env(safe-area-inset-top, 0px) + 64px)' }} className="fixed left-1/2 -translate-x-1/2 z-20 glass rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
           <input
             type="range"
+            aria-label="Search radius"
             min={0}
             max={RADIUS_OPTIONS.length - 1}
             value={radiusIndexOf(locationRadius)}
@@ -249,12 +271,14 @@ export function Feed() {
         </div>
       )}
 
+      {/* Feed content */}
       <div
         ref={scrollRef}
         className={cn(
           'overflow-y-scroll h-[calc(100dvh-56px)] scroll-smooth',
-          hasLocalCoords ? 'pt-[104px]' : 'pt-14'
+          hasLocalCoords ? 'pt-12' : 'pt-2'
         )}
+        style={swipeStyle}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -277,19 +301,40 @@ export function Feed() {
             />
           </div>
         )}
+
+        {/* Loading skeleton (inline, not full-page replacement) */}
+        {isLoading && (
+          <>
+            <FeedSkeleton />
+            <FeedSkeleton />
+            <FeedSkeleton />
+          </>
+        )}
+
+        {/* Error state */}
+        {error && !isLoading && (
+          <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
+            <div>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+              <p className="font-semibold text-text mb-1">Failed to load feed</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          </div>
+        )}
+
         {/* Local feed: requesting location */}
         {showLocalLoading && (
-          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+          <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4 animate-pulse"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-              <p className="font-semibold text-text text-lg mb-1">Finding your location…</p>
+              <p className="font-semibold text-text text-lg mb-1">Finding your location...</p>
             </div>
           </div>
         )}
 
         {/* Local feed: denied */}
         {showLocalPrompt && (
-          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+          <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg>
               <p className="font-bold text-text text-lg mb-2">Location access denied</p>
@@ -300,9 +345,9 @@ export function Feed() {
 
         {/* Following: empty state */}
         {feedMode === 'following' && !isLoading && posts.length === 0 && (
-          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+          <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4 mx-auto"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
               <p className="font-bold text-text text-lg mb-2">No posts yet</p>
               <p className="text-sm">Follow people to see their posts here.</p>
             </div>
@@ -311,9 +356,9 @@ export function Feed() {
 
         {/* Local: empty state (got coords, but no nearby posts) */}
         {feedMode === 'local' && viewerCoords && !isLoading && posts.length === 0 && (
-          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+          <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" /></svg>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4 mx-auto"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" /></svg>
               <p className="font-bold text-text text-lg mb-2">Nothing nearby yet</p>
               <p className="text-sm">
                 {locationRadius === -1
@@ -326,7 +371,7 @@ export function Feed() {
 
         {/* New feed: empty state */}
         {feedMode === 'new' && !isLoading && posts.length === 0 && (
-          <div className="h-[calc(100dvh-56px)] flex items-center justify-center text-text-secondary px-6 text-center">
+          <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
               <p className="font-bold text-text text-lg mb-2">No posts yet</p>
               <p className="text-sm">Be the first verified human to post.</p>
@@ -346,7 +391,7 @@ export function Feed() {
                 onClick={() => useArkoraStore.getState().setVerifySheetOpen(true)}
                 className="border border-accent/50 text-accent text-xs font-semibold px-3.5 py-2.5 rounded-[var(--r-md)] active:scale-95 active:opacity-70 transition-all shrink-0"
               >
-                Verify →
+                Verify
               </button>
             </div>
           </div>
@@ -379,7 +424,6 @@ export function Feed() {
           </div>
         )}
       </div>
-
     </>
   )
 }

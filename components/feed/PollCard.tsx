@@ -137,12 +137,8 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
       {/* Footer */}
       <p className="text-text-muted text-[11px] font-medium pt-1">
         {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
-        {post.pollEndsAt && (
-          <>
-            {' · '}
-            {formatTimeLeft(new Date(post.pollEndsAt))}
-          </>
-        )}
+        {' · '}
+        {post.pollEndsAt ? formatTimeLeft(new Date(post.pollEndsAt)) : 'Open'}
       </p>
     </div>
   )

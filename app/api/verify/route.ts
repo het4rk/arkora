@@ -6,11 +6,18 @@ import { registerNullifierOnchain } from '@/lib/registry'
 import { walletToNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
 
-interface RequestBody {
-  payload: ISuccessResult
-  action?: string  // accepted but ignored - server uses NEXT_PUBLIC_ACTION_ID env var
-  walletAddress?: string
-  signal?: string
+/** Validates and parses the verify request body. Returns null if invalid. */
+function parseVerifyBody(raw: unknown): { payload: ISuccessResult; walletAddress?: string; signal?: string } | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const body = raw as Record<string, unknown>
+  const p = body.payload
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return null
+  const proof = p as Record<string, unknown>
+  if (typeof proof.merkle_root !== 'string' || typeof proof.nullifier_hash !== 'string' || typeof proof.proof !== 'string') return null
+  const result: { payload: ISuccessResult; walletAddress?: string; signal?: string } = { payload: p as ISuccessResult }
+  if (typeof body.walletAddress === 'string') result.walletAddress = body.walletAddress
+  if (typeof body.signal === 'string') result.signal = body.signal
+  return result
 }
 
 /**
@@ -53,25 +60,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
-    const body = await req.json()
-    if (!body || typeof body !== 'object') {
+    const parsed = parseVerifyBody(await req.json())
+    if (!parsed) {
       return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 })
     }
-    const { payload, walletAddress, signal } = body as RequestBody
-
-    // Validate payload is a non-null object with required World ID proof fields
-    if (
-      !payload ||
-      typeof payload !== 'object' ||
-      typeof payload.merkle_root !== 'string' ||
-      typeof payload.nullifier_hash !== 'string' ||
-      typeof payload.proof !== 'string'
-    ) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    const { payload, walletAddress, signal } = parsed
 
     // Ignore client-provided action — always verify against the server-configured action
     // to prevent action manipulation attacks (attacker replaying a proof from a different action)

@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
         }
       }
       const duration = body.pollDuration
-      if (duration !== undefined && ![24, 72, 168].includes(duration)) {
+      if (duration !== undefined && ![0, 24, 72, 168].includes(duration)) {
         return NextResponse.json({ success: false, error: 'Invalid poll duration' }, { status: 400 })
       }
     }
@@ -233,7 +233,10 @@ export async function POST(req: NextRequest) {
     if (isPoll && Array.isArray(body.pollOptions)) {
       pollOptions = body.pollOptions.map((opt, i) => ({ index: i, text: sanitizeLine(opt) }))
       const durationHours = body.pollDuration ?? 72
-      pollEndsAt = new Date(Date.now() + durationHours * 60 * 60 * 1000)
+      // 0 = perpetual poll (never expires)
+      if (durationHours > 0) {
+        pollEndsAt = new Date(Date.now() + durationHours * 60 * 60 * 1000)
+      }
     }
 
     const post = await createPost({

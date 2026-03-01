@@ -7,9 +7,15 @@ import {
 } from '@worldcoin/minikit-js'
 import { rateLimit } from '@/lib/rateLimit'
 
-interface RequestBody {
-  payload: MiniAppWalletAuthSuccessPayload
-  nonce: string
+/** Validates and parses the auth request body. Returns null if invalid. */
+function parseAuthBody(raw: unknown): { payload: MiniAppWalletAuthSuccessPayload; nonce: string } | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const body = raw as Record<string, unknown>
+  const p = body.payload
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return null
+  if (typeof (p as Record<string, unknown>).address !== 'string') return null
+  if (typeof body.nonce !== 'string' || !/^[0-9a-f]{32}$/.test(body.nonce as string)) return null
+  return { payload: p as MiniAppWalletAuthSuccessPayload, nonce: body.nonce as string }
 }
 
 export async function POST(req: NextRequest) {
@@ -19,33 +25,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
-    const body = await req.json()
-    if (!body || typeof body !== 'object') {
+    const parsed = parseAuthBody(await req.json())
+    if (!parsed) {
       return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 })
     }
-    const { payload, nonce } = body as RequestBody
-
-    // Validate payload is a non-null object with a string address
-    if (!payload || typeof payload !== 'object' || typeof payload.address !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'Invalid payload' },
-        { status: 400 }
-      )
-    }
+    const { payload, nonce } = parsed
 
     const cookieStore = await cookies()
     const storedNonce = cookieStore.get('siwe-nonce')?.value
 
-    // Server must have an active nonce before accepting any provided value
     if (!storedNonce) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid or expired nonce' },
-        { status: 400 }
-      )
-    }
-
-    // Validate provided nonce is a string with exact format: 32 lowercase hex chars
-    if (typeof nonce !== 'string' || !/^[0-9a-f]{32}$/.test(nonce)) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired nonce' },
         { status: 400 }

@@ -74,9 +74,10 @@ html,
 body {
   background-color: rgb(var(--clr-bg));
   color: rgb(var(--clr-text));
-  /* SF Pro on iOS = premium system font, no extra loading needed */
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text',
-               'Helvetica Neue', system-ui, sans-serif;
+  /* SF Pro on iOS = premium system font, no extra loading needed.
+     --font-override is set by FontProvider when a custom font is active. */
+  font-family: var(--font-override, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+               'Helvetica Neue', system-ui, sans-serif);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

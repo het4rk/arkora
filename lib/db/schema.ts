@@ -108,6 +108,16 @@ export const humanUsers = pgTable(
     // Skin / accent color preference
     activeSkinId: text('active_skin_id').default('monochrome'),
     customHex: text('custom_hex'), // only used when activeSkinId = 'hex'
+    // Font preference
+    activeFontId: text('active_font_id').default('system'),
+    // Synced preferences (persisted server-side so they follow the user across devices)
+    theme: text('theme').default('dark'),
+    notifyReplies: boolean('notify_replies').default(true),
+    notifyDms: boolean('notify_dms').default(true),
+    notifyFollows: boolean('notify_follows').default(true),
+    notifyFollowedPosts: boolean('notify_followed_posts').default(true),
+    locationEnabled: boolean('location_enabled').default(false),
+    locationRadius: integer('location_radius').default(50),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
@@ -361,9 +371,27 @@ export const skinPurchases = pgTable(
   })
 )
 
+// ── Font Purchases ──────────────────────────────────────────────────────────
+export const fontPurchases = pgTable(
+  'font_purchases',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    buyerHash: text('buyer_hash').notNull(),
+    fontId: text('font_id').notNull(),
+    amountWld: text('amount_wld').notNull(),
+    txId: text('tx_id'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    buyerIdx: index('font_purchases_buyer_idx').on(t.buyerHash),
+    uniquePurchase: unique('font_purchases_unique').on(t.buyerHash, t.fontId),
+  })
+)
+
 export type DbTip = typeof tips.$inferSelect
 export type DbSubscription = typeof subscriptions.$inferSelect
 export type DbSkinPurchase = typeof skinPurchases.$inferSelect
+export type DbFontPurchase = typeof fontPurchases.$inferSelect
 
 // ── Reports ──────────────────────────────────────────────────────────────────
 export const reports = pgTable(
