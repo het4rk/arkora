@@ -5,12 +5,12 @@ pragma solidity ^0.8.20;
  * @title ArkoraNullifierRegistry
  * @notice Records verified World ID nullifiers on World Chain.
  *         Each entry proves a real human completed World ID Orb verification
- *         for Arkora at a specific block. Immutable — a nullifier registered
+ *         for Arkora at a specific block. Immutable - a nullifier registered
  *         once can never be unregistered.
  *
  * @dev Deployed on World Chain mainnet (chain 480).
  *      Only the contract owner (Arkora server wallet) can register nullifiers.
- *      This prevents fake registrations — the server only calls register()
+ *      This prevents fake registrations - the server only calls register()
  *      after a successful onchain WorldIDRouter proof verification.
  */
 contract ArkoraNullifierRegistry {

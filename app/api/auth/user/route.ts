@@ -39,6 +39,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    if (!/^0x[0-9a-fA-F]{40}$/.test(walletAddress)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid wallet address format' },
+        { status: 400 }
+      )
+    }
+
     // SECURITY: Verify the caller actually owns this wallet.
     // The wallet-address cookie is set by /api/auth after SIWE signature verification.
     const cookieStore = await cookies()

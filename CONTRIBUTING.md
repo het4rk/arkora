@@ -34,9 +34,9 @@ NEXT_PUBLIC_PUSHER_KEY=
 NEXT_PUBLIC_PUSHER_CLUSTER=
 WORLDCOIN_API_KEY=
 NEXT_PUBLIC_WORLD_APP_ID=
-HIPPIUS_ACCESS_KEY_ID=   # optional — only for image uploads
+HIPPIUS_ACCESS_KEY_ID=   # optional - only for image uploads
 HIPPIUS_SECRET_ACCESS_KEY=
-SENTRY_AUTH_TOKEN=       # optional — only required for production source map uploads
+SENTRY_AUTH_TOKEN=       # optional - only required for production source map uploads
 ```
 
 ## Project Architecture
@@ -44,8 +44,8 @@ SENTRY_AUTH_TOKEN=       # optional — only required for production source map 
 The project uses Next.js 15 App Router with TypeScript strict mode. Key patterns are documented in [CLAUDE.md](./CLAUDE.md). Short version:
 
 - **API routes**: `validate → getCallerNullifier() → rateLimit → business logic → JSON`
-- **Auth**: identity comes from the `arkora-nh` httpOnly cookie via `getCallerNullifier()` — never trust request body for identity
-- **DB**: Drizzle ORM with Neon Postgres — all queries are parameterized (no raw SQL string interpolation)
+- **Auth**: identity comes from the `arkora-nh` httpOnly cookie via `getCallerNullifier()` - never trust request body for identity
+- **DB**: Drizzle ORM with Neon Postgres - all queries are parameterized (no raw SQL string interpolation)
 - **Realtime**: Pusher presence channels for rooms, private channels for DMs and notifications
 - **Imports**: always use `@/` path alias
 
@@ -78,8 +78,8 @@ Scope is optional but helpful: `feat(rooms)`, `fix(dm)`, `chore(deps)`, `securit
 ## Pull Request Process
 
 1. Branch from `main`
-2. Keep PRs focused — one logical change per PR
-3. Run `pnpm test`, `pnpm exec tsc --noEmit`, and `pnpm exec next lint` locally — CI will catch failures
+2. Keep PRs focused - one logical change per PR
+3. Run `pnpm test`, `pnpm exec tsc --noEmit`, and `pnpm exec next lint` locally - CI will catch failures
 4. Fill out the PR template completely
 5. Request review from @hetark
 
@@ -92,11 +92,11 @@ CI checks that must pass:
 
 ## Code Style
 
-- **TypeScript strict** — all strict flags enabled, including `noUncheckedIndexedAccess`
-- **Tailwind** — utility classes only; no custom CSS unless unavoidable
-- **No raw `console.log`** in production paths — use tagged `console.error('[component]', ...)` for error paths
-- **Sanitize before DB writes** — use `sanitizeLine()` / `sanitizeText()` from `@/lib/sanitize`
-- **No secret in code** — all credentials via environment variables
+- **TypeScript strict** - all strict flags enabled, including `noUncheckedIndexedAccess`
+- **Tailwind** - utility classes only; no custom CSS unless unavoidable
+- **No raw `console.log`** in production paths - use tagged `console.error('[component]', ...)` for error paths
+- **Sanitize before DB writes** - use `sanitizeLine()` / `sanitizeText()` from `@/lib/sanitize`
+- **No secret in code** - all credentials via environment variables
 
 ## Security
 

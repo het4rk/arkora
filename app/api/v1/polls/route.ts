@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const auth = await requireApiKey(req)
   if (auth instanceof NextResponse) return auth
 
-  if (!rateLimit(`v1polls:${auth.key.slice(0, 20)}`, 120, 60_000)) {
+  if (!rateLimit(`v1polls:${auth.key}`, 120, 60_000)) {
     return NextResponse.json(
       { success: false, error: 'Too many requests' },
       { status: 429, headers: CORS_HEADERS }

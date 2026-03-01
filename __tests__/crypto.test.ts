@@ -74,7 +74,7 @@ describe('encryptDm / decryptDm roundtrip', () => {
     const alice = generateDmKeyPair()
     const bob = generateDmKeyPair()
 
-    const plaintext = '🔐 Привет мир — こんにちは'
+    const plaintext = '🔐 Привет мир - こんにちは'
     const encrypted = await encryptDm(alice.privateKeyB64, bob.publicKeyB64, plaintext)
     const decrypted = await decryptDm(bob.privateKeyB64, alice.publicKeyB64, encrypted)
 

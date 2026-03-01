@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
     const { payload, walletAddress, signal } = parsed
 
-    // Ignore client-provided action — always verify against the server-configured action
+    // Ignore client-provided action - always verify against the server-configured action
     // to prevent action manipulation attacks (attacker replaying a proof from a different action)
     const action = process.env.NEXT_PUBLIC_ACTION_ID
     if (!action) {

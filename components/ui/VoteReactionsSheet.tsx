@@ -107,7 +107,7 @@ export function VoteReactionsSheet({ isOpen, onClose, postId, upvoteCount, downv
                 ) : (
                   <div className="space-y-1">
                     {list.map((v, i) => (
-                      <div key={i} className="flex items-center gap-3 px-3 py-3 rounded-[var(--r-md)] glass">
+                      <div key={`${v.display}-${i}`} className="flex items-center gap-3 px-3 py-3 rounded-[var(--r-md)] glass">
                         <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
                           <span className="text-accent text-xs font-bold">
                             {v.display[0]?.toUpperCase() ?? '?'}

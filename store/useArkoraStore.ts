@@ -232,6 +232,9 @@ export const useArkoraStore = create<ArkoraState>()(
           ownedSkins: [],
           activeFontId: 'system' as FontId,
           ownedFonts: [],
+          activeBoard: null,
+          activeRoomId: null,
+          activeRoomTitle: null,
           hasExplicitlySignedOut: true,
         }),
     }),
@@ -258,7 +261,6 @@ export const useArkoraStore = create<ArkoraState>()(
         notifyDms: state.notifyDms,
         notifyFollows: state.notifyFollows,
         notifyFollowedPosts: state.notifyFollowedPosts,
-        optimisticVotes: state.optimisticVotes,
         hasExplicitlySignedOut: state.hasExplicitlySignedOut,
       }),
     }

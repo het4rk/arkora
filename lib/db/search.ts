@@ -86,13 +86,14 @@ export async function searchBoards(query: string, limit = 5): Promise<BoardResul
   const q = query.trim().toLowerCase().slice(0, 100)
   if (!q) return []
 
-  // Get all boards with post counts from DB
+  // Get all boards with post counts from DB (LIMIT 200 to avoid full table scan)
   const dbRows = await db.execute<{ board_id: string; count: string }>(
     sql`SELECT board_id, COUNT(*)::text AS count
         FROM posts
         WHERE report_count < 5
         GROUP BY board_id
-        ORDER BY COUNT(*) DESC`
+        ORDER BY COUNT(*) DESC
+        LIMIT 200`
   )
 
   // Build combined list: featured boards + any DB-only boards

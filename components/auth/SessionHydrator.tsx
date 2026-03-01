@@ -6,6 +6,10 @@ import type { HumanUser } from '@/lib/types'
 import type { SkinId } from '@/lib/skins'
 import type { FontId } from '@/lib/fonts'
 
+function fetchWithTimeout(url: string, ms = 8000): Promise<Response> {
+  return fetch(url, { signal: AbortSignal.timeout(ms) })
+}
+
 export function SessionHydrator() {
   const {
     isVerified, setVerified,
@@ -17,7 +21,7 @@ export function SessionHydrator() {
 
   useEffect(() => {
     if (isVerified) return
-    void fetch('/api/me')
+    void fetchWithTimeout('/api/me')
       .then((r) => r.json())
       .then((json: { success: boolean; nullifierHash: string | null; user: HumanUser | null }) => {
         if (json.nullifierHash && json.user) {
@@ -31,7 +35,7 @@ export function SessionHydrator() {
   // Hydrate skin preferences after auth
   useEffect(() => {
     if (!isVerified) return
-    void fetch('/api/skins')
+    void fetchWithTimeout('/api/skins')
       .then((r) => r.json())
       .then((json: { success: boolean; data?: { owned: string[]; activeSkinId: string; customHex: string | null } }) => {
         if (json.success && json.data) {
@@ -46,7 +50,7 @@ export function SessionHydrator() {
   // Hydrate font preferences after auth
   useEffect(() => {
     if (!isVerified) return
-    void fetch('/api/fonts')
+    void fetchWithTimeout('/api/fonts')
       .then((r) => r.json())
       .then((json: { success: boolean; data?: { owned: string[]; activeFontId: string } }) => {
         if (json.success && json.data) {
@@ -61,7 +65,7 @@ export function SessionHydrator() {
   // Hydrate synced preferences (theme, notifications, location) after auth
   useEffect(() => {
     if (!isVerified) return
-    void fetch('/api/preferences')
+    void fetchWithTimeout('/api/preferences')
       .then((r) => r.json())
       .then((json: { success: boolean; data?: {
         theme: string | null; notifyReplies: boolean | null; notifyDms: boolean | null;

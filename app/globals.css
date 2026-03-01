@@ -16,7 +16,7 @@
   --clr-text-sec:   158 158 168;
   --clr-text-muted: 88 88 96;
 
-  /* Brand — monochrome (white accent on dark) */
+  /* Brand - monochrome (white accent on dark) */
   --accent-rgb:   255 255 255;
   --accent-hex:   #FFFFFF;
   --accent-hover: #E0E0E0;
@@ -45,7 +45,7 @@
   --clr-text-sec:   88 88 100;
   --clr-text-muted: 150 150 162;
 
-  /* Brand — monochrome (near-black accent on light) */
+  /* Brand - monochrome (near-black accent on light) */
   --accent-rgb:   18 18 20;
   --accent-hex:   #121214;
   --accent-hover: #2A2A2E;
@@ -146,7 +146,7 @@ h1, h2, h3, h4, h5, h6 {
   iridescent tint, deep backdrop blur, layered depth shadow.
 */
 
-/* Base glass — panels, cards, sheets */
+/* Base glass - panels, cards, sheets */
 .glass {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur)) saturate(180%);
@@ -159,7 +159,7 @@ h1, h2, h3, h4, h5, h6 {
     0 0 0 0.5px rgba(255,255,255,0.06);   /* outer glow */
 }
 
-/* Liquid glass — iridescent tint for navigation & prominent surfaces */
+/* Liquid glass - iridescent tint for navigation & prominent surfaces */
 .glass-liquid {
   background: linear-gradient(
     160deg,
@@ -177,7 +177,7 @@ h1, h2, h3, h4, h5, h6 {
     0 8px 48px var(--glass-shadow);
 }
 
-/* Navigation bar — anchored bottom, narrower shadow */
+/* Navigation bar - anchored bottom, narrower shadow */
 .glass-nav {
   background: linear-gradient(
     to top,
@@ -205,7 +205,7 @@ h1, h2, h3, h4, h5, h6 {
     0 -4px 20px rgba(0,0,0,0.06);
 }
 
-/* Navigation bar — anchored top */
+/* Navigation bar - anchored top */
 .glass-nav-top {
   background: linear-gradient(
     to bottom,
@@ -278,7 +278,7 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 -4px 40px rgba(0,0,0,0.06);
 }
 
-/* Composer bar — like nav but with input area */
+/* Composer bar - like nav but with input area */
 .glass-compose {
   background: linear-gradient(
     to top,

@@ -1,4 +1,4 @@
-# feat: Live Rooms — real-time topic-based discussion spaces
+# feat: Live Rooms - real-time topic-based discussion spaces
 
 **Labels:** `enhancement`
 
@@ -6,7 +6,7 @@
 
 ## Summary
 
-Build a **Rooms** feature — live, real-time discussion spaces where verified humans can join and talk about a specific topic. Think X Spaces meets Discord channels, but for Arkora's provably-human anonymous platform.
+Build a **Rooms** feature - live, real-time discussion spaces where verified humans can join and talk about a specific topic. Think X Spaces meets Discord channels, but for Arkora's provably-human anonymous platform.
 
 ## Motivation
 
@@ -17,13 +17,13 @@ Currently Arkora has posts, replies, and DMs. There's no way for a group of peop
 These need to be researched and resolved before implementation:
 
 ### 1. Audio, text, or both?
-- **Text-only** — simplest to build, can leverage existing Pusher infrastructure
-- **Audio-first** — like X Spaces, more engaging but requires WebRTC/media servers (LiveKit, 100ms, Agora)
-- **Both** — Discord model, text chat alongside optional audio
+- **Text-only** - simplest to build, can leverage existing Pusher infrastructure
+- **Audio-first** - like X Spaces, more engaging but requires WebRTC/media servers (LiveKit, 100ms, Agora)
+- **Both** - Discord model, text chat alongside optional audio
 
 ### 2. Ephemeral or persistent?
-- **Ephemeral** — rooms disappear after they end (like X Spaces). Aligns with Arkora's anonymous identity model — conversations that exist in the moment.
-- **Persistent** — rooms/channels stick around (like Discord). Better for community building but requires more moderation.
+- **Ephemeral** - rooms disappear after they end (like X Spaces). Aligns with Arkora's anonymous identity model - conversations that exist in the moment.
+- **Persistent** - rooms/channels stick around (like Discord). Better for community building but requires more moderation.
 
 ### 3. Identity in rooms
 - Does the anonymous/alias/named mode carry over from posts?
@@ -37,8 +37,8 @@ These need to be researched and resolved before implementation:
 - Host/co-host privileges
 
 ### 5. Infrastructure cost
-- **Text via Pusher** — manageable, fits current stack
-- **Audio/video** — requires specialized media infrastructure (LiveKit, Agora, 100ms) which scales with cost
+- **Text via Pusher** - manageable, fits current stack
+- **Audio/video** - requires specialized media infrastructure (LiveKit, Agora, 100ms) which scales with cost
 - Connection limits and concurrent room capacity
 
 ## Recommended Phased Approach
@@ -64,11 +64,11 @@ These need to be researched and resolved before implementation:
 
 ## Technical Considerations
 
-- **Pusher presence channels** — automatic join/leave tracking and participant lists, ideal for Phase 1
+- **Pusher presence channels** - automatic join/leave tracking and participant lists, ideal for Phase 1
 - **World ID verification** required to create or join rooms (prevent spam/raids)
 - **Rate limiting** on room creation
 - **Max concurrent rooms** per user (1 active room at a time)
-- **Room TTL** — auto-close after inactivity timeout
+- **Room TTL** - auto-close after inactivity timeout
 - All messages through existing `sanitizeText()` utility
 - Existing E2E encryption pattern from DMs could be adapted for private rooms
 

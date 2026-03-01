@@ -104,7 +104,7 @@ export async function verifyWorldIdProof(
   action: string,
   signal?: string
 ): Promise<VerifyResult> {
-  // Always use NEXT_PUBLIC_APP_ID — this is the same var that IDKit uses client-side
+  // Always use NEXT_PUBLIC_APP_ID - this is the same var that IDKit uses client-side
   // to generate the ZK proof's externalNullifierHash. Using any other var causes mismatch.
   const appId = (process.env.NEXT_PUBLIC_APP_ID) as `app_${string}`
   const routerAddress = (process.env.WORLD_ID_ROUTER ??
@@ -126,7 +126,7 @@ export async function verifyWorldIdProof(
     proof.proof as Hex
   )
 
-  // Retry on NonExistentRoot — the root may not have propagated to our RPC yet.
+  // Retry on NonExistentRoot - the root may not have propagated to our RPC yet.
   // World App generates the proof against the latest tree; a few seconds' lag is common.
   const MAX_ATTEMPTS = 3
   let lastContractError: string | null = null
@@ -151,7 +151,7 @@ export async function verifyWorldIdProof(
           await new Promise<void>((r) => setTimeout(r, 1000))
           continue
         }
-        // All retries exhausted — root genuinely not found
+        // All retries exhausted - root genuinely not found
         return { success: false, error: 'expired_root' }
       }
 
@@ -160,7 +160,7 @@ export async function verifyWorldIdProof(
         return { success: false, error: 'max_verifications_reached' }
       }
 
-      // Root expired (not just non-existent — no point retrying)
+      // Root expired (not just non-existent - no point retrying)
       if (contractError === 'ExpiredRoot') {
         return { success: false, error: 'expired_root' }
       }
@@ -187,7 +187,7 @@ export async function verifyWorldIdProof(
     }
   }
 
-  // Unreachable — all code paths inside the loop return. TypeScript needs this.
+  // Unreachable - all code paths inside the loop return. TypeScript needs this.
   return { success: false, error: 'expired_root' }
 }
 

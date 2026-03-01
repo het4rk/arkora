@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline'",  // unsafe-inline required by Next.js; unsafe-eval removed for XSS hardening
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Tailwind + Google Fonts CSS
-              "img-src 'self' data: blob: https:",                 // Allow images from HTTPS origins
+              "img-src 'self' data: blob: https://s3.hippius.com https://worldcoin.org https://*.worldcoin.org https://*.world.org", // Whitelisted image origins only
               "font-src 'self' https://fonts.gstatic.com",
               "connect-src 'self' https://*.pusher.com wss://*.pusher.com https://*.worldcoin.org https://*.world.org https://*.alchemy.com",
               "frame-ancestors 'self' https://worldcoin.org https://*.worldcoin.org https://world.org https://*.world.org",

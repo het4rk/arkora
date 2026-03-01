@@ -66,10 +66,12 @@ export function Feed() {
     return () => clearTimeout(fallbackTimer)
   }, [feedMode, viewerCoords, locationDenied])
 
-  const localCoords =
-    feedMode === 'local' && viewerCoords
+  const localCoords = useMemo(
+    () => feedMode === 'local' && viewerCoords
       ? { ...viewerCoords, radiusMiles: locationRadius }
-      : null
+      : null,
+    [feedMode, viewerCoords, locationRadius]
+  )
 
   const { posts, isLoading, isLoadingMore, hasMore, error, loadMore, removePost, refresh } = useFeed(
     activeBoard ?? undefined,

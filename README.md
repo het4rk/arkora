@@ -3,15 +3,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![CI](https://github.com/het4rk/arkora/actions/workflows/ci.yml/badge.svg)](https://github.com/het4rk/arkora/actions/workflows/ci.yml)
 
-**Open source.** MIT licensed. Contributions welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md).
+**Open source.** MIT licensed. Contributions welcome - see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 **Twitter:** [@humansposting](https://x.com/humansposting)
 
 A provably human anonymous message board. Every voice is verified.
 
-Arkora is a World App miniapp where users post, vote, and converse anonymously — but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities. TikTok-style scroll feed, 4chan anonymity, Reddit boards structure — every voice cryptographically guaranteed real.
+Arkora is a World App miniapp where users post, vote, and converse anonymously - but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities. TikTok-style scroll feed, 4chan anonymity, Reddit boards structure - every voice cryptographically guaranteed real.
 
-World ID Orb proofs are validated directly on World Chain via the WorldIDRouter smart contract — not on Worldcoin's centralized servers. Proof validation is settled by blockchain consensus.
+World ID Orb proofs are validated directly on World Chain via the WorldIDRouter smart contract - not on Worldcoin's centralized servers. Proof validation is settled by blockchain consensus.
 
 **Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote, perpetual or timed) · Human Karma & reputation tiers (shown in feed cards + profiles) · Post impressions (view count, deduped per verified human) · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs, tips, mentions) · Community Notes · Bookmarks · 40 boards with fuzzy search + dynamic creation · Multi-entity search (boards, people, posts) with prefix-first matching · Following feed · Local feed (GPS radius) · E2E encrypted DMs (with block enforcement) · @ mentions · Live ephemeral Rooms with Clubhouse-style participant grid + speaking indicators (auto-close when last person leaves) · Live rooms strip in main feed · Native share sheet on posts and rooms · Profile picture upload · Block / report / moderation (auto-hide at 5 reports) · WLD tips (with push notification to recipient) & subscriptions · Skin shop (accent color skins, 1 WLD each) · Font shop (7 Google Fonts, 1 WLD each) · Server-synced preferences (theme, notifications, location persist across devices) · Private Pusher channels (server-authorized) · Light + dark theme · GDPR-compliant account deletion (comprehensive data cleanup) · Privacy Policy + Terms of Service · **Public Developer API** (verified-human data, API key auth, CORS)
 
@@ -50,10 +50,10 @@ All responses: `{ success: true, data: [...], nextCursor: "..." | null }`
 | Database | Neon Postgres + Drizzle ORM |
 | Auth | SIWE (Sign-In with Ethereum) + World MiniKit + IDKit |
 | Real-time | Pusher Channels |
-| File storage | Hippius S3 — decentralized storage on Bittensor subnet 14 |
+| File storage | Hippius S3 - decentralized storage on Bittensor subnet 14 |
 | State | Zustand (with localStorage persistence) |
 | Animations | Framer Motion |
-| Blockchain | World Chain (chain 480) — proof verified onchain via WorldIDRouter, not Worldcoin's cloud API |
+| Blockchain | World Chain (chain 480) - proof verified onchain via WorldIDRouter, not Worldcoin's cloud API |
 | Identity | Worldcoin World ID 4.0 (MiniKit + IDKit, Orb verified) |
 | Monitoring | Sentry (error tracking + session replay) + Vercel Analytics |
 
@@ -117,7 +117,7 @@ ADMIN_NULLIFIER_HASHES=0xabc123...
 WORLD_ID_ROUTER=0x17B354dD2595411ff79041f930e491A4Df39A278
 WORLD_CHAIN_RPC=https://worldchain-mainnet.g.alchemy.com/public
 
-# Sentry (optional — required for production source map uploads and error tracking)
+# Sentry (optional - required for production source map uploads and error tracking)
 SENTRY_AUTH_TOKEN=your-sentry-auth-token
 NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
 ```
@@ -166,7 +166,7 @@ World App opens miniapp
   → WalletConnect auto-triggers walletAuth (MiniKit.commands.walletAuth)
   → User signs SIWE message in World App
   → POST /api/auth/wallet → verifies signature, issues httpOnly cookies:
-      arkora-nh      (nullifierHash — the user's unique World ID identifier)
+      arkora-nh      (nullifierHash - the user's unique World ID identifier)
       wallet-address (EVM address)
   → Zustand store hydrates: isVerified=true, nullifierHash, user
 ```
@@ -193,21 +193,21 @@ Users choose how to appear:
 
 ### DMs
 
-End-to-end encrypted. Key exchange uses ECDH (Curve25519); messages encrypted with AES-256-GCM. Public keys stored server-side. Private keys live only in Zustand / localStorage — the server never sees them. Block checks enforced server-side — blocked users cannot send or receive DMs. All DM Pusher channels are private (server-authorized).
+End-to-end encrypted. Key exchange uses ECDH (Curve25519); messages encrypted with AES-256-GCM. Public keys stored server-side. Private keys live only in Zustand / localStorage - the server never sees them. Block checks enforced server-side - blocked users cannot send or receive DMs. All DM Pusher channels are private (server-authorized).
 
 ### Security
 
-Arkora underwent a comprehensive security audit (Sprint 19) across all layers — SQL injection, auth bypass, XSS/CSRF, rate limiting, secrets, headers, and infrastructure. Key properties:
+Arkora underwent a comprehensive security audit (Sprint 19) across all layers - SQL injection, auth bypass, XSS/CSRF, rate limiting, secrets, headers, and infrastructure. Key properties:
 
-- **No SQL injection**: All queries use Drizzle ORM parameterized builders — no raw SQL string interpolation anywhere in the codebase
+- **No SQL injection**: All queries use Drizzle ORM parameterized builders - no raw SQL string interpolation anywhere in the codebase
 - **Auth isolation**: Identity comes exclusively from the `arkora-nh` httpOnly cookie via `getCallerNullifier()`. Request body is never trusted for identity
 - **CSRF mitigated**: `SameSite=Strict` on all auth cookies. No additional CSRF token layer required
-- **World ID replay protection**: Enforced by the WorldIDRouter contract on World Chain — the EVM reverts on duplicate nullifier submissions
+- **World ID replay protection**: Enforced by the WorldIDRouter contract on World Chain - the EVM reverts on duplicate nullifier submissions
 - **Input sanitization**: All user text passes through `sanitizeLine()` / `sanitizeText()` (NFKC normalization + HTML stripping) before DB writes
-- **Private Pusher channels**: All per-user channels (`private-user-*`) require server-side authorization — prevents metadata snooping
+- **Private Pusher channels**: All per-user channels (`private-user-*`) require server-side authorization - prevents metadata snooping
 - **CSP**: `unsafe-eval` removed from `script-src`. HSTS 2-year preload. COOP + X-Permitted-Cross-Domain-Policies headers set
 - **Constant-time nonce comparison**: SIWE nonce validation uses `crypto.timingSafeEqual()` to prevent timing oracle attacks
-- **Rate limiting**: Per-endpoint, per-user sliding window. In-memory (per Vercel instance) — sufficient for early scale
+- **Rate limiting**: Per-endpoint, per-user sliding window. In-memory (per Vercel instance) - sufficient for early scale
 - **Error messages**: World ID verification errors return generic messages to client; detailed errors logged server-side only
 - **Atomic votes**: Vote operations use single CTE statements to prevent race conditions
 
@@ -226,14 +226,14 @@ Arkora is being progressively decentralized across every layer of the stack:
 
 | Layer | Status | Approach |
 |---|---|---|
-| **Identity** | Live | World ID Orb proofs validated onchain via WorldIDRouter on World Chain — no centralized identity API |
+| **Identity** | Live | World ID Orb proofs validated onchain via WorldIDRouter on World Chain - no centralized identity API |
 | **File storage** | Live | User-uploaded media stored on [Hippius](https://hippius.com), a decentralized S3-compatible service built on Bittensor subnet 14 |
-| **Compute / platform** | Planned | Migrate core platform logic (feed, posts, moderation) to Bittensor subnet infrastructure — replacing centralized Vercel serverless functions with incentivized, decentralized compute |
+| **Compute / platform** | Planned | Migrate core platform logic (feed, posts, moderation) to Bittensor subnet infrastructure - replacing centralized Vercel serverless functions with incentivized, decentralized compute |
 | **Database** | Planned | Evaluate decentralized or verifiable data storage options as the platform matures |
 
-The goal: a social platform where proof of humanity (World ID), content storage (Bittensor/Hippius), and application logic are all decentralized — no single operator can censor, surveil, or shut down the network.
+The goal: a social platform where proof of humanity (World ID), content storage (Bittensor/Hippius), and application logic are all decentralized - no single operator can censor, surveil, or shut down the network.
 
-> This is a work in progress. Contributions and ideas welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md).
+> This is a work in progress. Contributions and ideas welcome - see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
@@ -297,7 +297,7 @@ store/
 | Service | Free limit | Status |
 |---|---|---|
 | Vercel Hobby | 100 GB-hours/month | Comfortable |
-| Neon Free | 20 connections, 3 GB | OK — batch queries in hot paths |
+| Neon Free | 20 connections, 3 GB | OK - batch queries in hot paths |
 | Pusher Sandbox | 100 connections, 200k msg/day | Fine |
 | Hippius S3 | Pay-per-use | Minimal cost at launch |
 
@@ -348,4 +348,4 @@ To report a vulnerability, see [SECURITY.md](./SECURITY.md). Do not open public 
 
 ## License
 
-[MIT](./LICENSE) — Copyright © 2026 Arkora (by Hetark). Free to use, fork, and build on.
+[MIT](./LICENSE) - Copyright © 2026 Arkora (by Hetark). Free to use, fork, and build on.

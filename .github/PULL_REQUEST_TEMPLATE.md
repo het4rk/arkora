@@ -1,11 +1,11 @@
 ## Type of Change
 
-- [ ] feat — new feature
-- [ ] fix — bug fix
-- [ ] ui — visual / styling change
-- [ ] chore — tooling, deps, refactor
-- [ ] security — security patch
-- [ ] docs — documentation only
+- [ ] feat - new feature
+- [ ] fix - bug fix
+- [ ] ui - visual / styling change
+- [ ] chore - tooling, deps, refactor
+- [ ] security - security patch
+- [ ] docs - documentation only
 
 ## Description
 
