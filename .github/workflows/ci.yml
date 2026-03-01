@@ -10,13 +10,13 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: 'pnpm'
@@ -44,7 +44,7 @@ jobs:
           NEXT_PUBLIC_PUSHER_KEY: placeholder
           NEXT_PUBLIC_PUSHER_CLUSTER: us2
           NEXT_PUBLIC_APP_ID: app_placeholder
-          NEXT_PUBLIC_ACTION_ID: verifyhuman
+          NEXT_PUBLIC_ACTION_ID: placeholder
           APP_ID: app_placeholder
           NEXT_PUBLIC_WORLD_APP_ID: app_placeholder
           NEXT_PUBLIC_CHAIN_ID: '480'

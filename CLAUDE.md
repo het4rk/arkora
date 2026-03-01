@@ -95,6 +95,13 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] **World ID error leak** — `lib/worldid.ts` returns generic "Proof verification failed" to client, logs detailed error server-side only
 - [x] **toPost() type cast** — fixed repost type from `'text' | 'poll'` to `'text' | 'poll' | 'repost'` in follows.ts, bookmarks.ts, search.ts
 
+### Multi-Entity Search + World ID Cleanup (Sprint 23)
+
+- [x] **Multi-entity search** - upgraded search from posts-only to boards + people + posts; prefix-first matching ("ar" shows Arkora before Career); filter chips (All / Boards / People / Posts); grouped results with "See all" per section; board results show post counts + navigate to feed; people results show avatar + handle + karma rank
+- [x] **Search API** - `GET /api/search?q=<query>&type=all|boards|people|posts`; returns `{ boards: BoardResult[], people: PersonResult[], posts: Post[] }`; `searchBoards()` combines FEATURED_BOARDS + DB boards with prefix-first sorting; `searchUsers()` uses ILIKE with prefix-priority ORDER BY
+- [x] **Deprecated verifyhuman cleanup** - removed hardcoded `'verifyhuman'` fallback from all files; `NEXT_PUBLIC_ACTION_ID` now required (server returns 500 if missing); updated .env.example and CI workflow
+- [x] **Dependabot CI fix** - migrated ESLint from v8 (`.eslintrc.json`) to v9 flat config (`eslint.config.mjs`); bumped `eslint-config-next` to v16; replaced `next lint` with `eslint .` (removed in Next.js 16); React 19 strict rules (`set-state-in-effect`, `purity`) downgraded to warnings
+
 ### Public Developer API + Impressions (Sprint 22)
 
 - [x] **Impressions/views tracking** — `post_views` table (composite PK: postId + nullifierHash) + `view_count` denormalized counter on posts; atomic CTE: `INSERT ON CONFLICT DO NOTHING` + `UPDATE posts SET view_count = COUNT(*)`; fire-and-forget in GET `/api/posts/[id]`; eye icon + count shown in ThreadCard + ThreadView feed cards; `formatCount` helper (1k abbreviation)
@@ -142,7 +149,7 @@ pnpm db:seed          # Seed database (reads .env.local)
 - [x] Upvote / downvote (optimistic UI, self-vote blocked)
 - [x] Community Notes (fact-checking system)
 - [x] Bookmarks
-- [x] Full-text search (posts + boards) — crash-fixed
+- [x] Multi-entity search (boards + people + posts) with prefix-first matching and filter chips
 - [x] User profiles with avatar, bio, identity mode
 - [x] Follow / unfollow users
 - [x] Following feed tab
@@ -419,6 +426,10 @@ Known limitation: rate limiter is in-process (resets on Vercel cold start). Fine
 | `app/api/vote/reactions/route.ts` | Identity-aware upvoter/downvoter lists for a post |
 | `components/ui/VoteReactionsSheet.tsx` | Bottom sheet: Upvotes / Downvotes tabs with voter display names |
 | `components/ui/VoteButtons.tsx` | Vote buttons; count numbers are tappable to open VoteReactionsSheet |
+| `components/search/SearchSheet.tsx` | Multi-entity search modal (boards + people + posts); filter chips; prefix-first matching |
+| `hooks/useSearch.ts` | Debounced search hook with filter state; returns `SearchResults` (boards, people, posts) |
+| `lib/db/search.ts` | `searchPosts()` (full-text), `searchBoards()` (prefix-first), `searchUsers()` (ILIKE prefix) |
+| `app/api/search/route.ts` | Multi-entity search API; `type` param: all / boards / people / posts |
 | `components/auth/VerifyHuman.tsx` | World ID verification sheet (mobile) + IDKit QR (desktop) |
 | `components/auth/WalletConnect.tsx` | Auto-triggers walletAuth after onboarding |
 | `components/ui/LeftDrawer.tsx` | Slide-in drawer (identity, privacy, sign out) |

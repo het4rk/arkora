@@ -8,7 +8,7 @@ import { rateLimit } from '@/lib/rateLimit'
 
 interface RequestBody {
   payload: ISuccessResult
-  action?: string  // accepted but ignored — server uses NEXT_PUBLIC_ACTION_ID env var
+  action?: string  // accepted but ignored - server uses NEXT_PUBLIC_ACTION_ID env var
   walletAddress?: string
   signal?: string
 }
@@ -53,10 +53,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
-    const body = (await req.json()) as RequestBody
-    const { payload, walletAddress, signal } = body
+    const body = await req.json()
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 })
+    }
+    const { payload, walletAddress, signal } = body as RequestBody
 
-    if (!payload) {
+    // Validate payload is a non-null object with required World ID proof fields
+    if (
+      !payload ||
+      typeof payload !== 'object' ||
+      typeof payload.merkle_root !== 'string' ||
+      typeof payload.nullifier_hash !== 'string' ||
+      typeof payload.proof !== 'string'
+    ) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -65,7 +75,11 @@ export async function POST(req: NextRequest) {
 
     // Ignore client-provided action — always verify against the server-configured action
     // to prevent action manipulation attacks (attacker replaying a proof from a different action)
-    const action = process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman'
+    const action = process.env.NEXT_PUBLIC_ACTION_ID
+    if (!action) {
+      console.error('[verify/route] NEXT_PUBLIC_ACTION_ID is not configured')
+      return NextResponse.json({ success: false, error: 'Verification not configured' }, { status: 500 })
+    }
 
     // Validate walletAddress format if provided (EVM address: 0x + 40 hex chars)
     if (walletAddress !== undefined && walletAddress !== null && walletAddress !== '') {

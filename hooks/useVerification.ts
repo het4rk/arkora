@@ -114,7 +114,7 @@ export function useVerification(): UseVerificationReturn {
 
     try {
       const { finalPayload } = await MiniKit.commandsAsync.verify({
-        action: process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman',
+        action: process.env.NEXT_PUBLIC_ACTION_ID ?? '',
         verification_level: VerificationLevel.Orb,
       })
 
@@ -129,7 +129,7 @@ export function useVerification(): UseVerificationReturn {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           payload: finalPayload as ISuccessResult,
-          action: process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman',
+          action: process.env.NEXT_PUBLIC_ACTION_ID ?? '',
           walletAddress: walletAddress ?? '',
         }),
       })
@@ -174,7 +174,7 @@ export function useVerification(): UseVerificationReturn {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             payload: proof,
-            action: process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman',
+            action: process.env.NEXT_PUBLIC_ACTION_ID ?? '',
           }),
           signal: AbortSignal.timeout(15000),
         })

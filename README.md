@@ -13,7 +13,7 @@ Arkora is a World App miniapp where users post, vote, and converse anonymously �
 
 World ID Orb proofs are validated directly on World Chain via the WorldIDRouter smart contract — not on Worldcoin's centralized servers. Proof validation is settled by blockchain consensus.
 
-**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers (shown in feed cards + profiles) · Post impressions (view count, deduped per verified human) · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs, tips, mentions) · Community Notes · Bookmarks · 40 boards with fuzzy search + dynamic creation · Following feed · Local feed (GPS radius) · E2E encrypted DMs (with block enforcement) · @ mentions · Live ephemeral Rooms with Clubhouse-style participant grid + speaking indicators (auto-close when last person leaves) · Live rooms strip in main feed · Native share sheet on posts and rooms · Profile picture upload · Block / report / moderation (auto-hide at 5 reports) · WLD tips (with push notification to recipient) & subscriptions · Private Pusher channels (server-authorized) · Light + dark theme · GDPR-compliant account deletion (comprehensive data cleanup) · Privacy Policy + Terms of Service · **Public Developer API** (verified-human data, API key auth, CORS)
+**Features:** Posts + threaded replies · Sybil-resistant polls (1 verified human = 1 vote) · Human Karma & reputation tiers (shown in feed cards + profiles) · Post impressions (view count, deduped per verified human) · Confessions board (anonymous + verified) · Upvotes / downvotes · Vote reactions (see who liked/disliked) · Repost + quote-repost · In-app notifications (likes, quotes, reposts, replies, follows, DMs, tips, mentions) · Community Notes · Bookmarks · 40 boards with fuzzy search + dynamic creation · Multi-entity search (boards, people, posts) with prefix-first matching · Following feed · Local feed (GPS radius) · E2E encrypted DMs (with block enforcement) · @ mentions · Live ephemeral Rooms with Clubhouse-style participant grid + speaking indicators (auto-close when last person leaves) · Live rooms strip in main feed · Native share sheet on posts and rooms · Profile picture upload · Block / report / moderation (auto-hide at 5 reports) · WLD tips (with push notification to recipient) & subscriptions · Private Pusher channels (server-authorized) · Light + dark theme · GDPR-compliant account deletion (comprehensive data cleanup) · Privacy Policy + Terms of Service · **Public Developer API** (verified-human data, API key auth, CORS)
 
 ## Developer API
 
@@ -85,7 +85,7 @@ Create `.env.local` in the project root:
 ```env
 # World ID / MiniKit
 NEXT_PUBLIC_APP_ID=app_xxxxxxxxxxxxxxxxxxxxxxxx
-NEXT_PUBLIC_ACTION_ID=verifyhuman
+NEXT_PUBLIC_ACTION_ID=your_action_id
 APP_ID=app_xxxxxxxxxxxxxxxxxxxxxxxx
 
 # World Chain RPC
@@ -268,7 +268,8 @@ components/
   dm/                 ConversationView, ConversationList
   feed/               Feed, ThreadCard, FeedSkeleton
   onboarding/         OnboardingScreen (first-run slides)
-  rooms/              RoomsDiscovery, RoomView, RoomCard, RoomComposer, …
+  rooms/              RoomsDiscovery, RoomView, RoomCard, RoomComposer, ...
+  search/             SearchSheet (multi-entity search modal)
   settings/           SettingsView
   thread/             ThreadView, ReplyCard, ReplyTree
   ui/                 BottomNav, LeftDrawer, BodyText, MentionSuggestions, …

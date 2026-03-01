@@ -19,8 +19,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
-    const body = (await req.json()) as RequestBody
-    const { payload, nonce } = body
+    const body = await req.json()
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 })
+    }
+    const { payload, nonce } = body as RequestBody
+
+    // Validate payload is a non-null object with a string address
+    if (!payload || typeof payload !== 'object' || typeof payload.address !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'Invalid payload' },
+        { status: 400 }
+      )
+    }
 
     const cookieStore = await cookies()
     const storedNonce = cookieStore.get('siwe-nonce')?.value
@@ -33,8 +44,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate provided nonce format: must be 32 lowercase hex chars
-    if (!nonce || !/^[0-9a-f]{32}$/.test(nonce)) {
+    // Validate provided nonce is a string with exact format: 32 lowercase hex chars
+    if (typeof nonce !== 'string' || !/^[0-9a-f]{32}$/.test(nonce)) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired nonce' },
         { status: 400 }

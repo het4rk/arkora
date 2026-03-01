@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
       nullifierHash ? getUserVotesBatch(postIds, nullifierHash) : Promise.resolve({} as Record<string, number>),
     ])
 
-    const data: Record<string, { results: PollResult[]; userVote: number | null }> = {}
+    // Use null-prototype object to prevent prototype pollution via property injection
+    const data: Record<string, { results: PollResult[]; userVote: number | null }> = Object.create(null)
     for (const postId of postIds) {
       data[postId] = {
         results: resultsMap[postId] ?? [],

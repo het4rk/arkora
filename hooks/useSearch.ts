@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import type { Post } from '@/lib/types'
+import type { SearchResults, SearchFilter } from '@/lib/types'
+
+const EMPTY: SearchResults = { boards: [], people: [], posts: [] }
 
 interface UseSearchReturn {
   query: string
   setQuery: (q: string) => void
-  results: Post[]
+  filter: SearchFilter
+  setFilter: (f: SearchFilter) => void
+  results: SearchResults
   isSearching: boolean
   hasSearched: boolean
   clear: () => void
@@ -14,50 +18,55 @@ interface UseSearchReturn {
 
 export function useSearch(): UseSearchReturn {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Post[]>([])
+  const [filter, setFilter] = useState<SearchFilter>('all')
+  const [results, setResults] = useState<SearchResults>(EMPTY)
   const [isSearching, setIsSearching] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const runSearch = useCallback(async (q: string) => {
+  const runSearch = useCallback(async (q: string, type: SearchFilter) => {
     setIsSearching(true)
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=30`)
-      const json = (await res.json()) as { success: boolean; data: Post[] }
-      setResults(json.success ? json.data : [])
+      const res = await fetch(
+        `/api/search?q=${encodeURIComponent(q)}&type=${type}`
+      )
+      const json = (await res.json()) as { success: boolean; data: SearchResults }
+      setResults(json.success ? json.data : EMPTY)
       setHasSearched(true)
     } catch {
-      setResults([])
+      setResults(EMPTY)
       setHasSearched(true)
     } finally {
       setIsSearching(false)
     }
   }, [])
 
+  // Re-search when query or filter changes
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
     if (!query.trim()) {
-      setResults([])
+      setResults(EMPTY)
       setHasSearched(false)
       return
     }
 
     // 350ms debounce - fast enough to feel instant, slow enough to batch keystrokes
     debounceRef.current = setTimeout(() => {
-      void runSearch(query.trim())
+      void runSearch(query.trim(), filter)
     }, 350)
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [query, runSearch])
+  }, [query, filter, runSearch])
 
   const clear = useCallback(() => {
     setQuery('')
-    setResults([])
+    setFilter('all')
+    setResults(EMPTY)
     setHasSearched(false)
   }, [])
 
-  return { query, setQuery, results, isSearching, hasSearched, clear }
+  return { query, setQuery, filter, setFilter, results, isSearching, hasSearched, clear }
 }
