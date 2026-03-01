@@ -33,7 +33,7 @@ export function VerifyHuman() {
   if (isVerified) return null
 
   const appId = (process.env.NEXT_PUBLIC_APP_ID ?? '') as `app_${string}`
-  const actionId = process.env.NEXT_PUBLIC_ACTION_ID ?? 'verifyhuman'
+  const actionId = process.env.NEXT_PUBLIC_ACTION_ID ?? ''
 
   // IDKit handles both mobile-browser (deeplink to World App) and desktop (QR code).
   const needsIdKit = env === 'mobile-browser' || env === 'desktop'

@@ -44,7 +44,7 @@ jobs:
           NEXT_PUBLIC_PUSHER_KEY: placeholder
           NEXT_PUBLIC_PUSHER_CLUSTER: us2
           NEXT_PUBLIC_APP_ID: app_placeholder
-          NEXT_PUBLIC_ACTION_ID: verifyhuman
+          NEXT_PUBLIC_ACTION_ID: placeholder
           APP_ID: app_placeholder
           NEXT_PUBLIC_WORLD_APP_ID: app_placeholder
           NEXT_PUBLIC_CHAIN_ID: '480'

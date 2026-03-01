@@ -184,6 +184,29 @@ export interface LocalFeedParams {
   limit?: number | undefined
 }
 
+// ── Search ───────────────────────────────────────────────────────────────────
+
+export interface BoardResult {
+  id: string
+  label: string
+  postCount: number
+}
+
+export interface PersonResult {
+  nullifierHash: string
+  pseudoHandle: string
+  avatarUrl: string | null
+  karmaScore: number
+}
+
+export type SearchFilter = 'all' | 'boards' | 'people' | 'posts'
+
+export interface SearchResults {
+  boards: BoardResult[]
+  people: PersonResult[]
+  posts: Post[]
+}
+
 export type ApiResponse<T> =
   | { success: true; data: T }
   | { success: false; error: string }

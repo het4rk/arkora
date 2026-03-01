@@ -183,7 +183,7 @@ export function Feed() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100dvh-56px)] overflow-y-auto">
+      <div className="h-[calc(100dvh-56px)] overflow-y-auto pt-14">
         <FeedSkeleton />
         <FeedSkeleton />
         <FeedSkeleton />
@@ -253,7 +253,7 @@ export function Feed() {
         ref={scrollRef}
         className={cn(
           'overflow-y-scroll h-[calc(100dvh-56px)] scroll-smooth',
-          hasLocalCoords ? 'pt-8' : ''
+          hasLocalCoords ? 'pt-[104px]' : 'pt-14'
         )}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

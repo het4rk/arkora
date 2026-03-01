@@ -1,12 +1,20 @@
 import { db } from '@/lib/db'
 import { apiKeys } from './schema'
 import { eq, and, isNull, desc, sql } from 'drizzle-orm'
-import { createHash, randomBytes } from 'crypto'
+import { createHmac, randomBytes } from 'crypto'
 
-/** Generates a new API key pair: raw (shown once) + SHA-256 hash (stored). */
+// HMAC key derived from DATABASE_URL (stable, server-only, never exposed to clients).
+// Falls back to a static salt so dev/test environments still function.
+const HMAC_KEY = process.env.DATABASE_URL ?? 'arkora-api-key-hmac-fallback'
+
+function hmacHash(raw: string): string {
+  return createHmac('sha256', HMAC_KEY).update(raw).digest('hex')
+}
+
+/** Generates a new API key pair: raw (shown once) + HMAC-SHA256 hash (stored). */
 export function generateApiKey(): { raw: string; hash: string } {
   const raw = 'ark_' + randomBytes(32).toString('hex')
-  const hash = createHash('sha256').update(raw).digest('hex')
+  const hash = hmacHash(raw)
   return { raw, hash }
 }
 
@@ -68,7 +76,7 @@ export async function revokeApiKey(id: string, nullifierHash: string): Promise<b
  */
 export async function validateApiKey(raw: string): Promise<boolean> {
   if (!raw.startsWith('ark_') || raw.length !== 68) return false
-  const hash = createHash('sha256').update(raw).digest('hex')
+  const hash = hmacHash(raw)
   const rows = await db
     .select({ id: apiKeys.id, revokedAt: apiKeys.revokedAt })
     .from(apiKeys)
