@@ -33,6 +33,8 @@ const FILTERS: { id: FilterType; label: string }[] = [
   { id: 'like', label: 'Likes' },
   { id: 'reply', label: 'Replies' },
   { id: 'quote', label: 'Quotes' },
+  { id: 'repost', label: 'Reposts' },
+  { id: 'mention', label: 'Mentions' },
   { id: 'follow', label: 'Follows' },
   { id: 'dm', label: 'DMs' },
 ]

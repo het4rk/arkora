@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getCallerNullifier } from '@/lib/serverAuth'
-import { getOwnedSkins, getActiveSkin } from '@/lib/db/skins'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
+import { getOwnedSkinsByNullifiers, getActiveSkinForNullifiers } from '@/lib/db/skins'
 
 export async function GET() {
   const nullifierHash = await getCallerNullifier()
@@ -8,9 +8,11 @@ export async function GET() {
     return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
   }
 
+  const nullifiers = await getLinkedNullifiers(nullifierHash)
+
   const [owned, active] = await Promise.all([
-    getOwnedSkins(nullifierHash),
-    getActiveSkin(nullifierHash),
+    getOwnedSkinsByNullifiers(nullifiers),
+    getActiveSkinForNullifiers(nullifiers),
   ])
 
   return NextResponse.json({

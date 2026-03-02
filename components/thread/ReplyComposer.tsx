@@ -6,6 +6,7 @@ import { haptic } from '@/lib/utils'
 import { generateAlias } from '@/lib/session'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { useArkoraStore } from '@/store/useArkoraStore'
+import { useT } from '@/hooks/useT'
 interface Props {
   postId: string
   onSuccess: () => void
@@ -20,19 +21,15 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
   const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const { nullifierHash, isVerified, setVerifySheetOpen, identityMode, persistentAlias, walletAddress, user } = useArkoraStore()
-  function shortWallet(): string | undefined {
-    if (!walletAddress) return undefined
-    return walletAddress.slice(0, 6) + '…' + walletAddress.slice(-4)
-  }
-
+  const { nullifierHash, isVerified, setVerifySheetOpen, identityMode, persistentAlias, user } = useArkoraStore()
+  const t = useT()
   function getPseudoHandle(): string | undefined {
     if (identityMode === 'alias') {
       return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : undefined)
     }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
-      return username ?? user?.pseudoHandle ?? shortWallet()
+      return username ?? user?.pseudoHandle ?? undefined
     }
     return undefined
   }
@@ -112,7 +109,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
             ref={textareaRef}
             value={body}
             onChange={(e) => setBody(e.target.value.slice(0, 10000))}
-            placeholder="Add a reply…"
+            placeholder={t('composer.replyPlaceholder')}
             rows={2}
             className="glass-input w-full rounded-[var(--r-md)] px-3.5 py-3 text-sm resize-none leading-relaxed max-h-40 overflow-y-auto"
           />
@@ -123,7 +120,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
           disabled={isSubmitting || !body.trim()}
           className="mb-[3px] h-10 px-4 bg-accent disabled:opacity-35 text-background text-sm font-semibold rounded-[var(--r-md)] transition-all active:scale-95 active:bg-accent-hover shrink-0"
         >
-          {isSubmitting ? '…' : 'Reply'}
+          {isSubmitting ? t('composer.replying') : t('composer.reply')}
         </button>
       </div>
     </div>

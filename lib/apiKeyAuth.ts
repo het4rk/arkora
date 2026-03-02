@@ -26,15 +26,16 @@ export async function requireApiKey(
     )
   }
 
-  const valid = await validateApiKey(header)
-  if (!valid) {
+  const keyHash = await validateApiKey(header)
+  if (!keyHash) {
     return NextResponse.json(
       { success: false, error: 'Invalid or revoked API key.' },
       { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } }
     )
   }
 
-  return { ok: true, key: header }
+  // Return hash (not raw key) so rate limiter never holds plaintext keys in memory
+  return { ok: true, key: keyHash }
 }
 
 /** CORS headers for all v1 public data endpoints. */

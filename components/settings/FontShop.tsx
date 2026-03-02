@@ -7,10 +7,12 @@ import { sendWld } from '@/hooks/useTip'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
+import { useT } from '@/hooks/useT'
 
 const TREASURY_WALLET = process.env.NEXT_PUBLIC_TREASURY_WALLET ?? ''
 
 export function FontShop() {
+  const t = useT()
   const {
     activeFontId, ownedFonts,
     setActiveFont, setOwnedFonts,
@@ -21,6 +23,8 @@ export function FontShop() {
   const [error, setError] = useState<string | null>(null)
   // Track which Google Fonts stylesheets are loaded for previews
   const [loadedFonts, setLoadedFonts] = useState<Set<string>>(new Set())
+  // Stores the font to revert to if the user cancels or payment fails
+  const [previewPrev, setPreviewPrev] = useState<FontId | null>(null)
 
   const isMiniKit = typeof window !== 'undefined' && MiniKit.isInstalled()
   const isOwned = (id: FontId) => id === 'system' || ownedFonts.includes(id)
@@ -41,6 +45,7 @@ export function FontShop() {
 
   const handleTap = useCallback((fontId: FontId) => {
     if (isOwned(fontId)) {
+      // Activate immediately + persist to server
       setActiveFont(fontId)
       void fetch('/api/fonts/activate', {
         method: 'PATCH',
@@ -48,11 +53,22 @@ export function FontShop() {
         body: JSON.stringify({ fontId }),
       })
     } else {
+      // Preview: apply font immediately so the user sees it behind the payment sheet
+      setPreviewPrev(activeFontId)
+      setActiveFont(fontId)
       setConfirmFont(fontId)
       setError(null)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownedFonts])
+  }, [ownedFonts, activeFontId])
+
+  const revertPreview = useCallback(() => {
+    if (previewPrev !== null) {
+      setActiveFont(previewPrev)
+      setPreviewPrev(null)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewPrev])
 
   const handlePurchase = useCallback(async () => {
     if (!confirmFont) return
@@ -70,6 +86,7 @@ export function FontShop() {
     const result = await sendWld(TREASURY_WALLET, font.priceWld, `Unlock ${font.label} font`)
     if (!result) {
       setError('Transaction cancelled or failed')
+      revertPreview()
       setPurchasing(null)
       return
     }
@@ -83,27 +100,30 @@ export function FontShop() {
     const json = await res.json()
     if (!res.ok || !json.success) {
       setError(json.error ?? 'Purchase failed')
+      revertPreview()
       setPurchasing(null)
       return
     }
 
+    // Purchase succeeded - font is already applied as preview, now persist
     setOwnedFonts([...ownedFonts, confirmFont])
-    setActiveFont(confirmFont)
+    setPreviewPrev(null)
     setPurchasing(null)
     setConfirmFont(null)
+    // Persist activation to server
+    void fetch('/api/fonts/activate', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fontId: confirmFont }),
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmFont, ownedFonts])
+  }, [confirmFont, ownedFonts, revertPreview])
 
   const confirmFontData = confirmFont ? FONTS.find((f) => f.id === confirmFont) : null
 
   return (
     <>
-      <section className="space-y-3">
-        <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">
-          Font
-        </p>
-
-        <div className="space-y-2">
+      <div className="space-y-2">
           {FONTS.map((font) => {
             const owned = isOwned(font.id)
             const active = activeFontId === font.id
@@ -146,14 +166,13 @@ export function FontShop() {
               </button>
             )
           })}
-        </div>
-      </section>
+      </div>
 
       {/* Purchase confirmation sheet */}
       <BottomSheet
         isOpen={!!confirmFont}
-        onClose={() => { setConfirmFont(null); setError(null) }}
-        title="Unlock Font"
+        onClose={() => { revertPreview(); setConfirmFont(null); setError(null) }}
+        title={t('shop.unlockFont')}
       >
         {confirmFontData && (
           <div className="flex flex-col items-center text-center gap-5 py-4">
@@ -176,7 +195,7 @@ export function FontShop() {
                 Unlock {confirmFontData.label}
               </p>
               <p className="text-text-secondary text-sm mt-1">
-                {confirmFontData.priceWld} WLD - permanent, synced across devices
+                {confirmFontData.priceWld} WLD - {t('shop.permanent')}
               </p>
             </div>
 
@@ -192,15 +211,15 @@ export function FontShop() {
                 disabled={!!purchasing}
                 className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-background font-bold py-4 rounded-2xl transition-colors active:scale-95 text-base"
               >
-                {purchasing ? 'Confirming...' : `Pay ${confirmFontData.priceWld} WLD`}
+                {purchasing ? t('shop.confirming') : `${t('shop.pay')} ${confirmFontData.priceWld} WLD`}
               </button>
             ) : (
               <div className="w-full glass rounded-2xl py-4 text-center">
                 <p className="text-text-muted text-sm">
-                  Purchase in World App
+                  {t('shop.purchaseInApp')}
                 </p>
                 <p className="text-text-muted/60 text-xs mt-1">
-                  Open Arkora in World App to buy fonts
+                  {t('shop.openInWorldApp')}
                 </p>
               </div>
             )}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCallerNullifier } from '@/lib/serverAuth'
-import { getOwnedFonts, setActiveFont } from '@/lib/db/fonts'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
+import { getOwnedFontsByNullifiers, setActiveFont } from '@/lib/db/fonts'
 import { isValidFontId } from '@/lib/fonts'
 
 export async function PATCH(req: NextRequest) {
@@ -22,7 +22,8 @@ export async function PATCH(req: NextRequest) {
 
   // System font is always available
   if (fontId !== 'system') {
-    const owned = await getOwnedFonts(nullifierHash)
+    const nullifiers = await getLinkedNullifiers(nullifierHash)
+    const owned = await getOwnedFontsByNullifiers(nullifiers)
     if (!owned.includes(fontId)) {
       return NextResponse.json({ success: false, error: 'Font not owned' }, { status: 403 })
     }

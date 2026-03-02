@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCallerNullifier } from '@/lib/serverAuth'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
-import { recordSkinPurchase, getOwnedSkins, setActiveSkin } from '@/lib/db/skins'
+import { recordSkinPurchase, getOwnedSkinsByNullifiers, setActiveSkin } from '@/lib/db/skins'
 import { isValidSkinId, getSkinById } from '@/lib/skins'
+import { isPaymentBlocked } from '@/lib/geo'
 
 export async function POST(req: NextRequest) {
+  if (isPaymentBlocked(req)) {
+    return NextResponse.json({ success: false, error: 'In-app payments are not available in your region' }, { status: 451 })
+  }
+
   const nullifierHash = await getCallerNullifier()
   if (!nullifierHash) {
     return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
@@ -37,8 +42,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'Skin not found' }, { status: 400 })
   }
 
-  // Check if already owned (hex can be re-purchased but we don't need to)
-  const owned = await getOwnedSkins(nullifierHash)
+  // Check if already owned across all linked identities
+  const nullifiers = await getLinkedNullifiers(nullifierHash)
+  const owned = await getOwnedSkinsByNullifiers(nullifiers)
   if (owned.includes(skinId)) {
     return NextResponse.json({ success: false, error: 'Already owned' }, { status: 400 })
   }

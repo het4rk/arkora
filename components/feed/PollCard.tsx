@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Post, PollResult } from '@/lib/types'
+import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
 
 interface Props {
@@ -54,6 +55,11 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
   async function vote(e: React.MouseEvent, optionIndex: number) {
     e.stopPropagation()
     if (isVoting || hasVoted || isExpired) return
+    const { isVerified: verified, nullifierHash: nh, setVerifySheetOpen } = useArkoraStore.getState()
+    if (!verified || !nh) {
+      setVerifySheetOpen(true)
+      return
+    }
     haptic('medium')
     setIsVoting(true)
     setVoteError(null)

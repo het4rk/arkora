@@ -43,6 +43,8 @@ export const posts = pgTable(
     viewCount: integer('view_count').default(0).notNull(),
     // keccak256(id + title + body + nullifierHash) - tamper-evidence fingerprint set at creation.
     contentHash: text('content_hash'),
+    // Hashtags extracted from body - enables multi-board discovery
+    tags: text('tags').array(),
     // Poll fields - only set when type = 'poll'
     type: text('type').notNull().default('text'), // 'text' | 'poll' | 'repost'
     pollOptions: jsonb('poll_options').$type<{ index: number; text: string }[]>(),
@@ -57,6 +59,8 @@ export const posts = pgTable(
     countryCreatedIdx: index('posts_country_created_idx').on(table.countryCode, table.createdAt),
     // Feed queries filter reportCount < 5 on every request
     reportCountIdx: index('posts_report_count_idx').on(table.reportCount),
+    // GIN index on tags array for efficient @> (contains) queries
+    tagsIdx: index('posts_tags_idx').using('gin', table.tags),
   })
 )
 

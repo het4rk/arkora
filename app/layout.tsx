@@ -4,6 +4,7 @@ import { MiniKitProvider } from '@/components/providers/MiniKitProvider'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { SkinProvider } from '@/components/providers/SkinProvider'
 import { FontProvider } from '@/components/providers/FontProvider'
+import { LocaleDetector } from '@/components/providers/LocaleDetector'
 import { WalletConnect } from '@/components/auth/WalletConnect'
 import { BottomNav } from '@/components/ui/BottomNav'
 import { RoomMiniPlayer } from '@/components/rooms/RoomMiniPlayer'
@@ -61,6 +62,7 @@ export default function RootLayout({
           <ThemeProvider />
           <SkinProvider />
           <FontProvider />
+          <LocaleDetector />
           <TopBar />
           {/* Auto-triggers walletAuth on mount */}
           <SessionHydrator />

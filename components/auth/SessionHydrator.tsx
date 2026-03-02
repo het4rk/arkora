@@ -12,27 +12,31 @@ function fetchWithTimeout(url: string, ms = 8000): Promise<Response> {
 
 export function SessionHydrator() {
   const {
-    isVerified, setVerified,
+    isVerified, nullifierHash, setVerified, signOut,
     setOwnedSkins, setActiveSkin,
     setOwnedFonts, setActiveFont,
     setTheme, setNotifyReplies, setNotifyDms, setNotifyFollows, setNotifyFollowedPosts,
     setLocationEnabled, setLocationRadius,
   } = useArkoraStore()
 
+  // Always validate session on mount - catches stale localStorage auth when cookie expired
   useEffect(() => {
-    if (isVerified) return
     void fetchWithTimeout('/api/me')
       .then((r) => r.json())
       .then((json: { success: boolean; nullifierHash: string | null; user: HumanUser | null }) => {
         if (json.nullifierHash && json.user) {
           setVerified(json.nullifierHash, json.user)
+        } else if (isVerified) {
+          // Cookie expired but store still thinks we're authed - clear stale state
+          signOut()
         }
       })
       .catch(() => {/* silent */})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Hydrate skin preferences after auth
+  // Hydrate skin preferences after auth (re-fetches when identity changes,
+  // e.g. WalletConnect resolves wlt_ identity after World ID re-verify)
   useEffect(() => {
     if (!isVerified) return
     void fetchWithTimeout('/api/skins')
@@ -45,7 +49,7 @@ export function SessionHydrator() {
       })
       .catch(() => {/* silent */})
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVerified])
+  }, [isVerified, nullifierHash])
 
   // Hydrate font preferences after auth
   useEffect(() => {
@@ -60,7 +64,7 @@ export function SessionHydrator() {
       })
       .catch(() => {/* silent */})
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVerified])
+  }, [isVerified, nullifierHash])
 
   // Hydrate synced preferences (theme, notifications, location) after auth
   useEffect(() => {
@@ -85,7 +89,7 @@ export function SessionHydrator() {
       })
       .catch(() => {/* silent */})
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVerified])
+  }, [isVerified, nullifierHash])
 
   return null
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCallerNullifier } from '@/lib/serverAuth'
-import { getOwnedSkins, setActiveSkin } from '@/lib/db/skins'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
+import { getOwnedSkinsByNullifiers, setActiveSkin } from '@/lib/db/skins'
 import { isValidSkinId } from '@/lib/skins'
 
 export async function PATCH(req: NextRequest) {
@@ -22,7 +22,8 @@ export async function PATCH(req: NextRequest) {
 
   // Monochrome is always available
   if (skinId !== 'monochrome') {
-    const owned = await getOwnedSkins(nullifierHash)
+    const nullifiers = await getLinkedNullifiers(nullifierHash)
+    const owned = await getOwnedSkinsByNullifiers(nullifiers)
     if (!owned.includes(skinId)) {
       return NextResponse.json({ success: false, error: 'Skin not owned' }, { status: 403 })
     }

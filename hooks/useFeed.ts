@@ -54,6 +54,11 @@ export function useFeed(
     }
   }, [feedMode])
 
+  // Use a ref for nullifierHash so it doesn't cause fetchPosts to be recreated
+  // (which would trigger the main useEffect and cause a fetch loop during auth hydration)
+  const nullifierRef = useRef(nullifierHash)
+  nullifierRef.current = nullifierHash
+
   const fetchPosts = useCallback(
     async (reset: boolean) => {
       const params = new URLSearchParams({ limit: String(FEED_LIMIT) })
@@ -82,13 +87,20 @@ export function useFeed(
       }
 
       const res = await fetch(`/api/posts?${params.toString()}`, { signal: AbortSignal.timeout(10000) })
-      if (!res.ok) throw new Error('Failed to fetch feed')
+      if (!res.ok) {
+        if (res.status === 401 && feedMode === 'following') {
+          // Auth expired - return empty instead of looping on error
+          applyPage([], true)
+          return
+        }
+        throw new Error('Failed to fetch feed')
+      }
 
       const json = (await res.json()) as { data: Post[] }
       applyPage(json.data, reset)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [boardId, feedMode, nullifierHash, localCoords?.lat, localCoords?.lng, localCoords?.radiusMiles, applyPage]
+    [boardId, feedMode, localCoords?.lat, localCoords?.lng, localCoords?.radiusMiles, applyPage]
   )
 
   const refresh = useCallback(async () => {

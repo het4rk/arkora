@@ -7,10 +7,12 @@ import { sendWld } from '@/hooks/useTip'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
+import { useT } from '@/hooks/useT'
 
 const TREASURY_WALLET = process.env.NEXT_PUBLIC_TREASURY_WALLET ?? ''
 
 export function SkinShop() {
+  const t = useT()
   const {
     activeSkinId, customHex, ownedSkins,
     setActiveSkin, setOwnedSkins,
@@ -20,13 +22,15 @@ export function SkinShop() {
   const [confirmSkin, setConfirmSkin] = useState<SkinId | null>(null)
   const [hexInput, setHexInput] = useState(customHex ?? '#6366F1')
   const [error, setError] = useState<string | null>(null)
+  // Stores the skin to revert to if the user cancels or payment fails
+  const [previewPrev, setPreviewPrev] = useState<{ skinId: SkinId; hex: string | undefined } | null>(null)
 
   const isMiniKit = typeof window !== 'undefined' && MiniKit.isInstalled()
   const isOwned = (id: SkinId) => id === 'monochrome' || ownedSkins.includes(id)
 
   const handleTap = useCallback((skinId: SkinId) => {
     if (isOwned(skinId)) {
-      // Activate immediately
+      // Activate immediately + persist to server
       const hex = skinId === 'hex' ? hexInput : undefined
       setActiveSkin(skinId, hex)
       void fetch('/api/skins/activate', {
@@ -35,11 +39,23 @@ export function SkinShop() {
         body: JSON.stringify({ skinId, customHex: hex }),
       })
     } else {
+      // Preview: apply skin immediately so the user sees it behind the payment sheet
+      setPreviewPrev({ skinId: activeSkinId, hex: customHex ?? undefined })
+      const hex = skinId === 'hex' ? hexInput : undefined
+      setActiveSkin(skinId, hex)
       setConfirmSkin(skinId)
       setError(null)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownedSkins, hexInput])
+  }, [ownedSkins, hexInput, activeSkinId, customHex])
+
+  const revertPreview = useCallback(() => {
+    if (previewPrev) {
+      setActiveSkin(previewPrev.skinId, previewPrev.hex)
+      setPreviewPrev(null)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewPrev])
 
   const handlePurchase = useCallback(async () => {
     if (!confirmSkin) return
@@ -57,6 +73,7 @@ export function SkinShop() {
     const result = await sendWld(TREASURY_WALLET, skin.priceWld, `Unlock ${skin.label} skin`)
     if (!result) {
       setError('Transaction cancelled or failed')
+      revertPreview()
       setPurchasing(null)
       return
     }
@@ -70,17 +87,24 @@ export function SkinShop() {
     const json = await res.json()
     if (!res.ok || !json.success) {
       setError(json.error ?? 'Purchase failed')
+      revertPreview()
       setPurchasing(null)
       return
     }
 
-    // Update local state
+    // Purchase succeeded - skin is already applied as preview, now persist
     setOwnedSkins([...ownedSkins, confirmSkin])
-    setActiveSkin(confirmSkin, confirmSkin === 'hex' ? hexInput : undefined)
+    setPreviewPrev(null)
     setPurchasing(null)
     setConfirmSkin(null)
+    // Persist activation to server
+    void fetch('/api/skins/activate', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ skinId: confirmSkin, customHex: confirmSkin === 'hex' ? hexInput : undefined }),
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmSkin, ownedSkins, hexInput])
+  }, [confirmSkin, ownedSkins, hexInput, revertPreview])
 
   const handleHexChange = useCallback((hex: string) => {
     setHexInput(hex)
@@ -99,11 +123,7 @@ export function SkinShop() {
 
   return (
     <>
-      <section className="space-y-3">
-        <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">
-          Accent Color
-        </p>
-
+      <div className="space-y-3">
         {/* Swatch grid */}
         <div className="grid grid-cols-6 gap-2">
           {SKINS.filter((s) => s.id !== 'hex').map((skin) => {
@@ -189,10 +209,10 @@ export function SkinShop() {
                 </div>
                 <div className="text-left flex-1">
                   <p className="text-text text-sm font-semibold">
-                    {hexSkin.label} Color
+                    {t('shop.customColor')}
                   </p>
                   <p className="text-text-muted text-xs">
-                    {hexOwned ? 'Pick any hex color' : `${hexSkin.priceWld} WLD - unlock any color`}
+                    {hexOwned ? t('shop.pickAnyColor') : `${hexSkin.priceWld} WLD - ${t('shop.unlockAnyColor')}`}
                   </p>
                 </div>
                 {hexOwned && hexActive && (
@@ -226,13 +246,13 @@ export function SkinShop() {
             </div>
           )
         })()}
-      </section>
+      </div>
 
       {/* Purchase confirmation sheet */}
       <BottomSheet
         isOpen={!!confirmSkin}
-        onClose={() => { setConfirmSkin(null); setError(null) }}
-        title="Unlock Skin"
+        onClose={() => { revertPreview(); setConfirmSkin(null); setError(null) }}
+        title={t('shop.unlockSkin')}
       >
         {confirmSkinData && (
           <div className="flex flex-col items-center text-center gap-5 py-4">
@@ -250,7 +270,7 @@ export function SkinShop() {
                 Unlock {confirmSkinData.label}
               </p>
               <p className="text-text-secondary text-sm mt-1">
-                {confirmSkinData.priceWld} WLD - permanent, synced across devices
+                {confirmSkinData.priceWld} WLD - {t('shop.permanent')}
               </p>
             </div>
 
@@ -266,15 +286,15 @@ export function SkinShop() {
                 disabled={!!purchasing}
                 className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-background font-bold py-4 rounded-2xl transition-colors active:scale-95 text-base"
               >
-                {purchasing ? 'Confirming...' : `Pay ${confirmSkinData.priceWld} WLD`}
+                {purchasing ? t('shop.confirming') : `${t('shop.pay')} ${confirmSkinData.priceWld} WLD`}
               </button>
             ) : (
               <div className="w-full glass rounded-2xl py-4 text-center">
                 <p className="text-text-muted text-sm">
-                  Purchase in World App
+                  {t('shop.purchaseInApp')}
                 </p>
                 <p className="text-text-muted/60 text-xs mt-1">
-                  Open Arkora in World App to buy skins
+                  {t('shop.openInWorldApp')}
                 </p>
               </div>
             )}

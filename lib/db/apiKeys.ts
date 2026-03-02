@@ -74,8 +74,12 @@ export async function revokeApiKey(id: string, nullifierHash: string): Promise<b
  * Validates a raw API key. Returns true and touches lastUsedAt if valid and not revoked.
  * Returns false for any invalid/revoked/malformed key.
  */
-export async function validateApiKey(raw: string): Promise<boolean> {
-  if (!raw.startsWith('ark_') || raw.length !== 68) return false
+/**
+ * Validates a raw API key. Returns the key hash (safe for rate-limit keys) if valid.
+ * Returns null for any invalid/revoked/malformed key.
+ */
+export async function validateApiKey(raw: string): Promise<string | null> {
+  if (!raw.startsWith('ark_') || raw.length !== 68) return null
   const hash = hashKey(raw)
   const rows = await db
     .select({ id: apiKeys.id, revokedAt: apiKeys.revokedAt })
@@ -83,7 +87,7 @@ export async function validateApiKey(raw: string): Promise<boolean> {
     .where(eq(apiKeys.keyHash, hash))
     .limit(1)
   const row = rows[0]
-  if (!row || row.revokedAt) return false
+  if (!row || row.revokedAt) return null
   // Fire-and-forget: update lastUsedAt without blocking
   void db
     .update(apiKeys)
@@ -91,5 +95,5 @@ export async function validateApiKey(raw: string): Promise<boolean> {
     .where(eq(apiKeys.id, row.id))
     .execute()
     .catch(() => undefined)
-  return true
+  return hash
 }

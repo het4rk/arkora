@@ -1,34 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostsByNullifiers, getVotedPostsByNullifier } from '@/lib/db/posts'
 import { getRepliesByNullifiers } from '@/lib/db/replies'
-import { getUserByNullifier, getUserByWalletAddressNonWlt } from '@/lib/db/users'
-import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
-
-/**
- * Returns all nullifiers that belong to the same real-world user.
- * A user can have content under both their World ID nullifier and their
- * wlt_ wallet nullifier if they verified at different times.
- */
-async function getLinkedNullifiers(nullifierHash: string): Promise<string[]> {
-  const user = await getUserByNullifier(nullifierHash)
-  if (!user?.walletAddress || user.walletAddress.startsWith('idkit_')) {
-    return [nullifierHash]
-  }
-
-  const all = new Set([nullifierHash])
-
-  if (nullifierHash.startsWith('wlt_')) {
-    // Session is wallet-based - also check for linked World ID nullifier
-    const wiUser = await getUserByWalletAddressNonWlt(user.walletAddress)
-    if (wiUser) all.add(wiUser.nullifierHash)
-  } else {
-    // Session is World ID nullifier - also add linked wlt_ nullifier
-    all.add(walletToNullifier(user.walletAddress))
-  }
-
-  return [...all]
-}
 
 export async function GET(req: NextRequest) {
   try {

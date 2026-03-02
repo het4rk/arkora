@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { useArkoraStore } from '@/store/useArkoraStore'
 
 interface UseVoteReturn {
-  castVote: (postId: string, direction: 1 | -1) => Promise<void>
+  castVote: (postId: string, direction: 1 | -1, upvotes: number, downvotes: number) => Promise<void>
   isVoting: boolean
   myVote: (postId: string) => 1 | -1 | null
 }
@@ -15,26 +15,27 @@ export function useVote(): UseVoteReturn {
     useArkoraStore()
 
   const myVote = useCallback(
-    (postId: string): 1 | -1 | null => optimisticVotes[postId] ?? null,
+    (postId: string): 1 | -1 | null => optimisticVotes[postId]?.dir ?? null,
     [optimisticVotes]
   )
 
   const castVote = useCallback(
-    async (postId: string, direction: 1 | -1) => {
+    async (postId: string, direction: 1 | -1, upvotes: number, downvotes: number) => {
       if (!isVerified || !nullifierHash) {
         useArkoraStore.getState().setVerifySheetOpen(true)
         return
       }
 
       // Capture previous state so we can restore it on failure
-      const previousVote = optimisticVotes[postId] ?? null
-      const isToggleOff = previousVote === direction
+      const previousEntry = optimisticVotes[postId] ?? null
+      const previousDir = previousEntry?.dir ?? null
+      const isToggleOff = previousDir === direction
 
       // Optimistic update immediately
       if (isToggleOff) {
         clearOptimisticVote(postId)
       } else {
-        setOptimisticVote(postId, direction)
+        setOptimisticVote(postId, direction, upvotes, downvotes)
       }
       setIsVoting(true)
 
@@ -48,8 +49,8 @@ export function useVote(): UseVoteReturn {
         if (!res.ok) throw new Error('Vote rejected')
       } catch {
         // Restore exact previous state on failure
-        if (previousVote !== null) {
-          setOptimisticVote(postId, previousVote)
+        if (previousEntry !== null) {
+          setOptimisticVote(postId, previousEntry.dir, previousEntry.up, previousEntry.down)
         } else {
           clearOptimisticVote(postId)
         }

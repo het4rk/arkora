@@ -31,6 +31,9 @@ export async function POST(req: NextRequest) {
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
+    if (!rateLimit(`dm-keys-post:${nullifierHash}`, 10, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
     const { publicKey } = (await req.json()) as { publicKey?: string }
     if (!publicKey) {
       return NextResponse.json({ success: false, error: 'publicKey required' }, { status: 400 })

@@ -6,12 +6,13 @@ import Pusher from 'pusher-js'
 import { usePathname } from 'next/navigation'
 import { cn, haptic } from '@/lib/utils'
 import { useArkoraStore } from '@/store/useArkoraStore'
-import { LeftDrawer } from '@/components/ui/LeftDrawer'
+import { useT } from '@/hooks/useT'
 import { SearchSheet } from '@/components/search/SearchSheet'
 
 export function BottomNav() {
   const pathname = usePathname()
-  const { setComposerOpen, setSearchOpen, nullifierHash, isVerified, unreadNotificationCount, setUnreadNotificationCount } = useArkoraStore()
+  const { setComposerOpen, setSearchOpen, nullifierHash, isVerified, setVerifySheetOpen, unreadNotificationCount, setUnreadNotificationCount } = useArkoraStore()
+  const t = useT()
 
   // Fetch the initial unread count on mount, then subscribe to Pusher for
   // real-time DM notification count bumps (replaces 60 s polling interval).
@@ -57,9 +58,6 @@ export function BottomNav() {
   return (
     <>
       <SearchSheet />
-      {/* Drawer rendered here so it sits above nav in z-order */}
-      <LeftDrawer />
-
       <nav className="fixed bottom-0 left-0 right-0 z-30" aria-label="Main navigation">
         {/* Liquid glass bar */}
         <div className="glass-nav">
@@ -82,7 +80,7 @@ export function BottomNav() {
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>
               <span className={cn('text-[10px] font-medium', pathname === '/' && 'text-accent')}>
-                Feed
+                {t('nav.feed')}
               </span>
             </Link>
 
@@ -98,12 +96,16 @@ export function BottomNav() {
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
-              <span className="text-[10px] font-medium text-text-muted">Search</span>
+              <span className="text-[10px] font-medium text-text-muted">{t('nav.search')}</span>
             </button>
 
             {/* Compose FAB */}
             <button
-              onClick={() => { haptic('medium'); setComposerOpen(true) }}
+              onClick={() => {
+                haptic('medium')
+                if (!isVerified || !nullifierHash) { setVerifySheetOpen(true); return }
+                setComposerOpen(true)
+              }}
               className="w-12 h-12 rounded-2xl bg-accent text-background flex items-center justify-center shadow-lg active:scale-95 transition-all active:bg-accent-hover"
               aria-label="Create post"
             >
@@ -135,7 +137,7 @@ export function BottomNav() {
                 )}
               </span>
               <span className={cn('text-[10px] font-medium', pathname === '/notifications' && 'text-accent')}>
-                Alerts
+                {t('nav.alerts')}
               </span>
             </Link>
 
@@ -156,7 +158,7 @@ export function BottomNav() {
                 <circle cx="12" cy="7" r="4" />
               </svg>
               <span className={cn('text-[10px] font-medium', pathname === '/profile' && 'text-accent')}>
-                Profile
+                {t('nav.profile')}
               </span>
             </Link>
 

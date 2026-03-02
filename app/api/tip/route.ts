@@ -4,9 +4,14 @@ import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { worldAppNotify } from '@/lib/worldAppNotify'
+import { isPaymentBlocked } from '@/lib/geo'
 
 export async function POST(req: NextRequest) {
   try {
+    if (isPaymentBlocked(req)) {
+      return NextResponse.json({ success: false, error: 'In-app payments are not available in your region' }, { status: 451 })
+    }
+
     const senderHash = await getCallerNullifier()
     if (!senderHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })

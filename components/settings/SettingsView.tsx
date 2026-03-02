@@ -5,10 +5,14 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkoraStore'
+import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n'
 import { generateAlias } from '@/lib/session'
 import { cn } from '@/lib/utils'
+import { useT } from '@/hooks/useT'
 import { SkinShop } from '@/components/settings/SkinShop'
 import { FontShop } from '@/components/settings/FontShop'
+import { getSkinById } from '@/lib/skins'
+import { getFontById } from '@/lib/fonts'
 import { Avatar } from '@/components/ui/Avatar'
 import { AvatarCropper } from '@/components/ui/AvatarCropper'
 
@@ -16,8 +20,8 @@ import { AvatarCropper } from '@/components/ui/AvatarCropper'
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
 type RadiusOption = typeof RADIUS_OPTIONS[number]
 
-function radiusLabel(r: RadiusOption): string {
-  return r === -1 ? 'Country' : `${r} mi`
+function radiusLabel(r: RadiusOption, countryLabel: string): string {
+  return r === -1 ? countryLabel : `${r} mi`
 }
 
 function radiusIndexOf(miles: number): number {
@@ -25,22 +29,27 @@ function radiusIndexOf(miles: number): number {
   return idx >= 0 ? idx : 4  // default 50mi
 }
 
-const PRIVACY: { mode: IdentityMode; label: string; sub: string; icon: JSX.Element }[] = [
-  { mode: 'anonymous', label: 'Random',  sub: 'New Human # each post',    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /></svg> },
-  { mode: 'alias',     label: 'Alias',   sub: 'Consistent handle',        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> },
-  { mode: 'named',     label: 'Named',   sub: 'Your World ID username',   icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 15h4M7 11h6M7 9h10" /></svg> },
+import type { TKey } from '@/lib/i18n/en'
+
+const PRIVACY: { mode: IdentityMode; labelKey: TKey; subKey: TKey; icon: JSX.Element }[] = [
+  { mode: 'anonymous', labelKey: 'settings.identityRandom',  subKey: 'settings.identityRandomSub',    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none" /><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /></svg> },
+  { mode: 'alias',     labelKey: 'settings.identityAlias',   subKey: 'settings.identityAliasSub',        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> },
+  { mode: 'named',     labelKey: 'settings.identityNamed',   subKey: 'settings.identityNamedSub',   icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 15h4M7 11h6M7 9h10" /></svg> },
 ]
 
-const THEMES: { value: Theme; label: string; icon: JSX.Element }[] = [
-  { value: 'dark',  label: 'Dark',  icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg> },
-  { value: 'light', label: 'Light', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg> },
+const THEMES: { value: Theme; labelKey: TKey; icon: JSX.Element }[] = [
+  { value: 'dark',  labelKey: 'settings.dark',  icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg> },
+  { value: 'light', labelKey: 'settings.light', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg> },
 ]
 
 export function SettingsView() {
   const router = useRouter()
+  const t = useT()
   const {
     identityMode, setIdentityMode,
     theme, setTheme,
+    locale, setLocale,
+    activeSkinId, customHex, activeFontId,
     isVerified, nullifierHash, walletAddress,
     persistentAlias, setPersistentAlias,
     user, setUser,
@@ -68,6 +77,9 @@ export function SettingsView() {
   const [deleting, setDeleting] = useState(false)
   const [avatarSaving, setAvatarSaving] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
+  const [expandedCustom, setExpandedCustom] = useState<'color' | 'font' | null>(null)
+  const activeSkin = getSkinById(activeSkinId)
+  const activeFont = getFontById(activeFontId)
   const [cropFile, setCropFile] = useState<File | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
@@ -252,17 +264,17 @@ export function SettingsView() {
               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 1L1 6l5 5" />
             </svg>
-            Back
+            {t('settings.back')}
           </button>
         </div>
 
         <div className="px-[5vw] py-4 space-y-6">
-          <h1 className="text-xl font-bold text-text">Settings</h1>
+          <h1 className="text-xl font-bold text-text">{t('settings.title')}</h1>
 
           {/* ── Profile Picture ───────────────────────────────────── */}
           {isVerified && (
             <section className="space-y-3">
-              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Profile Picture</p>
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.profilePicture')}</p>
               <div className="glass rounded-[var(--r-lg)] p-4 flex items-center gap-4">
                 {/* Hidden file input */}
                 <input
@@ -304,7 +316,7 @@ export function SettingsView() {
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                       <circle cx="12" cy="13" r="4"/>
                     </svg>
-                    <span>{avatarSaving ? 'Saving…' : 'Change photo'}</span>
+                    <span>{avatarSaving ? t('settings.saving') : t('settings.changePhoto')}</span>
                   </button>
                   {user?.avatarUrl && (
                     <button
@@ -313,7 +325,7 @@ export function SettingsView() {
                       disabled={avatarSaving}
                       className="text-xs text-text-muted active:opacity-60 transition-opacity"
                     >
-                      Remove photo
+                      {t('settings.removePhoto')}
                     </button>
                   )}
                   {avatarError && <p className="text-xs text-text-secondary">{avatarError}</p>}
@@ -348,7 +360,7 @@ export function SettingsView() {
 
           {/* ── Identity ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Identity</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.identity')}</p>
             <div className="space-y-2">
               {PRIVACY.map((opt) => (
                 <div key={opt.mode}>
@@ -381,10 +393,10 @@ export function SettingsView() {
                         'text-sm font-semibold leading-tight',
                         identityMode === opt.mode ? 'text-accent' : 'text-text'
                       )}>
-                        {opt.label}
+                        {t(opt.labelKey)}
                       </p>
                       <p className="text-[11px] text-text-muted mt-0.5 leading-tight">
-                        {opt.sub}
+                        {t(opt.subKey)}
                       </p>
                     </div>
                     {identityMode === opt.mode && (
@@ -409,7 +421,7 @@ export function SettingsView() {
                         onClick={commitAlias}
                         className="px-3 py-2.5 bg-accent text-background text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all shrink-0"
                       >
-                        Set
+                        {t('settings.aliasSet')}
                       </button>
                     </div>
                   )}
@@ -418,70 +430,138 @@ export function SettingsView() {
             </div>
           </section>
 
-          {/* ── Appearance ──────────────────────────────────────────── */}
-          <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Appearance</p>
-            <div className="flex gap-2">
-              {THEMES.map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() => { setTheme(t.value); syncPref({ theme: t.value }) }}
-                  className={cn(
-                    'flex-1 flex flex-col items-center gap-2 py-4 rounded-[var(--r-lg)] border transition-all active:scale-95',
-                    theme === t.value
-                      ? 'bg-accent/12 border-accent/40'
-                      : 'glass'
-                  )}
+          {/* ── Customization ──────────────────────────────────────── */}
+          <section className="space-y-2">
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.customization')}</p>
+
+            {/* Theme */}
+            <div className="glass rounded-[var(--r-lg)] px-4 py-3.5 flex items-center gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted shrink-0">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+              <span className="text-text text-sm font-semibold flex-1">{t('settings.theme')}</span>
+              <div className="flex gap-1.5">
+                {THEMES.map((th) => (
+                  <button
+                    key={th.value}
+                    type="button"
+                    onClick={() => { setTheme(th.value); syncPref({ theme: th.value }) }}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all',
+                      theme === th.value
+                        ? 'bg-accent text-background'
+                        : 'text-text-muted glass'
+                    )}
+                  >
+                    {t(th.labelKey)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Accent Color */}
+            <div className="glass rounded-[var(--r-lg)] overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setExpandedCustom(expandedCustom === 'color' ? null : 'color')}
+                className="w-full px-4 py-3.5 flex items-center gap-3 active:opacity-80 transition-opacity"
+              >
+                <div className="w-5 h-5 rounded-full bg-accent shrink-0" />
+                <span className="text-text text-sm font-semibold flex-1 text-left">{t('settings.accentColor')}</span>
+                <span className="text-text-muted text-xs mr-1">{activeSkin?.label ?? 'Mono'}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className={cn('text-text-muted/50 transition-transform duration-200', expandedCustom === 'color' && 'rotate-180')}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {expandedCustom === 'color' && (
+                <div className="px-4 pb-4 pt-1 border-t border-white/[0.06]">
+                  <SkinShop />
+                </div>
+              )}
+            </div>
+
+            {/* Font */}
+            <div className="glass rounded-[var(--r-lg)] overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setExpandedCustom(expandedCustom === 'font' ? null : 'font')}
+                className="w-full px-4 py-3.5 flex items-center gap-3 active:opacity-80 transition-opacity"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted shrink-0">
+                  <polyline points="4 7 4 4 20 4 20 7" />
+                  <line x1="9" y1="20" x2="15" y2="20" />
+                  <line x1="12" y1="4" x2="12" y2="20" />
+                </svg>
+                <span className="text-text text-sm font-semibold flex-1 text-left">{t('settings.font')}</span>
+                <span
+                  className="text-text-muted text-xs mr-1"
+                  style={activeFont?.cssFamily ? { fontFamily: activeFont.cssFamily } : undefined}
                 >
-                  <div>{t.icon}</div>
-                  <span className={cn(
-                    'text-xs font-semibold',
-                    theme === t.value ? 'text-accent' : 'text-text-secondary'
-                  )}>
-                    {t.label}
-                  </span>
-                </button>
-              ))}
+                  {activeFont?.label ?? 'System'}
+                </span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className={cn('text-text-muted/50 transition-transform duration-200', expandedCustom === 'font' && 'rotate-180')}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {expandedCustom === 'font' && (
+                <div className="px-4 pb-4 pt-1 border-t border-white/[0.06]">
+                  <FontShop />
+                </div>
+              )}
+            </div>
+
+            {/* Language */}
+            <div className="glass rounded-[var(--r-lg)] px-4 py-3.5 flex items-center gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted shrink-0">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span className="text-text text-sm font-semibold flex-1">{t('settings.language')}</span>
+              <select
+                value={locale}
+                onChange={(e) => setLocale(e.target.value as Locale)}
+                aria-label="Language"
+                className="glass-input text-text text-xs font-medium px-2.5 py-1.5 rounded-full appearance-none cursor-pointer pr-7 bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%2712%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23999%27%20stroke-width=%272.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpolyline%20points=%276%209%2012%2015%2018%209%27/%3E%3C/svg%3E')] bg-[length:12px] bg-[right_8px_center] bg-no-repeat"
+              >
+                {LOCALES.map((loc) => (
+                  <option key={loc} value={loc}>{LOCALE_LABELS[loc]}</option>
+                ))}
+              </select>
             </div>
           </section>
 
-          {/* ── Accent Color (Skin Shop) ─────────────────────────── */}
-          <SkinShop />
-
-          {/* ── Font ──────────────────────────────────────────────── */}
-          <FontShop />
-
           {/* ── Account ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Account</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.account')}</p>
             <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
               {worldUsername() && (
                 <div className="px-4 py-3.5 flex items-center justify-between">
-                  <span className="text-text-muted text-sm">World ID</span>
+                  <span className="text-text-muted text-sm">{t('settings.worldId')}</span>
                   <span className="text-text text-sm font-medium">@{worldUsername()}</span>
                 </div>
               )}
               {user?.pseudoHandle && (
                 <div className="px-4 py-3.5 flex items-center justify-between">
-                  <span className="text-text-muted text-sm">Display name</span>
+                  <span className="text-text-muted text-sm">{t('settings.displayName')}</span>
                   <span className="text-text text-sm font-medium">{user.pseudoHandle}</span>
                 </div>
               )}
               {walletAddress && (
                 <div className="px-4 py-3.5 flex items-center justify-between">
-                  <span className="text-text-muted text-sm">Wallet</span>
-                  <span className="text-text text-sm font-mono">
-                    {walletAddress.slice(0, 6)}…{walletAddress.slice(-4)}
-                  </span>
+                  <span className="text-text-muted text-sm">{t('settings.wallet')}</span>
+                  <span className="text-accent text-xs font-semibold px-2 py-0.5 rounded-full bg-accent/15">{t('settings.connected')}</span>
                 </div>
               )}
               <div className="px-4 py-3.5 flex items-center justify-between">
-                <span className="text-text-muted text-sm">Verification</span>
+                <span className="text-text-muted text-sm">{t('settings.verification')}</span>
                 <span className={cn(
                   'text-xs font-semibold px-2 py-0.5 rounded-full',
                   isVerified ? 'bg-accent/15 text-accent' : 'bg-surface-up text-text-muted'
                 )}>
-                  {isVerified ? '✓ Verified human' : 'Unverified'}
+                  {isVerified ? `✓ ${t('settings.verified')}` : t('settings.unverified')}
                 </span>
               </div>
             </div>
@@ -500,7 +580,7 @@ export function SettingsView() {
                   <polyline points="16 17 21 12 16 7" />
                   <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
-                <span>Sign out</span>
+                <span>{t('settings.signOut')}</span>
               </button>
             )}
             {!isVerified && hasExplicitlySignedOut && (
@@ -517,7 +597,7 @@ export function SettingsView() {
                   <polyline points="10 17 15 12 10 7" />
                   <line x1="15" y1="12" x2="3" y2="12" />
                 </svg>
-                <span>Sign in again</span>
+                <span>{t('settings.signInAgain')}</span>
               </button>
             )}
             {isVerified && !deleteConfirm && (
@@ -532,14 +612,14 @@ export function SettingsView() {
                   <path d="M10 11v6M14 11v6" />
                   <path d="M9 6V4h6v2" />
                 </svg>
-                <span>Delete account</span>
+                <span>{t('settings.deleteAccount')}</span>
               </button>
             )}
             {isVerified && deleteConfirm && (
               <div className="glass rounded-[var(--r-lg)] px-4 py-4 space-y-3">
-                <p className="text-text text-sm font-semibold">Delete account?</p>
+                <p className="text-text text-sm font-semibold">{t('settings.deleteConfirm')}</p>
                 <p className="text-text-muted text-xs leading-relaxed">
-                  This permanently removes your profile, anonymizes all your posts, and cannot be undone.
+                  {t('settings.deleteDesc')}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -547,13 +627,13 @@ export function SettingsView() {
                     disabled={deleting}
                     className="flex-1 py-2.5 bg-text-muted text-background text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
                   >
-                    {deleting ? 'Deleting…' : 'Yes, delete'}
+                    {deleting ? t('settings.deleting') : t('settings.deleteYes')}
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(false)}
                     className="flex-1 py-2.5 glass text-text-secondary text-sm font-semibold rounded-[var(--r-md)] active:opacity-70 transition-opacity"
                   >
-                    Cancel
+                    {t('settings.cancel')}
                   </button>
                 </div>
               </div>
@@ -563,40 +643,23 @@ export function SettingsView() {
           {/* ── World Chain ──────────────────────────────────────────── */}
           {isVerified && (
             <section className="space-y-3">
-              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">World Chain Identity</p>
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.worldChain')}</p>
               <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
                 <div className="px-4 py-3.5">
-                  <p className="text-text text-sm font-semibold mb-0.5">Verified on-chain</p>
+                  <p className="text-text text-sm font-semibold mb-0.5">{t('settings.verifiedOnChain')}</p>
                   <p className="text-text-muted text-xs leading-relaxed">
-                    Your humanity proof was validated by World Chain&apos;s smart contracts - not by a central server.
+                    {t('settings.worldChainDesc')}
                   </p>
                 </div>
                 {walletAddress && !walletAddress.startsWith('idkit_') && (
                   <div className="px-4 py-3.5 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-text-muted text-xs mb-0.5">Wallet</p>
-                      <p className="text-text text-sm font-mono truncate">
-                        {walletAddress.slice(0, 6)}…{walletAddress.slice(-4)}
-                      </p>
-                    </div>
-                    <a
-                      href={`https://worldscan.org/address/${walletAddress}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 flex items-center gap-1 text-accent text-xs font-semibold active:opacity-70 transition-opacity"
-                    >
-                      View
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                        <polyline points="15 3 21 3 21 9" />
-                        <line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
-                    </a>
+                    <p className="text-text-muted text-xs">{t('settings.walletLinked')}</p>
+                    <span className="text-accent text-xs font-semibold px-2 py-0.5 rounded-full bg-accent/15">{t('settings.connected')}</span>
                   </div>
                 )}
                 {user?.verifiedBlockNumber && (
                   <div className="px-4 py-3.5 flex items-center justify-between">
-                    <span className="text-text-muted text-xs">Verified at block</span>
+                    <span className="text-text-muted text-xs">{t('settings.verifiedAtBlock')}</span>
                     <span className="text-text text-xs font-mono tabular-nums">
                       #{user.verifiedBlockNumber.toLocaleString()}
                     </span>
@@ -604,7 +667,7 @@ export function SettingsView() {
                 )}
                 {user?.registrationTxHash && (
                   <div className="px-4 py-3.5 flex items-center justify-between gap-3">
-                    <span className="text-text-muted text-xs">Registry tx</span>
+                    <span className="text-text-muted text-xs">{t('settings.registryTx')}</span>
                     <a
                       href={`https://worldscan.org/tx/${user.registrationTxHash}`}
                       target="_blank"
@@ -626,23 +689,23 @@ export function SettingsView() {
 
           {/* ── Privacy ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Privacy</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.privacy')}</p>
             <div className="glass rounded-[var(--r-lg)] px-4 py-4">
               <p className="text-text-secondary text-sm leading-relaxed">
-                Your identity is never stored. Only a cryptographic proof of humanity is used to verify your account - your personal data stays on your device.
+                {t('settings.privacyDesc')}
               </p>
             </div>
           </section>
 
           {/* ── Location ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Location</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.location')}</p>
             <div className="glass rounded-[var(--r-lg)] px-4 py-4 space-y-4">
               {/* Toggle */}
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-text text-sm font-semibold leading-tight">Tag posts with location</p>
-                  <p className="text-text-muted text-xs mt-0.5 leading-tight">Your posts will appear in nearby Local feeds</p>
+                  <p className="text-text text-sm font-semibold leading-tight">{t('settings.locationToggle')}</p>
+                  <p className="text-text-muted text-xs mt-0.5 leading-tight">{t('settings.locationToggleSub')}</p>
                 </div>
                 <button
                   onClick={() => { setLocationEnabled(!locationEnabled); syncPref({ locationEnabled: !locationEnabled }) }}
@@ -662,9 +725,9 @@ export function SettingsView() {
               {/* Radius slider - shown whether or not tagging is on (users still pick their feed radius) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-text-muted text-xs">Local feed radius</p>
+                  <p className="text-text-muted text-xs">{t('settings.localRadius')}</p>
                   <p className="text-accent text-xs font-semibold tabular-nums">
-                    {radiusLabel(locationRadius as RadiusOption)}
+                    {radiusLabel(locationRadius as RadiusOption, t('common.country'))}
                   </p>
                 </div>
                 <input
@@ -681,7 +744,7 @@ export function SettingsView() {
                 />
                 <div className="flex justify-between text-[10px] text-text-muted/60 px-0.5">
                   <span>1 mi</span>
-                  <span>Country</span>
+                  <span>{t('common.country')}</span>
                 </div>
               </div>
             </div>
@@ -689,18 +752,18 @@ export function SettingsView() {
 
           {/* ── Notifications ──────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Notifications</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.notifications')}</p>
             <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
               {([
-                { label: 'Replies', sub: 'When someone replies to your post', value: notifyReplies, setter: setNotifyReplies, key: 'notifyReplies' },
-                { label: 'Direct messages', sub: 'When you receive a new DM', value: notifyDms, setter: setNotifyDms, key: 'notifyDms' },
-                { label: 'Follows', sub: 'When someone follows you', value: notifyFollows, setter: setNotifyFollows, key: 'notifyFollows' },
-                { label: 'Following posts', sub: 'When someone you follow posts', value: notifyFollowedPosts, setter: setNotifyFollowedPosts, key: 'notifyFollowedPosts' },
-              ] as const).map((opt) => (
-                <div key={opt.label} className="px-4 py-3.5 flex items-center justify-between gap-3">
+                { labelKey: 'settings.notifyReplies' as const, subKey: 'settings.notifyRepliesSub' as const, value: notifyReplies, setter: setNotifyReplies, key: 'notifyReplies' },
+                { labelKey: 'settings.notifyDms' as const, subKey: 'settings.notifyDmsSub' as const, value: notifyDms, setter: setNotifyDms, key: 'notifyDms' },
+                { labelKey: 'settings.notifyFollows' as const, subKey: 'settings.notifyFollowsSub' as const, value: notifyFollows, setter: setNotifyFollows, key: 'notifyFollows' },
+                { labelKey: 'settings.notifyFollowedPosts' as const, subKey: 'settings.notifyFollowedPostsSub' as const, value: notifyFollowedPosts, setter: setNotifyFollowedPosts, key: 'notifyFollowedPosts' },
+              ]).map((opt) => (
+                <div key={opt.key} className="px-4 py-3.5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-text text-sm font-semibold leading-tight">{opt.label}</p>
-                    <p className="text-text-muted text-xs mt-0.5 leading-tight">{opt.sub}</p>
+                    <p className="text-text text-sm font-semibold leading-tight">{t(opt.labelKey)}</p>
+                    <p className="text-text-muted text-xs mt-0.5 leading-tight">{t(opt.subKey)}</p>
                   </div>
                   <button
                     onClick={() => { opt.setter(!opt.value); syncPref({ [opt.key]: !opt.value }) }}
@@ -708,7 +771,7 @@ export function SettingsView() {
                       'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
                       opt.value ? 'bg-accent' : 'bg-white/[0.20]'
                     )}
-                    aria-label={`Toggle ${opt.label.toLowerCase()} notifications`}
+                    aria-label={`Toggle ${t(opt.labelKey).toLowerCase()} notifications`}
                   >
                     <span className={cn(
                       'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200',
@@ -723,11 +786,11 @@ export function SettingsView() {
           {/* ── Subscriptions ──────────────────────────────────── */}
           {isVerified && (
             <section className="space-y-3">
-              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">My Subscriptions</p>
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.subscriptions')}</p>
               {subsLoading ? (
-                <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm animate-pulse">Loading…</div>
+                <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm animate-pulse">{t('settings.loading')}</div>
               ) : subs.length === 0 ? (
-                <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm">No active subscriptions.</div>
+                <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm">{t('settings.noSubscriptions')}</div>
               ) : (
                 <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
                   {subs.map((sub) => (
@@ -737,7 +800,7 @@ export function SettingsView() {
                           {sub.creatorName ?? `Human #${sub.creatorHash.slice(-6)}`}
                         </p>
                         <p className="text-text-muted text-xs mt-0.5">
-                          {sub.daysLeft}d remaining · {sub.amountWld} WLD/mo
+                          {sub.daysLeft}d {t('settings.remaining')} · {sub.amountWld} WLD/mo
                         </p>
                       </div>
                       <button
@@ -745,7 +808,7 @@ export function SettingsView() {
                         disabled={cancellingHash === sub.creatorHash}
                         className="shrink-0 px-3 py-1.5 glass rounded-[var(--r-full)] text-xs text-text-muted font-semibold active:scale-95 transition-all disabled:opacity-40"
                       >
-                        {cancellingHash === sub.creatorHash ? '…' : 'Cancel'}
+                        {cancellingHash === sub.creatorHash ? '...' : t('settings.cancelSub')}
                       </button>
                     </div>
                   ))}
@@ -757,15 +820,15 @@ export function SettingsView() {
           {/* ── Developer API ──────────────────────────────────── */}
           {isVerified && (
             <section className="space-y-3">
-              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">Developer API</p>
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.developerApi')}</p>
 
               {/* New key revealed - shown once */}
               {newKeyResult && (
                 <div className="glass rounded-[var(--r-lg)] p-4 space-y-3 border border-accent/20">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-text text-sm font-semibold">Key created</p>
-                      <p className="text-text-muted text-xs mt-0.5">Copy it now - it will not be shown again.</p>
+                      <p className="text-text text-sm font-semibold">{t('settings.keyCreated')}</p>
+                      <p className="text-text-muted text-xs mt-0.5">{t('settings.keyCopyNow')}</p>
                     </div>
                     <button
                       type="button"
@@ -792,7 +855,7 @@ export function SettingsView() {
                       ) : (
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                       )}
-                      <span>{keyCopied ? 'Copied' : 'Copy'}</span>
+                      <span>{keyCopied ? t('settings.copied') : t('settings.copy')}</span>
                     </button>
                   </div>
                 </div>
@@ -801,7 +864,7 @@ export function SettingsView() {
               {/* Create key form */}
               {showKeyForm && !newKeyResult && (
                 <div className="glass rounded-[var(--r-lg)] p-4 space-y-3">
-                  <p className="text-text text-sm font-semibold">New API key</p>
+                  <p className="text-text text-sm font-semibold">{t('settings.newApiKey')}</p>
                   <input
                     type="text"
                     value={newKeyLabel}
@@ -818,14 +881,14 @@ export function SettingsView() {
                       disabled={creatingKey}
                       className="flex-1 py-2.5 bg-accent text-background text-sm font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40"
                     >
-                      {creatingKey ? 'Creating…' : 'Create key'}
+                      {creatingKey ? t('settings.creating') : t('settings.createKey')}
                     </button>
                     <button
                       type="button"
                       onClick={() => { setShowKeyForm(false); setNewKeyLabel('') }}
                       className="flex-1 py-2.5 glass text-text-secondary text-sm font-semibold rounded-[var(--r-md)] active:opacity-70 transition-opacity"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -833,12 +896,12 @@ export function SettingsView() {
 
               {/* Existing keys list */}
               {apiKeysLoading ? (
-                <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm animate-pulse">Loading…</div>
+                <div className="glass rounded-[var(--r-lg)] px-4 py-3 text-text-muted text-sm animate-pulse">{t('settings.loading')}</div>
               ) : apiKeysList.length === 0 && !showKeyForm ? (
                 <div className="glass rounded-[var(--r-lg)] px-4 py-4 space-y-2">
-                  <p className="text-text-secondary text-sm">No API keys yet.</p>
+                  <p className="text-text-secondary text-sm">{t('settings.noKeys')}</p>
                   <p className="text-text-muted text-xs leading-relaxed">
-                    API keys let you query Arkora&apos;s verified-human data programmatically. Only verified users can create keys.
+                    {t('settings.noKeysDesc')}
                   </p>
                 </div>
               ) : apiKeysList.length > 0 ? (
@@ -858,7 +921,7 @@ export function SettingsView() {
                         disabled={revokingKeyId === k.id}
                         className="shrink-0 px-3 py-1.5 glass rounded-[var(--r-full)] text-xs text-text-muted font-semibold active:scale-95 transition-all disabled:opacity-40"
                       >
-                        {revokingKeyId === k.id ? '…' : 'Revoke'}
+                        {revokingKeyId === k.id ? '...' : t('settings.revokeKey')}
                       </button>
                     </div>
                   ))}
@@ -875,7 +938,7 @@ export function SettingsView() {
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
-                  <span>New API key</span>
+                  <span>{t('settings.newApiKey')}</span>
                 </button>
               )}
 
@@ -887,7 +950,7 @@ export function SettingsView() {
               {/* Docs link */}
               <div className="glass rounded-[var(--r-lg)] px-4 py-3 flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-text-muted text-xs">Base URL</p>
+                  <p className="text-text-muted text-xs">{t('settings.baseUrl')}</p>
                   <p className="text-text text-xs font-mono mt-0.5">https://arkora.vercel.app/api/v1</p>
                 </div>
                 <div className="text-text-muted text-xs">
@@ -899,14 +962,14 @@ export function SettingsView() {
 
           {/* ── About ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">About</p>
+            <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em]">{t('settings.about')}</p>
             <div className="glass rounded-[var(--r-lg)] divide-y divide-white/[0.06]">
               <div className="px-4 py-3.5 flex items-center justify-between">
-                <span className="text-text-muted text-sm">Version</span>
+                <span className="text-text-muted text-sm">{t('settings.version')}</span>
                 <span className="text-text-muted text-sm">1.0.0</span>
               </div>
               <Link href="/privacy" className="px-4 py-3.5 flex items-center justify-between active:opacity-60 transition-opacity">
-                <span className="text-text-muted text-sm">Privacy Policy</span>
+                <span className="text-text-muted text-sm">{t('settings.privacyPolicy')}</span>
                 <svg width="7" height="12" viewBox="0 0 7 12" fill="none"
                   stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                   className="text-text-muted/50 rotate-180">
@@ -914,7 +977,7 @@ export function SettingsView() {
                 </svg>
               </Link>
               <Link href="/terms" className="px-4 py-3.5 flex items-center justify-between active:opacity-60 transition-opacity">
-                <span className="text-text-muted text-sm">Terms of Service</span>
+                <span className="text-text-muted text-sm">{t('settings.termsOfService')}</span>
                 <svg width="7" height="12" viewBox="0 0 7 12" fill="none"
                   stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                   className="text-text-muted/50 rotate-180">
@@ -923,8 +986,8 @@ export function SettingsView() {
               </Link>
               <div className="px-4 py-3.5">
                 <p className="text-text-muted text-xs text-center leading-relaxed">
-                  Every voice is a verified human.<br />
-                  Powered by World ID
+                  {t('settings.tagline')}<br />
+                  {t('settings.poweredBy')}
                 </p>
               </div>
             </div>

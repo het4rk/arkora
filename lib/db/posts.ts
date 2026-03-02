@@ -1,6 +1,6 @@
 import { db } from './index'
 import { posts, postVotes, postViews, humanUsers } from './schema'
-import { eq, desc, lt, and, sql, aliasedTable, inArray } from 'drizzle-orm'
+import { eq, desc, lt, and, or, sql, aliasedTable, inArray } from 'drizzle-orm'
 import type { Post, BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
 import { createHash } from 'crypto'
@@ -33,6 +33,7 @@ function toPost(
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     countryCode: row.countryCode ?? null,
+    tags: row.tags ?? null,
     type: (row.type as 'text' | 'poll' | 'repost') ?? 'text',
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
@@ -55,6 +56,7 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       imageUrl: input.imageUrl ?? null,
       quotedPostId: input.quotedPostId ?? null,
       type: input.type ?? 'text',
+      tags: input.tags ?? null,
       pollOptions: input.pollOptions ?? null,
       pollEndsAt: input.pollEndsAt ?? null,
       lat: input.lat ?? null,
@@ -78,7 +80,8 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
 
   // Increment quote count on the original post (fire-and-forget).
   // Must call .execute() - Drizzle builders are lazy and don't run unless consumed.
-  if (input.quotedPostId) {
+  // Only real quotes count - reposts reference the original via quotedPostId but aren't quotes.
+  if (input.quotedPostId && input.type !== 'repost') {
     void db
       .update(posts)
       .set({ quoteCount: sql`${posts.quoteCount} + 1` })
@@ -120,7 +123,13 @@ export async function getFeed(params: FeedParams): Promise<Post[]> {
 
   const conditions = [lt(posts.reportCount, 5)]
   if (params.boardId) {
-    conditions.push(eq(posts.boardId, params.boardId))
+    // Match posts assigned to this board OR tagged with it
+    conditions.push(
+      or(
+        eq(posts.boardId, params.boardId),
+        sql`${posts.tags} @> ARRAY[${params.boardId}]::text[]`
+      )!
+    )
   }
   if (params.cursor) {
     conditions.push(lt(posts.createdAt, new Date(params.cursor)))
@@ -153,7 +162,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         LEFT JOIN human_users hu ON p.nullifier_hash = hu.nullifier_hash
         LEFT JOIN posts qp ON p.quoted_post_id = qp.id
         WHERE p.report_count < 5
-          ${boardId ? sql`AND p.board_id = ${boardId}` : sql``}
+          ${boardId ? sql`AND (p.board_id = ${boardId} OR p.tags @> ARRAY[${boardId}]::text[])` : sql``}
           AND p.created_at > now() - interval '7 days'
         ORDER BY
           (p.upvotes::float - p.downvotes) /
@@ -177,6 +186,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
       lat: (r['lat'] as number | null) ?? null,
       lng: (r['lng'] as number | null) ?? null,
       countryCode: (r['country_code'] as string | null) ?? null,
+      tags: (r['tags'] as string[] | null) ?? null,
       type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll' | 'repost',
       pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
@@ -198,6 +208,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         quotedPostId: (r['q_quoted_post_id'] as string | null) ?? null,
         quotedPost: null,
         lat: null, lng: null, countryCode: null,
+        tags: null,
         type: 'text', pollOptions: null, pollEndsAt: null,
         contentHash: null,
       }
@@ -310,9 +321,22 @@ export async function deletePost(postId: string, nullifierHash: string): Promise
   const result = await db
     .delete(posts)
     .where(and(eq(posts.id, postId), eq(posts.nullifierHash, nullifierHash)))
-    .returning({ id: posts.id })
+    .returning({ id: posts.id, type: posts.type, quotedPostId: posts.quotedPostId })
 
-  return result.length > 0
+  if (result.length === 0) return false
+
+  // Decrement quote count on the original post if this was a real quote (not a repost)
+  const deleted = result[0]!
+  if (deleted.quotedPostId && deleted.type !== 'repost') {
+    void db
+      .update(posts)
+      .set({ quoteCount: sql`GREATEST(${posts.quoteCount} - 1, 0)` })
+      .where(eq(posts.id, deleted.quotedPostId))
+      .execute()
+      .catch((err) => console.error('[quoteCount decrement]', err))
+  }
+
+  return true
 }
 
 export async function getPostsByNullifier(
@@ -422,7 +446,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
         LEFT JOIN posts qp ON p.quoted_post_id = qp.id
         WHERE p.report_count < 5
           AND p.country_code = ${params.countryCode}
-          ${params.boardId ? sql`AND p.board_id = ${params.boardId}` : sql``}
+          ${params.boardId ? sql`AND (p.board_id = ${params.boardId} OR p.tags @> ARRAY[${params.boardId}]::text[])` : sql``}
           ${params.cursor ? sql`AND p.created_at < ${new Date(params.cursor)}` : sql``}
           ${useRadius
             ? sql`AND p.lat IS NOT NULL AND p.lng IS NOT NULL
@@ -453,6 +477,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
       lat: (r['lat'] as number | null) ?? null,
       lng: (r['lng'] as number | null) ?? null,
       countryCode: (r['country_code'] as string | null) ?? null,
+      tags: (r['tags'] as string[] | null) ?? null,
       type: ((r['type'] as string | null) ?? 'text') as 'text' | 'poll' | 'repost',
       pollOptions: (r['poll_options'] as { index: number; text: string }[] | null) ?? null,
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
@@ -476,6 +501,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
         lat: (r['q_lat'] as number | null) ?? null,
         lng: (r['q_lng'] as number | null) ?? null,
         countryCode: (r['q_country_code'] as string | null) ?? null,
+        tags: null,
         type: 'text', pollOptions: null, pollEndsAt: null,
         contentHash: null,
       }

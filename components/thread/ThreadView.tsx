@@ -95,7 +95,7 @@ interface Props {
 
 export function ThreadView({ postId }: Props) {
   const router = useRouter()
-  const { setComposerOpen, setComposerQuotedPost, nullifierHash, isVerified } = useArkoraStore()
+  const { setComposerOpen, setComposerQuotedPost, nullifierHash, isVerified, setVerifySheetOpen } = useArkoraStore()
   const [data, setData] = useState<ThreadData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -296,7 +296,12 @@ export function ThreadView({ postId }: Props) {
             <div className="flex items-center gap-3">
               {/* Quote button */}
               <button
-                onClick={() => { haptic('light'); setComposerQuotedPost(post); setComposerOpen(true) }}
+                onClick={() => {
+                  haptic('light')
+                  if (!isVerified || !nullifierHash) { setVerifySheetOpen(true); return }
+                  setComposerQuotedPost(post)
+                  setComposerOpen(true)
+                }}
                 aria-label="Quote post"
                 className="flex items-center gap-1 text-text-muted text-xs active:scale-90 transition-all"
               >
@@ -309,22 +314,24 @@ export function ThreadView({ postId }: Props) {
                 </svg>
                 <span>{post.quoteCount > 0 ? post.quoteCount : 'Quote'}</span>
               </button>
-              {/* Community Note button - only for verified users */}
-              {isVerified && (
-                <button
-                  onClick={() => { haptic('light'); setNoteOpen((o) => !o) }}
-                  aria-label="Submit community note"
-                  className={`flex items-center gap-1 text-xs active:scale-90 transition-all ${noteOpen ? 'text-text-secondary' : 'text-text-muted'}`}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                    <line x1="12" y1="9" x2="12" y2="13" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                  <span>Note</span>
-                </button>
-              )}
+              {/* Community Note button */}
+              <button
+                onClick={() => {
+                  haptic('light')
+                  if (!isVerified || !nullifierHash) { setVerifySheetOpen(true); return }
+                  setNoteOpen((o) => !o)
+                }}
+                aria-label="Submit community note"
+                className={`flex items-center gap-1 text-xs active:scale-90 transition-all ${noteOpen ? 'text-text-secondary' : 'text-text-muted'}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <span>Note</span>
+              </button>
               <BookmarkButton postId={post.id} />
               {post.viewCount > 0 && (
                 <span className="text-text-muted text-xs flex items-center gap-1">

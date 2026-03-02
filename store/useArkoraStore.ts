@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware'
 import type { HumanUser, BoardId, Post } from '@/lib/types'
 import type { SkinId } from '@/lib/skins'
 import type { FontId } from '@/lib/fonts'
+import type { Locale } from '@/lib/i18n'
 
 export type IdentityMode = 'anonymous' | 'alias' | 'named'
 export type Theme = 'dark' | 'light'
@@ -22,6 +23,7 @@ interface ArkoraState {
   persistentAlias: string | null
 
   // Appearance
+  locale: Locale
   theme: Theme
   activeSkinId: SkinId
   customHex: string | null
@@ -37,7 +39,6 @@ interface ArkoraState {
   isComposerOpen: boolean
   composerQuotedPost: Post | null
   isVerifySheetOpen: boolean
-  isDrawerOpen: boolean
   isSearchOpen: boolean
 
   // Location - locationEnabled tags posts with GPS; locationRadius controls local feed view radius
@@ -57,8 +58,8 @@ interface ArkoraState {
   activeRoomId: string | null
   activeRoomTitle: string | null
 
-  // Optimistic vote cache: postId → direction
-  optimisticVotes: Record<string, 1 | -1>
+  // Optimistic vote cache: postId -> { direction, snapshot of server counts at vote time }
+  optimisticVotes: Record<string, { dir: 1 | -1; up: number; down: number }>
 
   // Notification badge (non-persisted)
   unreadNotificationCount: number
@@ -71,6 +72,7 @@ interface ArkoraState {
   setVerified: (nullifierHash: string, user: HumanUser) => void
   setIdentityMode: (mode: IdentityMode) => void
   setPersistentAlias: (alias: string | null) => void
+  setLocale: (locale: Locale) => void
   setTheme: (theme: Theme) => void
   setHasOnboarded: (v: boolean) => void
   setActiveBoard: (boardId: BoardId | null) => void
@@ -78,11 +80,10 @@ interface ArkoraState {
   setComposerQuotedPost: (post: Post | null) => void
   setDmPrivateKey: (key: string | null) => void
   setVerifySheetOpen: (open: boolean) => void
-  setDrawerOpen: (open: boolean) => void
   setSearchOpen: (open: boolean) => void
   setLocationEnabled: (v: boolean) => void
   setLocationRadius: (miles: number) => void
-  setOptimisticVote: (postId: string, direction: 1 | -1) => void
+  setOptimisticVote: (postId: string, direction: 1 | -1, snapshotUp: number, snapshotDown: number) => void
   clearOptimisticVote: (postId: string) => void
   setNotifyReplies: (v: boolean) => void
   setNotifyDms: (v: boolean) => void
@@ -108,6 +109,7 @@ const initialState = {
   user: null,
   identityMode: 'anonymous' as IdentityMode,
   persistentAlias: null,
+  locale: 'en' as Locale,
   theme: 'dark' as Theme,
   activeSkinId: 'monochrome' as SkinId,
   customHex: null as string | null,
@@ -128,7 +130,6 @@ const initialState = {
   notifyFollows: true,
   notifyFollowedPosts: true,
   isVerifySheetOpen: false,
-  isDrawerOpen: false,
   isSearchOpen: false,
   optimisticVotes: {},
   unreadNotificationCount: 0,
@@ -149,6 +150,8 @@ export const useArkoraStore = create<ArkoraState>()(
 
       setPersistentAlias: (alias) => set({ persistentAlias: alias }),
 
+      setLocale: (locale) => set({ locale }),
+
       setTheme: (theme) => set({ theme }),
 
       setHasOnboarded: (v) => set({ hasOnboarded: v }),
@@ -167,13 +170,11 @@ export const useArkoraStore = create<ArkoraState>()(
 
       setLocationRadius: (miles) => set({ locationRadius: miles }),
 
-      setDrawerOpen: (open) => set({ isDrawerOpen: open }),
-
       setSearchOpen: (open) => set({ isSearchOpen: open }),
 
-      setOptimisticVote: (postId, direction) =>
+      setOptimisticVote: (postId, direction, up, down) =>
         set((state) => ({
-          optimisticVotes: { ...state.optimisticVotes, [postId]: direction },
+          optimisticVotes: { ...state.optimisticVotes, [postId]: { dir: direction, up, down } },
         })),
 
       clearOptimisticVote: (postId) =>
@@ -225,7 +226,6 @@ export const useArkoraStore = create<ArkoraState>()(
           isComposerOpen: false,
           composerQuotedPost: null,
           isVerifySheetOpen: false,
-          isDrawerOpen: false,
           isSearchOpen: false,
           activeSkinId: 'monochrome' as SkinId,
           customHex: null,
@@ -247,6 +247,7 @@ export const useArkoraStore = create<ArkoraState>()(
         user: state.user,
         identityMode: state.identityMode,
         persistentAlias: state.persistentAlias,
+        locale: state.locale,
         theme: state.theme,
         activeSkinId: state.activeSkinId,
         customHex: state.customHex,

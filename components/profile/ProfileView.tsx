@@ -20,7 +20,7 @@ interface ReplyWithTitle extends Reply { postTitle: string | null }
 
 export function ProfileView() {
   const router = useRouter()
-  const { nullifierHash, isVerified, user, setVerified, unreadNotificationCount } = useArkoraStore()
+  const { nullifierHash, isVerified, user, setVerified, signOut, unreadNotificationCount } = useArkoraStore()
   const [tab, setTab] = useState<Tab>('posts')
   const [posts, setPosts] = useState<Post[]>([])
   const [replies, setReplies] = useState<ReplyWithTitle[]>([])
@@ -156,6 +156,7 @@ export function ProfileView() {
         setSaved(json.data ?? [])
       } else {
         const res = await fetch(`/api/profile?tab=${t}`)
+        if (res.status === 401) { signOut(); return }
         const json = (await res.json()) as { success: boolean; data?: { items: unknown[] }; error?: string }
         if (!json.success) throw new Error(json.error ?? 'Failed to load')
 

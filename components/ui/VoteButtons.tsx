@@ -14,14 +14,22 @@ interface Props {
 
 export function VoteButtons({ post, className }: Props) {
   const { castVote, isVoting, myVote } = useVote()
-  const { nullifierHash } = useArkoraStore()
+  const { nullifierHash, optimisticVotes } = useArkoraStore()
   const myDirection = myVote(post.id)
   const isOwnPost = !!nullifierHash && post.nullifierHash === nullifierHash
   const [reactionsOpen, setReactionsOpen] = useState(false)
   const [reactionsTab, setReactionsTab] = useState<'up' | 'down'>('up')
 
-  const displayUpvotes = myDirection === 1 && post.upvotes === 0 ? 1 : post.upvotes
-  const displayDownvotes = myDirection === -1 && post.downvotes === 0 ? 1 : post.downvotes
+  // Compute display counts: if server data still matches the snapshot taken at
+  // vote time, apply the optimistic delta. Once the feed refreshes with updated
+  // counts the snapshot won't match and we use server values directly.
+  const opt = optimisticVotes[post.id]
+  let displayUpvotes = post.upvotes
+  let displayDownvotes = post.downvotes
+  if (opt && post.upvotes === opt.up && post.downvotes === opt.down) {
+    displayUpvotes = post.upvotes + (opt.dir === 1 ? 1 : 0)
+    displayDownvotes = post.downvotes + (opt.dir === -1 ? 1 : 0)
+  }
 
   function openReactions(tab: 'up' | 'down', e: React.MouseEvent) {
     e.stopPropagation()
@@ -34,7 +42,7 @@ export function VoteButtons({ post, className }: Props) {
     <>
     <div className={cn('flex items-center gap-2', className)}>
       <button
-        onClick={() => { if (isOwnPost) return; haptic('light'); void castVote(post.id, 1) }}
+        onClick={() => { if (isOwnPost) return; haptic('light'); void castVote(post.id, 1, post.upvotes, post.downvotes) }}
         disabled={isVoting || isOwnPost}
         aria-label={`Upvote (${displayUpvotes})`}
         title={isOwnPost ? "Can't vote on your own post" : undefined}
@@ -54,7 +62,7 @@ export function VoteButtons({ post, className }: Props) {
       </button>
 
       <button
-        onClick={() => { if (isOwnPost) return; haptic('light'); void castVote(post.id, -1) }}
+        onClick={() => { if (isOwnPost) return; haptic('light'); void castVote(post.id, -1, post.upvotes, post.downvotes) }}
         disabled={isVoting || isOwnPost}
         aria-label={`Downvote (${displayDownvotes})`}
         title={isOwnPost ? "Can't vote on your own post" : undefined}

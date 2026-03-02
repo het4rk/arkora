@@ -1,5 +1,5 @@
 import { db } from './index'
-import { notifications } from './schema'
+import { notifications, humanUsers } from './schema'
 import { eq, desc, and, sql } from 'drizzle-orm'
 import type { Notification } from '@/lib/types'
 
@@ -15,12 +15,30 @@ function toNotification(row: typeof notifications.$inferSelect): Notification {
   }
 }
 
+/** Map notification types to user preference columns. Types not listed always fire. */
+const PREF_MAP: Partial<Record<Notification['type'], 'notifyReplies' | 'notifyDms' | 'notifyFollows'>> = {
+  reply: 'notifyReplies',
+  dm: 'notifyDms',
+  follow: 'notifyFollows',
+}
+
 export async function createNotification(
   recipientHash: string,
   type: Notification['type'],
   referenceId?: string,
   actorHash?: string
 ): Promise<void> {
+  // Check recipient preference before creating notification
+  const prefCol = PREF_MAP[type]
+  if (prefCol) {
+    const [user] = await db
+      .select({ pref: humanUsers[prefCol] })
+      .from(humanUsers)
+      .where(eq(humanUsers.nullifierHash, recipientHash))
+      .limit(1)
+    if (user && user.pref === false) return
+  }
+
   await db.insert(notifications).values({
     recipientHash,
     type,

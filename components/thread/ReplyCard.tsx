@@ -6,6 +6,7 @@ import { HumanBadge } from '@/components/ui/HumanBadge'
 import { InlineFollowButton } from '@/components/ui/InlineFollowButton'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { useArkoraStore } from '@/store/useArkoraStore'
+import { useT } from '@/hooks/useT'
 import { haptic, formatDisplayName } from '@/lib/utils'
 import { BodyText } from '@/components/ui/BodyText'
 
@@ -20,6 +21,7 @@ interface Props {
 
 export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
   const { nullifierHash, isVerified } = useArkoraStore()
+  const t = useT()
   const [isDeleting, setIsDeleting] = useState(false)
   const [myVote, setMyVote] = useState<VoteDir>(null)
   const [upvotes, setUpvotes] = useState(reply.upvotes)
@@ -94,13 +96,13 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
       {/* Top row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <HumanBadge label={displayName} nullifierHash={reply.nullifierHash} size="sm" />
+          <HumanBadge label={displayName} size="sm" />
           <InlineFollowButton targetHash={reply.nullifierHash} />
         </div>
         <div className="flex items-center gap-2.5">
           {isTopReply && (
             <span className="text-[11px] text-accent font-semibold uppercase tracking-[0.12em]">
-              Top
+              {t('thread.top')}
             </span>
           )}
           <TimeAgo date={reply.createdAt} />
@@ -145,7 +147,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
           <button
             onClick={() => { if (!isOwner) void handleVote(1) }}
             disabled={isVoting || !isVerified || isOwner}
-            title={isOwner ? "Can't vote on your own reply" : undefined}
+            title={isOwner ? t('thread.cantVoteOwn') : undefined}
             className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${isOwner ? 'text-text-muted/40 cursor-not-allowed' : myVote === 1 ? 'text-accent font-semibold' : 'text-text-muted'}`}
           >
             <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
@@ -156,7 +158,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
           <button
             onClick={() => { if (!isOwner) void handleVote(-1) }}
             disabled={isVoting || !isVerified || isOwner}
-            title={isOwner ? "Can't vote on your own reply" : undefined}
+            title={isOwner ? t('thread.cantVoteOwn') : undefined}
             className={`flex items-center gap-1 text-xs transition-all active:scale-90 disabled:cursor-default ${isOwner ? 'text-text-muted/40 cursor-not-allowed' : myVote === -1 ? 'text-accent font-semibold' : 'text-text-muted'}`}
           >
             <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
@@ -176,7 +178,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
               <polyline points="9 17 4 12 9 7" />
               <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
             </svg>
-            Reply
+            {t('thread.reply')}
           </button>
         )}
       </div>

@@ -24,6 +24,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     countryCode: row.countryCode ?? null,
+    tags: row.tags ?? null,
     type: (row.type as 'text' | 'poll' | 'repost') ?? 'text',
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,

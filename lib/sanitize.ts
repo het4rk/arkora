@@ -55,3 +55,17 @@ export function parseMentions(text: string): string[] {
   // Deduplicate while preserving order
   return [...new Set(matches)]
 }
+
+/**
+ * Extract #hashtags from text and normalize to board-slug format.
+ * Returns unique tags (lowercased, alphanumeric + hyphens, max 30 chars).
+ * Only call on already-sanitized text.
+ */
+const HASHTAG_RE = /\B#([a-zA-Z0-9][\w-]{0,29})/g
+
+export function parseHashtags(text: string): string[] {
+  const matches = [...text.matchAll(HASHTAG_RE)].map((m) =>
+    m[1]!.toLowerCase().replace(/_/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 30)
+  ).filter((t) => t.length > 0)
+  return [...new Set(matches)].slice(0, 5)
+}

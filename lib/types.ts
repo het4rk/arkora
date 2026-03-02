@@ -26,6 +26,7 @@ export interface Post {
   lat: number | null
   lng: number | null
   countryCode: string | null
+  tags: string[] | null
   type: 'text' | 'poll' | 'repost'
   pollOptions: { index: number; text: string }[] | null
   pollEndsAt: Date | null
@@ -89,6 +90,7 @@ export interface CreatePostInput {
   lat?: number | undefined
   lng?: number | undefined
   countryCode?: string | undefined
+  tags?: string[] | undefined
   type?: 'text' | 'poll' | 'repost'
   pollOptions?: { index: number; text: string }[]
   pollDuration?: number

@@ -23,21 +23,31 @@ export function useSearch(): UseSearchReturn {
   const [isSearching, setIsSearching] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const runSearch = useCallback(async (q: string, type: SearchFilter) => {
+    // Abort any in-flight request
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setIsSearching(true)
     try {
       const res = await fetch(
-        `/api/search?q=${encodeURIComponent(q)}&type=${type}`
+        `/api/search?q=${encodeURIComponent(q)}&type=${type}`,
+        { signal: controller.signal }
       )
       const json = (await res.json()) as { success: boolean; data: SearchResults }
-      setResults(json.success ? json.data : EMPTY)
-      setHasSearched(true)
-    } catch {
+      if (!controller.signal.aborted) {
+        setResults(json.success ? json.data : EMPTY)
+        setHasSearched(true)
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
       setResults(EMPTY)
       setHasSearched(true)
     } finally {
-      setIsSearching(false)
+      if (!controller.signal.aborted) setIsSearching(false)
     }
   }, [])
 
@@ -46,6 +56,7 @@ export function useSearch(): UseSearchReturn {
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
     if (!query.trim()) {
+      abortRef.current?.abort()
       setResults(EMPTY)
       setHasSearched(false)
       return
@@ -58,6 +69,7 @@ export function useSearch(): UseSearchReturn {
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
+      abortRef.current?.abort()
     }
   }, [query, filter, runSearch])
 

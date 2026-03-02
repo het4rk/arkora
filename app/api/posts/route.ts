@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPost, getPostNullifier } from '@/lib/db/posts'
-import { sanitizeLine, sanitizeText, parseMentions } from '@/lib/sanitize'
+import { sanitizeLine, sanitizeText, parseMentions, parseHashtags } from '@/lib/sanitize'
 import { getFeedFollowing } from '@/lib/db/follows'
 import { isVerifiedHuman, getUsersByHandles } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
@@ -12,16 +12,7 @@ import { worldAppNotify } from '@/lib/worldAppNotify'
 import { ANONYMOUS_BOARDS } from '@/lib/types'
 import { FEATURED_BOARDS, resolveBoard, normalizeBoard } from '@/lib/boards'
 import type { BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
-
-/** Extract the viewer's country code from standard edge/CDN headers. Falls back to 'US' in dev. */
-function getCountryCode(req: NextRequest): string | null {
-  return (
-    req.headers.get('x-vercel-ip-country') ??
-    req.headers.get('cf-ipcountry') ??
-    req.headers.get('x-country-code') ??
-    (process.env.NODE_ENV === 'development' ? 'US' : null)
-  )
-}
+import { getCountryCode } from '@/lib/geo'
 
 const FEATURED_IDS = FEATURED_BOARDS.map((b) => b.id)
 
@@ -136,13 +127,7 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      // For regular posts body is required; polls use title as the question
-      if (!isPoll && !rawBody?.trim()) {
-        return NextResponse.json(
-          { success: false, error: 'Missing required fields' },
-          { status: 400 }
-        )
-      }
+      // Body is optional for text posts - title-only posts are allowed
     }
 
     // Poll-specific validation
@@ -169,8 +154,17 @@ export async function POST(req: NextRequest) {
     const title = isRepost ? '' : sanitizeLine(rawTitle ?? '')
     const postBody = (isPoll || isRepost) ? '' : sanitizeText(rawBody ?? '')
 
+    // Parse hashtags from title + body for multi-board discovery
+    const tags = isRepost ? [] : parseHashtags(`${title} ${postBody}`)
+
     // Resolve board - normalizes, applies synonyms, tolerates typos
-    const boardId = resolveBoard(rawBoardId ?? 'arkora', FEATURED_IDS)
+    let boardId = resolveBoard(rawBoardId ?? 'arkora', FEATURED_IDS)
+
+    // Auto-detect board from first hashtag if user left the default board
+    if (boardId === 'arkora' && tags.length > 0) {
+      const autoBoard = resolveBoard(tags[0]!, FEATURED_IDS)
+      if (autoBoard !== 'arkora') boardId = autoBoard
+    }
 
     // Force-anonymous on boards like Confessions - strip handle regardless of identity mode
     const pseudoHandle = ANONYMOUS_BOARDS.has(boardId)
@@ -243,6 +237,7 @@ export async function POST(req: NextRequest) {
       title, body: postBody, boardId, nullifierHash, pseudoHandle,
       imageUrl: rawImageUrl, quotedPostId, lat, lng, countryCode,
       type: isPoll ? 'poll' : isRepost ? 'repost' : 'text',
+      ...(tags.length > 0 && { tags }),
       ...(pollOptions !== undefined && { pollOptions }),
       ...(pollEndsAt !== undefined && { pollEndsAt }),
     })

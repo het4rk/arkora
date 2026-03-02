@@ -8,14 +8,15 @@ import { FeedSkeleton } from './FeedSkeleton'
 import { LiveRoomsStrip } from './LiveRoomsStrip'
 import { haptic } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { useT } from '@/hooks/useT'
 import type { PollResult } from '@/lib/types'
 
 // Discrete radius options in miles; -1 means "entire country"
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
 type RadiusOption = typeof RADIUS_OPTIONS[number]
 
-function radiusLabel(r: RadiusOption): string {
-  return r === -1 ? 'Country' : `${r} mi`
+function radiusLabel(r: RadiusOption, countryLabel: string): string {
+  return r === -1 ? countryLabel : `${r} mi`
 }
 
 function radiusIndexOf(miles: number): number {
@@ -27,6 +28,7 @@ const SWIPE_COMMIT = 40
 
 export function Feed() {
   const { activeBoard, nullifierHash, isVerified, locationRadius, setLocationRadius } = useArkoraStore()
+  const t = useT()
   const [feedMode, setFeedMode] = useState<FeedMode>('new')
 
   // Available tabs (Following only for verified users)
@@ -134,7 +136,7 @@ export function Feed() {
       }
     } else if (gestureRef.current === 'vertical') {
       // Pull-to-refresh (only when scrolled to top)
-      if (dy > 0 && scrollRef.current && scrollRef.current.scrollTop <= 0) {
+      if (dy > 0 && scrollRef.current && scrollRef.current.scrollTop <= 1) {
         setPullDistance(Math.min(dy * 0.4, 120))
       }
     }
@@ -246,7 +248,7 @@ export function Feed() {
                 feedMode === mode ? 'bg-accent text-background shadow-sm' : 'text-text-muted'
               )}
             >
-              {mode === 'new' ? 'New' : mode === 'following' ? 'Following' : 'Local'}
+              {mode === 'new' ? t('feed.new') : mode === 'following' ? t('feed.following') : t('feed.local')}
             </button>
           ))}
         </div>
@@ -268,7 +270,7 @@ export function Feed() {
             className="w-28 accent-[var(--accent)] cursor-pointer"
           />
           <span className="text-xs font-semibold text-accent min-w-[4.5rem] text-right tabular-nums">
-            {radiusLabel(locationRadius as RadiusOption)}
+            {radiusLabel(locationRadius as RadiusOption, t('common.country'))}
           </span>
         </div>
       )}
@@ -277,10 +279,10 @@ export function Feed() {
       <div
         ref={scrollRef}
         className={cn(
-          'overflow-y-scroll h-[calc(100dvh-56px)] scroll-smooth',
+          'overflow-y-scroll h-[calc(100dvh-56px)]',
           hasLocalCoords ? 'pt-12' : 'pt-2'
         )}
-        style={swipeStyle}
+        style={{ ...swipeStyle, touchAction: 'pan-y' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -318,7 +320,7 @@ export function Feed() {
           <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-              <p className="font-semibold text-text mb-1">Failed to load feed</p>
+              <p className="font-semibold text-text mb-1">{t('feed.failedToLoad')}</p>
               <p className="text-sm">{error}</p>
             </div>
           </div>
@@ -329,7 +331,7 @@ export function Feed() {
           <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4 animate-pulse"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-              <p className="font-semibold text-text text-lg mb-1">Finding your location...</p>
+              <p className="font-semibold text-text text-lg mb-1">{t('feed.findingLocation')}</p>
             </div>
           </div>
         )}
@@ -339,8 +341,8 @@ export function Feed() {
           <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4"><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg>
-              <p className="font-bold text-text text-lg mb-2">Location access denied</p>
-              <p className="text-sm">Allow location access in your browser settings to see nearby posts.</p>
+              <p className="font-bold text-text text-lg mb-2">{t('feed.locationDenied')}</p>
+              <p className="text-sm">{t('feed.locationDeniedDesc')}</p>
             </div>
           </div>
         )}
@@ -350,8 +352,8 @@ export function Feed() {
           <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4 mx-auto"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-              <p className="font-bold text-text text-lg mb-2">No posts yet</p>
-              <p className="text-sm">Follow people to see their posts here.</p>
+              <p className="font-bold text-text text-lg mb-2">{t('feed.noPostsYet')}</p>
+              <p className="text-sm">{t('feed.followToSee')}</p>
             </div>
           </div>
         )}
@@ -361,10 +363,10 @@ export function Feed() {
           <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted mb-4 mx-auto"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" /></svg>
-              <p className="font-bold text-text text-lg mb-2">Nothing nearby yet</p>
+              <p className="font-bold text-text text-lg mb-2">{t('feed.nothingNearby')}</p>
               <p className="text-sm">
                 {locationRadius === -1
-                  ? 'No posts from your country yet.'
+                  ? t('feed.noPostsCountry')
                   : `No posts within ${locationRadius} miles. Try expanding the radius.`}
               </p>
             </div>
@@ -375,8 +377,8 @@ export function Feed() {
         {feedMode === 'new' && !isLoading && posts.length === 0 && (
           <div className="flex items-center justify-center text-text-secondary px-6 text-center py-20">
             <div>
-              <p className="font-bold text-text text-lg mb-2">No posts yet</p>
-              <p className="text-sm">Be the first verified human to post.</p>
+              <p className="font-bold text-text text-lg mb-2">{t('feed.noPostsYet')}</p>
+              <p className="text-sm">{t('feed.beFirst')}</p>
             </div>
           </div>
         )}
@@ -386,14 +388,14 @@ export function Feed() {
           <div className="px-4 pt-4 pb-2">
             <div className="glass rounded-[var(--r-lg)] px-4 py-3.5 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-text text-sm font-semibold leading-tight">Join the conversation</p>
-                <p className="text-text-muted text-xs mt-0.5">Post, reply, and vote as a verified human.</p>
+                <p className="text-text text-sm font-semibold leading-tight">{t('feed.joinConversation')}</p>
+                <p className="text-text-muted text-xs mt-0.5">{t('feed.verifyToPost')}</p>
               </div>
               <button
                 onClick={() => useArkoraStore.getState().setVerifySheetOpen(true)}
                 className="border border-accent/50 text-accent text-xs font-semibold px-3.5 py-2.5 rounded-[var(--r-md)] active:scale-95 active:opacity-70 transition-all shrink-0"
               >
-                Verify
+                {t('feed.verifyNow')}
               </button>
             </div>
           </div>

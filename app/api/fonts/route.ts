@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getCallerNullifier } from '@/lib/serverAuth'
-import { getOwnedFonts, getActiveFont } from '@/lib/db/fonts'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
+import { getOwnedFontsByNullifiers, getActiveFontForNullifiers } from '@/lib/db/fonts'
 
 export async function GET() {
   const nullifierHash = await getCallerNullifier()
@@ -8,9 +8,11 @@ export async function GET() {
     return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
   }
 
+  const nullifiers = await getLinkedNullifiers(nullifierHash)
+
   const [owned, active] = await Promise.all([
-    getOwnedFonts(nullifierHash),
-    getActiveFont(nullifierHash),
+    getOwnedFontsByNullifiers(nullifiers),
+    getActiveFontForNullifiers(nullifiers),
   ])
 
   return NextResponse.json({

@@ -1,5 +1,6 @@
 import { createHash } from 'crypto'
 import { cookies } from 'next/headers'
+import { getUserByNullifier, getUserByWalletAddressNonWlt } from '@/lib/db/users'
 
 /**
  * Reads the caller's nullifier hash from the server-side `arkora-nh` httpOnly cookie.
@@ -30,4 +31,31 @@ export function walletToNullifier(walletAddress: string): string {
     .update(walletAddress.toLowerCase())
     .digest('hex')
   return `wlt_${hash}`
+}
+
+/**
+ * Returns all nullifiers that belong to the same real-world user.
+ * A user can have content under both their World ID nullifier (0x...)
+ * and their wallet-derived nullifier (wlt_...) if they verified at different times.
+ * Used by purchase/profile queries to find all owned items regardless of which
+ * identity the current session resolves to.
+ */
+export async function getLinkedNullifiers(nullifierHash: string): Promise<string[]> {
+  const user = await getUserByNullifier(nullifierHash)
+  if (!user?.walletAddress || user.walletAddress.startsWith('idkit_')) {
+    return [nullifierHash]
+  }
+
+  const all = new Set([nullifierHash])
+
+  if (nullifierHash.startsWith('wlt_')) {
+    // Session is wallet-based - also check for linked World ID nullifier
+    const wiUser = await getUserByWalletAddressNonWlt(user.walletAddress)
+    if (wiUser) all.add(wiUser.nullifierHash)
+  } else {
+    // Session is World ID nullifier - also add linked wlt_ nullifier
+    all.add(walletToNullifier(user.walletAddress))
+  }
+
+  return [...all]
 }

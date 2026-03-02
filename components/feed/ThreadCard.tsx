@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, memo } from 'react'
+import { useState, useRef, useCallback, useEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import type { Post, PollResult } from '@/lib/types'
@@ -15,6 +15,7 @@ import { QuotedPost } from '@/components/ui/QuotedPost'
 import { ReportSheet } from '@/components/ui/ReportSheet'
 import { ImageViewer } from '@/components/ui/ImageViewer'
 import { useArkoraStore } from '@/store/useArkoraStore'
+import { useT } from '@/hooks/useT'
 import { haptic, formatDisplayName, shareUrl } from '@/lib/utils'
 
 interface Props {
@@ -33,7 +34,8 @@ function formatCount(n: number): string {
 
 export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, isBookmarked, pollResults, userVote, authorKarmaScore }: Props) {
   const router = useRouter()
-  const { nullifierHash, setComposerQuotedPost, setComposerOpen } = useArkoraStore()
+  const { nullifierHash, isVerified, setComposerQuotedPost, setComposerOpen, setVerifySheetOpen } = useArkoraStore()
+  const t = useT()
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
@@ -69,8 +71,15 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
     }
   }, [])
 
+  useEffect(() => () => { cancelLongPress() }, [cancelLongPress])
+
   async function handleRepost() {
-    if (!nullifierHash || isReposting) return
+    if (!isVerified || !nullifierHash) {
+      setVerifySheetOpen(true)
+      setRepostMenuOpen(false)
+      return
+    }
+    if (isReposting) return
     haptic('medium')
     setIsReposting(true)
     setRepostMenuOpen(false)
@@ -126,7 +135,12 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           <TimeAgo date={post.createdAt} />
           {!isOwner && (
             <button
-              onClick={(e) => { e.stopPropagation(); haptic('light'); setReportOpen(true) }}
+              onClick={(e) => {
+                e.stopPropagation()
+                haptic('light')
+                if (!isVerified || !nullifierHash) { setVerifySheetOpen(true); return }
+                setReportOpen(true)
+              }}
               aria-label="Report post"
               className="text-text-muted/40 hover:text-text-muted active:scale-90 transition-all"
             >
@@ -185,7 +199,6 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           <div className="flex items-center gap-2 flex-wrap">
             <HumanBadge
               label={displayName}
-              nullifierHash={post.nullifierHash}
               size="md"
             />
             {authorKarmaScore != null && <KarmaBadge score={authorKarmaScore} />}
@@ -230,7 +243,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
         {topReply && (
           <div className="mt-5 glass rounded-[var(--r-lg)] px-4 py-4">
             <p className="text-accent text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">
-              Top reply
+              {t('thread.top')} {t('thread.reply').toLowerCase()}
             </p>
             <p className="text-text-secondary text-sm leading-relaxed line-clamp-3">
               {topReply}
@@ -249,7 +262,12 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
         <div className="flex items-center gap-3">
           {/* Repost / quote button */}
           <button
-            onClick={(e) => { e.stopPropagation(); haptic('light'); setRepostMenuOpen(true) }}
+            onClick={(e) => {
+              e.stopPropagation()
+              haptic('light')
+              if (!isVerified || !nullifierHash) { setVerifySheetOpen(true); return }
+              setRepostMenuOpen(true)
+            }}
             disabled={isReposting}
             aria-label="Repost or quote"
             className={`flex items-center gap-1 text-xs active:scale-90 transition-all disabled:opacity-40 ${reposted ? 'text-accent' : 'text-text-muted'}`}
@@ -351,7 +369,12 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
                 </div>
               </button>
               <button
-                onClick={() => { setRepostMenuOpen(false); setComposerQuotedPost(post); setComposerOpen(true) }}
+                onClick={() => {
+                  setRepostMenuOpen(false)
+                  if (!isVerified || !nullifierHash) { setVerifySheetOpen(true); return }
+                  setComposerQuotedPost(post)
+                  setComposerOpen(true)
+                }}
                 className="w-full flex items-center gap-3 px-4 py-4 rounded-[var(--r-lg)] glass active:scale-[0.97] transition-all"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -367,7 +390,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
                 onClick={() => setRepostMenuOpen(false)}
                 className="w-full py-3 text-text-muted text-sm font-medium active:opacity-60 transition-all"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </motion.div>

@@ -3,7 +3,7 @@ import { requireApiKey, CORS_HEADERS } from '@/lib/apiKeyAuth'
 import { rateLimit } from '@/lib/rateLimit'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
-import { eq, and, lt, isNull, desc, sql } from 'drizzle-orm'
+import { eq, and, or, lt, isNull, desc, sql } from 'drizzle-orm'
 
 /**
  * GET /api/v1/posts
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     sql`${posts.reportCount} < 5`,
   ]
 
-  if (boardId) conditions.push(eq(posts.boardId, boardId))
+  if (boardId) conditions.push(or(eq(posts.boardId, boardId), sql`${posts.tags} @> ARRAY[${boardId}]::text[]`)!)
   if (type && ['text', 'poll', 'repost'].includes(type)) {
     conditions.push(eq(posts.type, type as 'text' | 'poll' | 'repost'))
   }
@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
         viewCount: posts.viewCount,
         createdAt: posts.createdAt,
         countryCode: posts.countryCode,
+        tags: posts.tags,
         pollOptions: posts.pollOptions,
         pollEndsAt: posts.pollEndsAt,
         pseudoHandle: posts.pseudoHandle,
@@ -96,6 +97,7 @@ export async function GET(req: NextRequest) {
       viewCount: r.viewCount,
       createdAt: r.createdAt,
       countryCode: r.countryCode ?? null,
+      tags: r.tags ?? [],
       pollOptions: r.type === 'poll' ? (r.pollOptions ?? null) : null,
       pollEndsAt: r.type === 'poll' ? (r.pollEndsAt?.toISOString() ?? null) : null,
       author: {

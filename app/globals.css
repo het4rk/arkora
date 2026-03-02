@@ -70,6 +70,10 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+html {
+  touch-action: manipulation;
+}
+
 html,
 body {
   background-color: rgb(var(--clr-bg));

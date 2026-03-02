@@ -15,10 +15,15 @@ export function WalletConnect() {
     // Don't attempt auth until the user has dismissed onboarding
     if (!hasOnboarded) return
 
-    // Don't auto-auth if the user explicitly signed out this session
-    if (hasExplicitlySignedOut) return
+    // Don't auto-auth if the user explicitly signed out this session.
+    // Reset the attempt guard so wallet auth re-runs after re-verification
+    // clears this flag (setVerified sets hasExplicitlySignedOut = false).
+    if (hasExplicitlySignedOut) {
+      attempted.current = false
+      return
+    }
 
-    // Guard: only run once per session mount
+    // Guard: only run once per sign-out/re-verify cycle
     if (attempted.current) return
     attempted.current = true
 
@@ -34,8 +39,10 @@ export function WalletConnect() {
       return
     }
 
-    // Already verified via some other path without a wallet - nothing to do
-    if (isVerified) return
+    // Already verified with wallet linked - nothing more to do.
+    // If verified WITHOUT a wallet (e.g. re-verified via World ID after sign-out),
+    // fall through so walletAuth can link the wallet identity and restore purchases.
+    if (isVerified && walletAddress) return
 
     // ── Full path: no wallet yet - wait for MiniKit, then walletAuth ──────
     let retries = 0
@@ -114,7 +121,7 @@ export function WalletConnect() {
       if (pendingTimer !== null) clearTimeout(pendingTimer)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasOnboarded])
+  }, [hasOnboarded, hasExplicitlySignedOut])
 
   async function callUserEndpoint(address: string, username?: string) {
     try {

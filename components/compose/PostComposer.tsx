@@ -1,40 +1,42 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { MiniKit } from '@worldcoin/minikit-js'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { usePost } from '@/hooks/usePost'
 import { generateAlias } from '@/lib/session'
-import { FEATURED_BOARDS } from '@/lib/boards'
+import { FEATURED_BOARDS, resolveBoard } from '@/lib/boards'
 import { ANONYMOUS_BOARDS } from '@/lib/types'
 import { cn, haptic } from '@/lib/utils'
+import { useT } from '@/hooks/useT'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { QuotedPost } from '@/components/ui/QuotedPost'
 import { PollOptionInputs, type PollOption } from '@/components/compose/PollOptionInputs'
 import { BoardPicker } from '@/components/ui/BoardPicker'
+import { parseHashtags } from '@/lib/sanitize'
 
 export function PostComposer() {
   const router = useRouter()
   const {
     isComposerOpen, setComposerOpen,
     composerQuotedPost, setComposerQuotedPost,
-    setDrawerOpen,
-    identityMode,
+    identityMode, setIdentityMode,
     persistentAlias, setPersistentAlias,
     nullifierHash,
-    walletAddress,
     user,
     locationEnabled,
     isVerified,
   } = useArkoraStore()
   const { submit, isSubmitting, error } = usePost()
+  const t = useT()
 
   const [isPoll, setIsPoll] = useState(false)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [boardId, setBoardId] = useState('arkora')
+  const [userPickedBoard, setUserPickedBoard] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const pollIdCounter = useRef(2)
   const [pollOptions, setPollOptions] = useState<PollOption[]>([{ id: 0, text: '' }, { id: 1, text: '' }])
@@ -50,6 +52,7 @@ export function PostComposer() {
 
   // Load boards from API (to include any user-created boards)
   const [allBoards, setAllBoards] = useState(FEATURED_BOARDS)
+  const featuredIds = useRef(FEATURED_BOARDS.map((b) => b.id))
   useEffect(() => {
     void fetch('/api/boards')
       .then((r) => r.json())
@@ -59,10 +62,26 @@ export function PostComposer() {
       .catch(() => null)
   }, [isComposerOpen])
 
-  function shortWallet(): string | undefined {
-    if (!walletAddress) return undefined
-    return walletAddress.slice(0, 6) + '…' + walletAddress.slice(-4)
-  }
+  // Manual board selection - mark as user-picked so hashtags don't override
+  const handleBoardChange = useCallback((id: string) => {
+    setBoardId(id)
+    setUserPickedBoard(true)
+  }, [])
+
+  // Auto-detect board from hashtags when user hasn't manually picked one
+  useEffect(() => {
+    if (userPickedBoard) return
+    const text = `${title} ${body}`
+    const tags = parseHashtags(text)
+    if (tags.length === 0) {
+      setBoardId('arkora')
+      return
+    }
+    const resolved = resolveBoard(tags[0]!, featuredIds.current)
+    if (resolved !== 'arkora') {
+      setBoardId(resolved)
+    }
+  }, [title, body, userPickedBoard])
 
   function getPreviewName(): string {
     if (identityMode === 'alias') {
@@ -70,7 +89,7 @@ export function PostComposer() {
     }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
-      return username ?? user?.pseudoHandle ?? shortWallet() ?? 'World ID user'
+      return username ?? user?.pseudoHandle ?? 'World ID user'
     }
     return 'Human #????'
   }
@@ -81,7 +100,7 @@ export function PostComposer() {
     }
     if (identityMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
-      return username ?? user?.pseudoHandle ?? shortWallet()
+      return username ?? user?.pseudoHandle ?? undefined
     }
     return undefined
   }
@@ -95,7 +114,6 @@ export function PostComposer() {
 
   async function handleSubmit() {
     if (!title.trim()) return
-    if (!isPoll && !body.trim()) return
     if (isPoll && pollOptions.filter((o) => o.text.trim()).length < 2) return
 
     let lat: number | undefined
@@ -134,6 +152,7 @@ export function PostComposer() {
       setPollDuration(72)
       setIsPoll(false)
       setBoardId('arkora')
+      setUserPickedBoard(false)
       setComposerQuotedPost(null)
       setComposerOpen(false)
       router.push(`/post/${post.id}`)
@@ -155,7 +174,7 @@ export function PostComposer() {
         {/* Board selector */}
         <div>
           <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2.5">Board</p>
-          <BoardPicker selected={boardId} allBoards={allBoards} onChange={setBoardId} />
+          <BoardPicker selected={boardId} allBoards={allBoards} onChange={handleBoardChange} />
           {isAnonymousBoard && (
             <p className="mt-2.5 text-[11px] text-text-muted flex items-center gap-1">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
@@ -180,7 +199,7 @@ export function PostComposer() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value.slice(0, 280))}
-            placeholder="What's on your mind?"
+            placeholder={t('composer.placeholder')}
             className="glass-input w-full rounded-[var(--r-lg)] px-4 py-3.5 text-base"
             autoComplete="off"
           />
@@ -241,7 +260,7 @@ export function PostComposer() {
               }}
             />
             <div>
-              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">Duration</p>
+              <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">{t('composer.pollDuration')}</p>
               <div className="flex gap-2">
                 {([24, 72, 168, 0] as const).map((d) => (
                   <button
@@ -253,7 +272,7 @@ export function PostComposer() {
                       pollDuration === d ? 'bg-accent text-background shadow-sm shadow-accent/30' : 'glass text-text-secondary'
                     )}
                   >
-                    {d === 0 ? 'Forever' : d === 24 ? '24h' : d === 72 ? '3 days' : '7 days'}
+                    {d === 0 ? t('composer.forever') : d === 24 ? '24h' : d === 72 ? t('composer.days3') : t('composer.days7')}
                   </button>
                 ))}
               </div>
@@ -263,26 +282,30 @@ export function PostComposer() {
 
         {/* Identity row */}
         {isVerified ? (
-          <button
-            type="button"
-            onClick={() => {
-              setComposerOpen(false)
-              setTimeout(() => setDrawerOpen(true), 250)
-            }}
-            className="w-full flex items-center justify-between px-4 py-3.5 glass rounded-[var(--r-lg)] active:scale-[0.99] transition-all"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-text-muted text-xs">Posting as</span>
-              <span className="text-accent text-xs font-semibold">{getPreviewName()} ✓</span>
+          <div className="w-full flex items-center gap-2 px-4 py-3.5 glass rounded-[var(--r-lg)]">
+            <span className="text-text-muted text-xs shrink-0">{t('composer.postingAs')}</span>
+            <div className="flex gap-1.5 flex-1 justify-end">
+              {(['anonymous', 'alias', 'named'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => { setIdentityMode(mode); haptic('light') }}
+                  className={cn(
+                    'px-2.5 py-1.5 rounded-full text-[11px] font-semibold transition-all',
+                    identityMode === mode
+                      ? 'bg-accent text-background'
+                      : 'text-text-muted glass'
+                  )}
+                >
+                  {mode === 'anonymous' ? t('composer.modeRandom') : mode === 'alias' ? t('composer.modeAlias') : t('composer.modeNamed')}
+                </button>
+              ))}
             </div>
-            <span className="text-text-muted text-[11px]">
-              Change →
-            </span>
-          </button>
+          </div>
         ) : (
           <div className="w-full flex items-center gap-3 px-4 py-3.5 glass rounded-[var(--r-lg)]">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted shrink-0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-            <span className="text-text-secondary text-sm">World ID verification required to post</span>
+            <span className="text-text-secondary text-sm">{t('composer.verificationRequired')}</span>
           </div>
         )}
 
@@ -307,14 +330,13 @@ export function PostComposer() {
           disabled={
             isSubmitting ||
             !title.trim() ||
-            (!isPoll && !body.trim()) ||
             (isPoll && pollOptions.filter((o) => o.text.trim()).length < 2)
           }
           className="w-full bg-accent disabled:opacity-30 text-background font-semibold py-4 rounded-[var(--r-lg)] transition-all active:scale-[0.98] active:bg-accent-hover text-base tracking-[-0.01em] shadow-lg shadow-accent/25"
         >
           {isSubmitting
-            ? (isPoll ? 'Creating poll…' : 'Posting…')
-            : (isPoll ? 'Create poll' : 'Post')}
+            ? (isPoll ? t('composer.creatingPoll') : t('composer.posting'))
+            : (isPoll ? t('composer.createPoll') : t('composer.post'))}
         </button>
       </div>
     </BottomSheet>

@@ -7,6 +7,7 @@ import {
 import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { isPaymentBlocked } from '@/lib/geo'
 
 function daysLeft(expiresAt: Date): number {
   return Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000))
@@ -45,6 +46,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (isPaymentBlocked(req)) {
+      return NextResponse.json({ success: false, error: 'In-app payments are not available in your region' }, { status: 451 })
+    }
+
     const subscriberHash = await getCallerNullifier()
     if (!subscriberHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })

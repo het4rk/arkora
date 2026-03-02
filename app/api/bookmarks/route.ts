@@ -25,7 +25,8 @@ export async function GET(req: NextRequest) {
     // ?postIds=id1,id2,… → bulk status check for feed (returns bookmarked subset)
     const postIdsParam = searchParams.get('postIds')
     if (postIdsParam) {
-      const ids = postIdsParam.split(',').filter(Boolean).slice(0, 10)
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      const ids = postIdsParam.split(',').filter((id) => UUID_RE.test(id)).slice(0, 10)
       const bookmarkedIds = await getBulkBookmarkStatus(nullifierHash, ids)
       return NextResponse.json({ success: true, data: { bookmarkedIds } })
     }

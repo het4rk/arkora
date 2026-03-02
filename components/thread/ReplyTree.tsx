@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import type { Reply } from '@/lib/types'
 import { ReplyCard } from './ReplyCard'
 
@@ -11,7 +12,7 @@ interface Props {
   depth?: number | undefined
 }
 
-/** Build parent → [children] map from a flat reply list */
+/** Build parent -> [children] map from a flat reply list */
 function buildTree(replies: Reply[]): Map<string | null, Reply[]> {
   const map = new Map<string | null, Reply[]>()
   for (const r of replies) {
@@ -23,7 +24,7 @@ function buildTree(replies: Reply[]): Map<string | null, Reply[]> {
 }
 
 export function ReplyTree({ replies, onReplyTo, onDeleted, depth = 0 }: Props) {
-  const tree = buildTree(replies)
+  const tree = useMemo(() => buildTree(replies), [replies])
   const roots = tree.get(null) ?? []
 
   return (
