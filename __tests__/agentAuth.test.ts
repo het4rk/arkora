@@ -83,7 +83,7 @@ describe('agentAuth', () => {
   describe('requireV2Auth', () => {
     it('returns 402 with extensions when no auth headers present', async () => {
       const { requireV2Auth } = await import('@/lib/agentAuth')
-      const req = new NextRequest('https://arkora.vercel.app/api/v2/posts')
+      const req = new NextRequest('https://arkora.app/api/v2/posts')
 
       const result = await requireV2Auth(req)
       expect(result).toBeInstanceOf(NextResponse)
@@ -101,7 +101,7 @@ describe('agentAuth', () => {
       const mockRequireApiKey = vi.mocked(requireApiKey)
       mockRequireApiKey.mockResolvedValueOnce({ ok: true, key: 'test-hash' })
 
-      const req = new NextRequest('https://arkora.vercel.app/api/v2/posts', {
+      const req = new NextRequest('https://arkora.app/api/v2/posts', {
         headers: { 'X-API-Key': 'ark_test123' },
       })
 
@@ -123,7 +123,7 @@ describe('agentAuth', () => {
 
       try {
         const { requirePremiumAuth } = await import('@/lib/agentAuth')
-        const req = new NextRequest('https://arkora.vercel.app/api/v2/sentiment?boardId=ai')
+        const req = new NextRequest('https://arkora.app/api/v2/sentiment?boardId=ai')
 
         const result = await requirePremiumAuth(req, 'v2/sentiment')
         expect(result).toBeInstanceOf(NextResponse)
@@ -150,7 +150,7 @@ describe('agentAuth', () => {
 
       try {
         const { requirePremiumAuth } = await import('@/lib/agentAuth')
-        const req = new NextRequest('https://arkora.vercel.app/api/v2/trends?limit=10')
+        const req = new NextRequest('https://arkora.app/api/v2/trends?limit=10')
 
         const result = await requirePremiumAuth(req, 'v2/trends')
         expect(result).toBeInstanceOf(NextResponse)

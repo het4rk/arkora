@@ -951,7 +951,7 @@ export function SettingsView() {
               <div className="glass rounded-[var(--r-lg)] px-4 py-3 flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="text-text-muted text-xs">{t('settings.baseUrl')}</p>
-                  <p className="text-text text-xs font-mono mt-0.5">https://arkora.vercel.app/api/v1</p>
+                  <p className="text-text text-xs font-mono mt-0.5">https://arkora.app/api/v1</p>
                 </div>
                 <div className="text-text-muted text-xs">
                   <code className="text-[11px] bg-black/20 px-2 py-1 rounded font-mono">X-API-Key: ark_...</code>

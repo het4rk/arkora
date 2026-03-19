@@ -2,4 +2,4 @@ User-agent: *
 Disallow: /api/
 Allow: /
 
-Sitemap: https://arkora.vercel.app/sitemap.xml
+Sitemap: https://arkora.app/sitemap.xml

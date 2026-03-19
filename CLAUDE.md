@@ -2,7 +2,7 @@
 
 This file is loaded automatically by Claude Code at the start of every session. It provides project architecture, conventions, and operational context.
 
-**Live URL:** <https://arkora.vercel.app>
+**Live URL:** <https://arkora.app>
 **Twitter:** [@humansposting](https://x.com/humansposting)
 **Developer Portal:** <https://developer.worldcoin.org>
 
@@ -246,6 +246,7 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 | Sprint | Shipped |
 | --- | --- |
+| 29 | Hardening v2 - linked-identity gap closure: reply vote, follow, block, subscribe, tip endpoints now check all linked nullifiers (0x + wlt_) for self-action and double-vote prevention. Postgres error-code detection (23505) replaces fragile constraint-name string matching in tips/skins/fonts. Redundant NOT-EQUAL filter removed from deleteReplyVote/deletePostVote recount queries. Rate limit added to subscribe/list GET. |
 | 28 | Security hardening (strip walletAddress/lat-lng/creatorWallet from public responses, rate limit health/postDetail/idkitContext, try/catch on dm/keys), dead code removal (verifyTransaction, contracts, ArkVotes.sol, form-data, 23 unused Db* types, unused exports), deps update (Next 16.2.0, idkit 4.0.10, sentry 10.44.0, pusher 5.3.3, pusher-js 8.4.2, drizzle-kit 0.31.10, CVE patches for fast-xml-parser + flatted), QA.md testing checklist, fix 0x-prefix cookie regex (unblocked desktop IDKit users) |
 | 27 | AgentKit v2 API (dual auth: AgentKit proof-of-human + API key fallback), premium analytics endpoints (sentiment, trends, demographics) with x402 402 responses when free trial exhausted, DrizzleAgentKitStorage for nonce replay + usage tracking, spec-compliant x402 payment instructions (USDC on World Chain eip155:480), MCP server for AI agent tooling, 13 new tests (82 total) |
 | 26 | Tailwind CSS v4 migration (CSS-first @theme config, color-mix opacity, autoprefixer removed), IDKit v4 migration (IDKitRequestWidget, orbLegacy preset, server-side RP context signing), eslint-config-next v16.2, dependency bumps (idkit, vercel/analytics, vercel/speed-insights, viem, zustand, framer-motion, Next 16.2.0) |

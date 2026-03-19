@@ -9,7 +9,7 @@ Arkora is a [World App](https://world.org) miniapp where users post, vote, and c
 
 World ID Orb proofs are validated directly on World Chain via the WorldIDRouter smart contract - not on Worldcoin's centralized servers. Proof validation is settled by blockchain consensus.
 
-**Live:** [arkora.vercel.app](https://arkora.vercel.app) | **Twitter:** [@humansposting](https://x.com/humansposting) | **License:** [MIT](./LICENSE)
+**Live:** [arkora.app](https://arkora.app) | **Twitter:** [@humansposting](https://x.com/humansposting) | **License:** [MIT](./LICENSE)
 
 ---
 
@@ -193,7 +193,7 @@ The goal: a social platform where proof of humanity, content storage, and applic
 
 Arkora exposes a public REST API for accessing verified-human posts, polls, and stats. All data originates from World ID-verified accounts.
 
-**Base URL:** `https://arkora.vercel.app/api/v1`
+**Base URL:** `https://arkora.app/api/v1`
 
 **Authentication:** Include your API key in every request:
 
@@ -216,7 +216,7 @@ All responses follow the format: `{ success: true, data: [...], nextCursor: "...
 
 ### v2 API (AgentKit + Premium Analytics)
 
-**Base URL:** `https://arkora.vercel.app/api/v2`
+**Base URL:** `https://arkora.app/api/v2`
 
 v2 endpoints accept dual authentication:
 - **AgentKit** (recommended for AI agents) - `agentkit` header with proof-of-human delegation. Agents get 2x rate limits and access to premium endpoints.

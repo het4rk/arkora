@@ -18,7 +18,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://arkora.vercel.app'),
+  metadataBase: new URL('https://arkora.app'),
   title: 'Arkora',
   description: 'A provably human anonymous message board. Every voice is verified.',
   manifest: '/manifest.json',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Arkora',
     description: 'A provably human anonymous message board. Every voice is verified.',
-    url: 'https://arkora.vercel.app',
+    url: 'https://arkora.app',
     siteName: 'Arkora',
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Arkora - Every voice is verified' }],
     type: 'website',
