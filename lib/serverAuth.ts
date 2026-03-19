@@ -12,8 +12,8 @@ export async function getCallerNullifier(): Promise<string | null> {
   const cookieStore = await cookies()
   const value = cookieStore.get('arkora-nh')?.value
   if (!value) return null
-  // Validate format: World ID nullifier (0x hex) or wallet-derived (wlt_ hex)
-  if (!/^(wlt_)?[0-9a-fA-F]+$/.test(value)) return null
+  // Validate format: World ID nullifier (0x + hex) or wallet-derived (wlt_ + hex)
+  if (!/^(0x|wlt_)?[0-9a-fA-F]+$/.test(value)) return null
   return value
 }
 
