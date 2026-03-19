@@ -34,6 +34,8 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 ### Identity and Privacy
 
 - Three identity modes: Random (fresh tag each post), Alias (persistent handle), Named (World ID username)
+- Per-action identity: choose anon/alias/named on each post or reply independently
+- Social gating: follow, DM, tip, and subscribe require named mode
 - Confessions board - force-anonymous, completely unlinkable
 - Human Karma and reputation tiers displayed on profiles and feed cards
 
@@ -62,6 +64,7 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 ### Customization
 
 - Light and dark theme
+- Responsive layout - adapts from mobile (full width) to desktop (centered column with side borders)
 - 10 languages: English, Spanish, Portuguese, French, German, Japanese, Korean, Thai, Indonesian, Turkish (auto-detected, manually overridable)
 - Server-synced preferences (theme, notifications, location persist across devices)
 - Profile picture upload
@@ -171,6 +174,7 @@ Arkora has undergone comprehensive security auditing across all layers. Key prop
 - **Constant-time nonce comparison** - SIWE nonce validation uses `crypto.timingSafeEqual()`
 - **Rate limiting** - per-endpoint, per-user sliding window on all routes
 - **Atomic votes** - single CTE statements to prevent race conditions
+- **Session recovery** - `authFetch()` wrapper on all client API calls detects expired sessions and forces re-authentication
 
 For vulnerability reporting, see [SECURITY.md](./SECURITY.md).
 

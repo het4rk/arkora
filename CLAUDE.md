@@ -52,6 +52,8 @@ pnpm db:seed          # Seed database (reads .env.local)
 - **Input sanitization**: Pass user text through `sanitizeLine()` / `sanitizeText()` from `@/lib/sanitize` before DB writes.
 - **Types**: Shared types in `lib/types.ts`. Use `interface`. Explicit optionals with `| undefined`.
 - **No `any`**: TypeScript strict mode enforced.
+- **Client fetches**: All authenticated client-side fetch calls must use `authFetch()` from `@/lib/authFetch`, not bare `fetch()`. This ensures stale auth sessions are detected and cleared.
+- **Avoid raw SQL**: Use Drizzle query builder, not `db.execute(sql\`...\`)`. Drizzle parameterizes each template interpolation as a separate `$N`, which breaks Postgres `DISTINCT ON` / `ORDER BY` matching when the same value is interpolated multiple times.
 
 ---
 
@@ -143,6 +145,7 @@ All user preferences are synced server-side in `humanUsers`. On login, `SessionH
 | Cookie validation | `getCallerNullifier()` validates format with regex before returning |
 | Rate limiting | Per-endpoint, per-user sliding window; full API key used (not truncated) |
 | Identity isolation | Named profile uses real nullifier; alias uses SHA256(real+":alias"); anon uses SHA256(real+":anon:"+postId). `authorNullifier` (internal) never in API responses. Follow/DM/tip gated to named mode. |
+| Session recovery | `authFetch()` wrapper detects 401 on all client fetches and clears stale Zustand auth state, forcing re-auth instead of showing generic errors. |
 
 Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set (cross-instance enforcement). Falls back to in-memory when env vars are missing (dev/local). Both sync `rateLimit()` and async `rateLimitAsync()` APIs are available.
 
@@ -154,6 +157,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | --- | --- |
 | `store/useArkoraStore.ts` | Single source of truth for all client state |
 | `lib/serverAuth.ts` | `getCallerNullifier()` - cookie auth with format validation |
+| `lib/authFetch.ts` | Client-side fetch wrapper - detects 401 and clears stale Zustand auth state |
 | `lib/identityRules.ts` | Sub-identity derivation (alias/anon nullifiers) + interaction permission checks |
 | `lib/db/schema.ts` | Drizzle schema (source of truth for DB shape) |
 | `lib/db/users.ts` | User CRUD + batch query + mention autocomplete |
@@ -248,6 +252,7 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 | Sprint | Shipped |
 | --- | --- |
+| 31 (v1.1.0) | Responsive layout system - CSS custom property `--app-col` scales from 100% (mobile) to 680/720/760px at md/lg/xl breakpoints, `.app-fixed` constrains all fixed chrome (TopBar, BottomNav, sheets, composers) to content column, `.app-shell` adds subtle side borders on desktop. Auth session recovery - `authFetch()` wrapper on all 60+ client-side API calls detects 401 and clears stale Zustand state. Bug fixes - DM conversations query rewritten from broken raw SQL DISTINCT ON to Drizzle builder + JS dedup, `db.execute()` return shape fixed in communityNotes. Hardening - try/catch added to 6 unprotected API routes (me, fonts, skins, preferences, nonce). Search UX - board chips limited to 12 with expandable "+N more" toggle. Version bump to 1.1.0. |
 | 30 | Identity mode isolation - sub-identity system (SHA256-derived alias/anon nullifiers), authorNullifier column for internal use (rate limiting, moderation, ownership), postIdentityMode on posts/replies. Per-action identity mode: posts and replies accept `identityMode` from request body (defaults to DB profile), ReplyComposer has inline Anon/Alias/Named picker so users can reply anonymously on any thread without switching global mode. Social hardening: follow/DM/tip/subscribe gated to named-mode, profile returns "not available" for non-named, following feed filters to named-only posts, own profile shows ALL posts (anon/alias/named) via authorNullifier query, anon/alias badge in ProfilePostCard, notifications only reveal actor for named-mode actions, room join uses DB identity mode (blocks client override), PublicProfileView hides Follow/DM/Tip for non-named viewers. Migration 0005 with backfill. New utility: lib/identityRules.ts. |
 | 29 | Hardening v2 - linked-identity gap closure: reply vote, follow, block, subscribe, tip endpoints now check all linked nullifiers (0x + wlt_) for self-action and double-vote prevention. Postgres error-code detection (23505) replaces fragile constraint-name string matching in tips/skins/fonts. Redundant NOT-EQUAL filter removed from deleteReplyVote/deletePostVote recount queries. Rate limit added to subscribe/list GET. |
 | 28 | Security hardening (strip walletAddress/lat-lng/creatorWallet from public responses, rate limit health/postDetail/idkitContext, try/catch on dm/keys), dead code removal (verifyTransaction, contracts, ArkVotes.sol, form-data, 23 unused Db* types, unused exports), deps update (Next 16.2.0, idkit 4.0.10, sentry 10.44.0, pusher 5.3.3, pusher-js 8.4.2, drizzle-kit 0.31.10, CVE patches for fast-xml-parser + flatted), QA.md testing checklist, fix 0x-prefix cookie regex (unblocked desktop IDKit users) |
@@ -363,6 +368,8 @@ MCP_PORT                 - MCP SSE port (default: 3001)
 - [x] v2 API with AgentKit auth + premium analytics + MCP server
 - [x] Security audit + hardening (Sprint 28)
 - [x] Dead code cleanup + dependency audit (Sprint 28)
+- [x] Responsive layout (v1.1.0) - CSS breakpoint system, desktop side borders, fixed chrome constrained
+- [x] Auth session recovery (v1.1.0) - authFetch wrapper on all client API calls
 - [ ] Upgrade DB driver to `@neondatabase/serverless`
 - [ ] Rooms Phase 2 - audio (WebRTC or LiveKit)
 - [ ] Admin moderation queue for reports
