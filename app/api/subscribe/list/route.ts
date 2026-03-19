@@ -17,7 +17,6 @@ export async function GET() {
 
     const data = rows.map((r) => ({
       creatorHash: r.creatorHash,
-      creatorWallet: r.creatorWallet,
       amountWld: r.amountWld,
       expiresAt: r.expiresAt instanceof Date ? r.expiresAt.toISOString() : String(r.expiresAt),
       daysLeft: Math.max(0, Math.ceil((new Date(r.expiresAt).getTime() - Date.now()) / 86_400_000)),

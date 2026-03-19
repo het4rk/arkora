@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { signRequest } from '@worldcoin/idkit/signing'
+import { rateLimit } from '@/lib/rateLimit'
 
 /**
  * Generates an RP context for IDKit v4 verification requests.
@@ -9,7 +10,11 @@ import { signRequest } from '@worldcoin/idkit/signing'
  *   IDKIT_RP_ID       - RP ID from the Worldcoin Developer Portal
  *   IDKIT_SIGNING_KEY - ECDSA private key (hex) from the Developer Portal
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'anon'
+  if (!rateLimit(`idkit-ctx:${ip}`, 10, 60_000)) {
+    return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+  }
   const rpId = process.env.IDKIT_RP_ID
   const signingKey = process.env.IDKIT_SIGNING_KEY
 

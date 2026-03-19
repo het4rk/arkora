@@ -106,12 +106,6 @@ export interface CreateReplyInput {
   imageUrl?: string | undefined
 }
 
-export interface VoteInput {
-  postId: string
-  direction: 1 | -1
-  nullifierHash: string
-}
-
 export interface Notification {
   id: string
   recipientHash: string
@@ -164,12 +158,6 @@ export interface RoomMessage {
   createdAt: string // ISO string for Pusher transport
 }
 
-export interface CreateNoteInput {
-  postId: string
-  body: string
-  submitterNullifierHash: string
-}
-
 export interface FeedParams {
   boardId?: BoardId | undefined
   cursor?: string | undefined
@@ -209,6 +197,3 @@ export interface SearchResults {
   posts: Post[]
 }
 
-export type ApiResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: string }

@@ -30,8 +30,9 @@ function toPost(
     createdAt: row.createdAt,
     quotedPostId: row.quotedPostId ?? null,
     quotedPost: quoted ? toPost(quoted) : null,
-    lat: row.lat ?? null,
-    lng: row.lng ?? null,
+    // Never expose exact coordinates in API responses - stored for local feed filtering only
+    lat: null,
+    lng: null,
     countryCode: row.countryCode ?? null,
     tags: row.tags ?? null,
     type: (row.type as 'text' | 'poll' | 'repost') ?? 'text',

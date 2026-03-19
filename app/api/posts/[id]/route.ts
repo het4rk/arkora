@@ -6,13 +6,19 @@ import { getPollResults, getUserVote } from '@/lib/db/polls'
 import { getKarmaScore } from '@/lib/db/karma'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { invalidatePosts } from '@/lib/cache'
+import { rateLimit } from '@/lib/rateLimit'
 
 interface Params {
   params: Promise<{ id: string }>
 }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   try {
+    const ip = req.headers.get('x-forwarded-for') ?? 'anon'
+    if (!rateLimit(`postdetail:${ip}`, 120, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
+
     const { id } = await params
     const [post, replies, notes] = await Promise.all([
       getPostById(id),

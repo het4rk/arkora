@@ -286,8 +286,6 @@ export const pollVotes = pgTable(
   })
 )
 
-export type DbPollVote = typeof pollVotes.$inferSelect
-
 export const notifications = pgTable(
   'notifications',
   {
@@ -306,17 +304,6 @@ export const notifications = pgTable(
   })
 )
 
-export type DbPost = typeof posts.$inferSelect
-export type DbReply = typeof replies.$inferSelect
-export type DbHumanUser = typeof humanUsers.$inferSelect
-export type DbCommunityNote = typeof communityNotes.$inferSelect
-export type DbPostVote = typeof postVotes.$inferSelect
-export type DbBookmark = typeof bookmarks.$inferSelect
-export type DbFollow = typeof follows.$inferSelect
-export type DbDmKey = typeof dmKeys.$inferSelect
-export type DbDmMessage = typeof dmMessages.$inferSelect
-export type DbReplyVote = typeof replyVotes.$inferSelect
-export type DbCommunityNoteVote = typeof communityNoteVotes.$inferSelect
 
 // ── Tips ──────────────────────────────────────────────────────────────────────
 export const tips = pgTable(
@@ -392,10 +379,6 @@ export const fontPurchases = pgTable(
   })
 )
 
-export type DbTip = typeof tips.$inferSelect
-export type DbSubscription = typeof subscriptions.$inferSelect
-export type DbSkinPurchase = typeof skinPurchases.$inferSelect
-export type DbFontPurchase = typeof fontPurchases.$inferSelect
 
 // ── Reports ──────────────────────────────────────────────────────────────────
 export const reports = pgTable(
@@ -418,7 +401,6 @@ export const reports = pgTable(
   })
 )
 
-export type DbReport = typeof reports.$inferSelect
 
 // ── Blocks ───────────────────────────────────────────────────────────────────
 export const blocks = pgTable(
@@ -435,7 +417,6 @@ export const blocks = pgTable(
   })
 )
 
-export type DbBlock = typeof blocks.$inferSelect
 
 // ── Rooms ─────────────────────────────────────────────────────────────────────
 export const rooms = pgTable(
@@ -479,8 +460,6 @@ export const roomParticipants = pgTable(
   })
 )
 
-export type DbRoom = typeof rooms.$inferSelect
-export type DbRoomParticipant = typeof roomParticipants.$inferSelect
 
 // ── Public API Keys ───────────────────────────────────────────────────────────
 export const apiKeys = pgTable(
@@ -499,8 +478,6 @@ export const apiKeys = pgTable(
     keyHashIdx: uniqueIndex('api_keys_key_hash_idx').on(table.keyHash),
   })
 )
-
-export type DbApiKey = typeof apiKeys.$inferSelect
 
 // ── AgentKit Usage Tracking ──────────────────────────────────────────────────
 export const agentkitUsage = pgTable(
@@ -521,5 +498,3 @@ export const agentkitNonces = pgTable('agentkit_nonces', {
   recordedAt: timestamp('recorded_at').defaultNow().notNull(),
 })
 
-export type DbAgentkitUsage = typeof agentkitUsage.$inferSelect
-export type DbAgentkitNonce = typeof agentkitNonces.$inferSelect

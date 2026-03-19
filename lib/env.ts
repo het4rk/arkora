@@ -44,14 +44,3 @@ export function validateEnv(): void {
   }
 }
 
-/**
- * Type-safe env accessor - throws if the var is not set.
- * Use this instead of `process.env.FOO!` to get clear errors.
- */
-export function requireEnv(key: string): string {
-  const value = process.env[key]
-  if (!value) {
-    throw new Error(`[Arkora] Required environment variable "${key}" is not set.`)
-  }
-  return value
-}

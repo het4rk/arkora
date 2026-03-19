@@ -36,10 +36,24 @@ export async function GET(req: NextRequest, { params }: Params) {
       ? Math.max(0, Math.ceil((activeSub.expiresAt.getTime() - Date.now()) / 86_400_000))
       : null
 
+    // Strip walletAddress from public profile - only expose public-facing fields
+    const safeUser = user ? {
+      nullifierHash: user.nullifierHash,
+      pseudoHandle: user.pseudoHandle,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      identityMode: user.identityMode,
+      karmaScore: user.karmaScore,
+      worldIdVerified: user.worldIdVerified,
+      verifiedBlockNumber: user.verifiedBlockNumber,
+      registrationTxHash: user.registrationTxHash,
+      createdAt: user.createdAt,
+    } : null
+
     return NextResponse.json({
       success: true,
       data: {
-        user,
+        user: safeUser,
         posts,
         ...profileStats,
         isFollowing: following,
