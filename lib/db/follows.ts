@@ -29,6 +29,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
     contentHash: row.contentHash ?? null,
+    postIdentityMode: (row.postIdentityMode as 'anonymous' | 'alias' | 'named') ?? 'anonymous',
   }
 }
 
@@ -85,17 +86,19 @@ export async function getFeedFollowing(
   cursor?: string,
   limit = 20
 ): Promise<Post[]> {
-  // Single JOIN query - no separate getFollowingIds round-trip.
+  // Join on authorNullifier (real identity) and only show named-mode posts.
+  // Alias/anon posts from followed users are excluded from the following feed.
   const conditions = [
     eq(follows.followerId, nullifierHash),
     lt(posts.reportCount, 5),
+    eq(posts.postIdentityMode, 'named'),
   ]
   if (cursor) conditions.push(lt(posts.createdAt, new Date(cursor)))
 
   const rows = await db
     .select({ post: posts })
     .from(posts)
-    .innerJoin(follows, eq(follows.followedId, posts.nullifierHash))
+    .innerJoin(follows, eq(follows.followedId, posts.authorNullifier))
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
     .limit(Math.min(limit, 50))

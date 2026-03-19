@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPostsByNullifiers, getVotedPostsByNullifier } from '@/lib/db/posts'
-import { getRepliesByNullifiers } from '@/lib/db/replies'
+import { getPostsByAuthorNullifiers, getVotedPostsByNullifier } from '@/lib/db/posts'
+import { getRepliesByAuthorNullifiers } from '@/lib/db/replies'
 import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -21,16 +21,18 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '20', 10) || 20, 50)
 
     if (tab === 'posts') {
+      // Query by authorNullifier so the user sees ALL their posts (named + alias + anon)
       const nullifiers = await getLinkedNullifiers(nullifierHash)
-      const items = await getPostsByNullifiers(nullifiers, cursor, limit)
+      const items = await getPostsByAuthorNullifiers(nullifiers, cursor, limit)
       const hasMore = items.length === limit
       const nextCursor = hasMore ? items[items.length - 1]?.createdAt.toISOString() : undefined
       return NextResponse.json({ success: true, data: { items, hasMore, nextCursor } })
     }
 
     if (tab === 'replies') {
+      // Query by authorNullifier so the user sees ALL their replies
       const nullifiers = await getLinkedNullifiers(nullifierHash)
-      const items = await getRepliesByNullifiers(nullifiers, limit)
+      const items = await getRepliesByAuthorNullifiers(nullifiers, limit)
       return NextResponse.json({ success: true, data: { items, hasMore: false } })
     }
 

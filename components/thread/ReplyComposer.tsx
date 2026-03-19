@@ -7,6 +7,9 @@ import { generateAlias } from '@/lib/session'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useT } from '@/hooks/useT'
+
+type ReplyMode = 'anonymous' | 'alias' | 'named'
+
 interface Props {
   postId: string
   onSuccess: () => void
@@ -23,15 +26,32 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
 
   const { nullifierHash, isVerified, setVerifySheetOpen, identityMode, persistentAlias, user } = useArkoraStore()
   const t = useT()
+
+  // Per-reply identity mode - defaults to global preference, overridable inline
+  const [replyMode, setReplyMode] = useState<ReplyMode>(identityMode)
+
   function getPseudoHandle(): string | undefined {
-    if (identityMode === 'alias') {
+    if (replyMode === 'alias') {
       return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : undefined)
     }
-    if (identityMode === 'named') {
+    if (replyMode === 'named') {
       const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
       return username ?? user?.pseudoHandle ?? undefined
     }
     return undefined
+  }
+
+  function getModeLabel(mode: ReplyMode): string {
+    if (mode === 'anonymous') return 'Anon'
+    if (mode === 'alias') return 'Alias'
+    return 'Named'
+  }
+
+  function getModePreview(): string {
+    if (replyMode === 'anonymous') return 'Human #????'
+    if (replyMode === 'alias') return persistentAlias ?? (nullifierHash ? generateAlias(nullifierHash) : 'alias')
+    const username = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
+    return username ?? user?.pseudoHandle ?? 'You'
   }
 
   async function handleSubmit() {
@@ -50,7 +70,14 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
       const res = await fetch('/api/replies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, body, pseudoHandle: getPseudoHandle(), imageUrl: imageUrl ?? undefined, parentReplyId }),
+        body: JSON.stringify({
+          postId,
+          body,
+          pseudoHandle: getPseudoHandle(),
+          imageUrl: imageUrl ?? undefined,
+          parentReplyId,
+          identityMode: replyMode,
+        }),
       })
 
       const json = (await res.json()) as { success: boolean; error?: string }
@@ -87,6 +114,29 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
           </span>
         </div>
       )}
+
+      {/* Inline identity mode picker */}
+      {isVerified && (
+        <div className="flex items-center gap-1.5 mb-2 px-1">
+          <span className="text-text-muted text-[10px] shrink-0">as</span>
+          {(['anonymous', 'alias', 'named'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => { setReplyMode(mode); haptic('light') }}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all active:scale-95 ${
+                replyMode === mode
+                  ? 'bg-accent text-background'
+                  : 'text-text-muted/60 glass'
+              }`}
+            >
+              {getModeLabel(mode)}
+            </button>
+          ))}
+          <span className="text-text-muted/40 text-[10px] ml-1 truncate">{getModePreview()}</span>
+        </div>
+      )}
+
       {imageUrl === null && (
         <ImagePicker
           previewUrl={null}

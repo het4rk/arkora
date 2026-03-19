@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { recordTip } from '@/lib/db/tips'
 import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
-import { getCallerNullifier } from '@/lib/serverAuth'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 import { worldAppNotify } from '@/lib/worldAppNotify'
 import { isPaymentBlocked } from '@/lib/geo'
+import { isValidTxId } from '@/lib/txValidation'
+import { canTip } from '@/lib/identityRules'
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,6 +29,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
 
+    if (!isValidTxId(txId)) {
+      return NextResponse.json({ success: false, error: 'Invalid transaction ID format' }, { status: 400 })
+    }
+
+    const allLinked = await getLinkedNullifiers(senderHash)
+    if (allLinked.includes(recipientHash)) {
+      return NextResponse.json({ success: false, error: 'Cannot tip yourself' }, { status: 400 })
+    }
+
     const amount = parseFloat(amountWld)
     if (isNaN(amount) || amount <= 0 || amount > 1000) {
       return NextResponse.json({ success: false, error: 'Invalid amount' }, { status: 400 })
@@ -40,12 +51,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
 
-    const recipient = await getUserByNullifier(recipientHash)
+    const [sender, recipient] = await Promise.all([
+      getUserByNullifier(senderHash),
+      getUserByNullifier(recipientHash),
+    ])
     if (!recipient) {
       return NextResponse.json({ success: false, error: 'Recipient not found' }, { status: 404 })
     }
 
-    await recordTip(senderHash, recipientHash, recipient.walletAddress, amountWld, txId)
+    // Sender must be named or alias, recipient must be named
+    const senderMode = (sender?.identityMode ?? 'anonymous') as 'anonymous' | 'alias' | 'named'
+    const recipientMode = (recipient.identityMode ?? 'anonymous') as 'anonymous' | 'alias' | 'named'
+    if (!canTip(senderMode, recipientMode)) {
+      return NextResponse.json({ success: false, error: 'Tips require the recipient to be in named mode' }, { status: 403 })
+    }
+
+    const recorded = await recordTip(senderHash, recipientHash, recipient.walletAddress, amountWld, txId)
+    if (!recorded) {
+      return NextResponse.json({ success: false, error: 'Transaction already used' }, { status: 400 })
+    }
 
     void worldAppNotify(
       recipientHash,

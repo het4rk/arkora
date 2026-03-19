@@ -18,6 +18,7 @@ function toPost(
     title: row.title,
     body: row.body,
     boardId: row.boardId as BoardId,
+    // nullifierHash is already the derived public identifier (set at creation time)
     nullifierHash: row.nullifierHash,
     pseudoHandle: row.pseudoHandle ?? null,
     sessionTag: row.sessionTag,
@@ -40,14 +41,17 @@ function toPost(
     pollEndsAt: row.pollEndsAt ?? null,
     contentHash: row.contentHash ?? null,
     authorKarmaScore: karmaScore ?? null,
+    postIdentityMode: (row.postIdentityMode as 'anonymous' | 'alias' | 'named') ?? 'anonymous',
+    // authorNullifier is NEVER included - internal only
   }
 }
 
-export async function createPost(input: CreatePostInput): Promise<Post> {
+export async function createPost(input: CreatePostInput & { id?: string }): Promise<Post> {
   const sessionTag = generateSessionTag()
   const [row] = await db
     .insert(posts)
     .values({
+      ...(input.id ? { id: input.id } : {}),
       title: input.title,
       body: input.body,
       boardId: input.boardId,
@@ -63,6 +67,8 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       lat: input.lat ?? null,
       lng: input.lng ?? null,
       countryCode: input.countryCode ?? null,
+      authorNullifier: input.authorNullifier ?? input.nullifierHash,
+      postIdentityMode: input.postIdentityMode ?? 'anonymous',
     })
     .returning()
 
@@ -101,7 +107,7 @@ export async function getPostById(id: string): Promise<Post | null> {
     .select({ post: posts, quoted: quotedPosts, karmaScore: humanUsers.karmaScore })
     .from(posts)
     .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
-    .leftJoin(humanUsers, eq(posts.nullifierHash, humanUsers.nullifierHash))
+    .leftJoin(humanUsers, sql`COALESCE(${posts.authorNullifier}, ${posts.nullifierHash}) = ${humanUsers.nullifierHash}`)
     .where(eq(posts.id, id))
     .limit(1) as PostWithQuoted[]
 
@@ -117,6 +123,17 @@ export async function getPostNullifier(id: string): Promise<string | null> {
     .where(eq(posts.id, id))
     .limit(1)
   return row?.nullifierHash ?? null
+}
+
+/** Returns the real (internal) author nullifier for a post. Used for ownership checks and notifications.
+ *  Falls back to nullifierHash for pre-migration posts where authorNullifier is null. */
+export async function getPostAuthorNullifier(id: string): Promise<string | null> {
+  const [row] = await db
+    .select({ authorNullifier: posts.authorNullifier, nullifierHash: posts.nullifierHash })
+    .from(posts)
+    .where(eq(posts.id, id))
+    .limit(1)
+  return row?.authorNullifier ?? row?.nullifierHash ?? null
 }
 
 export async function getFeed(params: FeedParams): Promise<Post[]> {
@@ -140,7 +157,7 @@ export async function getFeed(params: FeedParams): Promise<Post[]> {
     .select({ post: posts, quoted: quotedPosts, karmaScore: humanUsers.karmaScore })
     .from(posts)
     .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
-    .leftJoin(humanUsers, eq(posts.nullifierHash, humanUsers.nullifierHash))
+    .leftJoin(humanUsers, sql`COALESCE(${posts.authorNullifier}, ${posts.nullifierHash}) = ${humanUsers.nullifierHash}`)
     .where(and(...conditions))
     .orderBy(desc(posts.createdAt))
     .limit(limit) as PostWithQuoted[]
@@ -158,9 +175,10 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
           qp.upvotes as q_upvotes, qp.downvotes as q_downvotes,
           qp.reply_count as q_reply_count, qp.quote_count as q_quote_count,
           qp.created_at as q_created_at, qp.deleted_at as q_deleted_at,
-          qp.quoted_post_id as q_quoted_post_id
+          qp.quoted_post_id as q_quoted_post_id,
+          qp.post_identity_mode as q_post_identity_mode
         FROM posts p
-        LEFT JOIN human_users hu ON p.nullifier_hash = hu.nullifier_hash
+        LEFT JOIN human_users hu ON COALESCE(p.author_nullifier, p.nullifier_hash) = hu.nullifier_hash
         LEFT JOIN posts qp ON p.quoted_post_id = qp.id
         WHERE p.report_count < 5
           ${boardId ? sql`AND (p.board_id = ${boardId} OR p.tags @> ARRAY[${boardId}]::text[])` : sql``}
@@ -193,6 +211,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
       contentHash: (r['content_hash'] as string | null) ?? null,
       authorKarmaScore: (r['author_karma_score'] as number | null) ?? null,
+      postIdentityMode: ((r['post_identity_mode'] as string | null) ?? 'anonymous') as 'anonymous' | 'alias' | 'named',
     }
 
     if (r['quoted_id']) {
@@ -212,6 +231,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         tags: null,
         type: 'text', pollOptions: null, pollEndsAt: null,
         contentHash: null,
+        postIdentityMode: ((r['q_post_identity_mode'] as string | null) ?? 'anonymous') as 'anonymous' | 'alias' | 'named',
       }
     }
 
@@ -312,16 +332,20 @@ export async function deletePostVote(postId: string, nullifierHash: string): Pro
         )
         UPDATE posts
         SET
-          upvotes   = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND nullifier_hash != ${nullifierHash} AND direction =  1),
-          downvotes = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND nullifier_hash != ${nullifierHash} AND direction = -1)
+          upvotes   = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction =  1),
+          downvotes = (SELECT COUNT(*) FROM post_votes WHERE post_id = ${postId} AND direction = -1)
         WHERE id = ${postId}`
   )
 }
 
 export async function deletePost(postId: string, nullifierHash: string): Promise<boolean> {
+  // Check authorNullifier for ownership (real identity), falling back to nullifierHash for pre-migration posts
   const result = await db
     .delete(posts)
-    .where(and(eq(posts.id, postId), eq(posts.nullifierHash, nullifierHash)))
+    .where(and(
+      eq(posts.id, postId),
+      or(eq(posts.authorNullifier, nullifierHash), eq(posts.nullifierHash, nullifierHash))!,
+    ))
     .returning({ id: posts.id, type: posts.type, quotedPostId: posts.quotedPostId })
 
   if (result.length === 0) return false
@@ -347,6 +371,38 @@ export async function getPostsByNullifier(
 ): Promise<Post[]> {
   const conditions = [
     eq(posts.nullifierHash, nullifierHash),
+  ]
+  if (cursor) {
+    conditions.push(lt(posts.createdAt, new Date(cursor)))
+  }
+
+  const rows = await db
+    .select({ post: posts, quoted: quotedPosts })
+    .from(posts)
+    .leftJoin(quotedPosts, eq(posts.quotedPostId, quotedPosts.id))
+    .where(and(...conditions))
+    .orderBy(desc(posts.createdAt))
+    .limit(Math.min(limit, 50)) as PostWithQuoted[]
+
+  return rows.map((r) => toPost(r.post, r.quoted))
+}
+
+/**
+ * Fetch posts by the internal author nullifier (real identity).
+ * Used for own-profile views where the user needs to see ALL their posts
+ * including anonymous and alias posts.
+ */
+export async function getPostsByAuthorNullifiers(
+  nullifiers: string[],
+  cursor?: string,
+  limit = 20
+): Promise<Post[]> {
+  if (nullifiers.length === 0) return []
+
+  const conditions = [
+    nullifiers.length === 1
+      ? or(eq(posts.authorNullifier, nullifiers[0]!), eq(posts.nullifierHash, nullifiers[0]!))!
+      : or(inArray(posts.authorNullifier, nullifiers), inArray(posts.nullifierHash, nullifiers))!,
   ]
   if (cursor) {
     conditions.push(lt(posts.createdAt, new Date(cursor)))
@@ -441,9 +497,10 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
           qp.reply_count as q_reply_count, qp.quote_count as q_quote_count,
           qp.created_at as q_created_at, qp.deleted_at as q_deleted_at,
           qp.quoted_post_id as q_quoted_post_id,
-          qp.lat as q_lat, qp.lng as q_lng, qp.country_code as q_country_code
+          qp.lat as q_lat, qp.lng as q_lng, qp.country_code as q_country_code,
+          qp.post_identity_mode as q_post_identity_mode
         FROM posts p
-        LEFT JOIN human_users hu ON p.nullifier_hash = hu.nullifier_hash
+        LEFT JOIN human_users hu ON COALESCE(p.author_nullifier, p.nullifier_hash) = hu.nullifier_hash
         LEFT JOIN posts qp ON p.quoted_post_id = qp.id
         WHERE p.report_count < 5
           AND p.country_code = ${params.countryCode}
@@ -484,6 +541,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
       pollEndsAt: r['poll_ends_at'] ? new Date(r['poll_ends_at'] as string) : null,
       contentHash: (r['content_hash'] as string | null) ?? null,
       authorKarmaScore: (r['author_karma_score'] as number | null) ?? null,
+      postIdentityMode: ((r['post_identity_mode'] as string | null) ?? 'anonymous') as 'anonymous' | 'alias' | 'named',
     }
 
     if (r['quoted_id']) {
@@ -505,6 +563,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
         tags: null,
         type: 'text', pollOptions: null, pollEndsAt: null,
         contentHash: null,
+        postIdentityMode: ((r['q_post_identity_mode'] as string | null) ?? 'anonymous') as 'anonymous' | 'alias' | 'named',
       }
     }
 

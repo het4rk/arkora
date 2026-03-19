@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getActiveSubscriptions } from '@/lib/db/subscriptions'
 import { getUsersByNullifiers } from '@/lib/db/users'
+import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 
 export async function GET() {
@@ -8,6 +9,10 @@ export async function GET() {
     const subscriberHash = await getCallerNullifier()
     if (!subscriberHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!rateLimit(`subscribe-list:${subscriberHash}`, 30, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const rows = await getActiveSubscriptions(subscriberHash)

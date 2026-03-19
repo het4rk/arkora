@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { saveDmMessage, getDmMessages } from '@/lib/db/dm'
-import { isVerifiedHuman } from '@/lib/db/users'
+import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { createNotification } from '@/lib/db/notifications'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
@@ -9,6 +9,7 @@ import { worldAppNotify } from '@/lib/worldAppNotify'
 import { db } from '@/lib/db'
 import { blocks } from '@/lib/db/schema'
 import { or, and, eq } from 'drizzle-orm'
+import { canDM } from '@/lib/identityRules'
 
 /** Returns true if either user has blocked the other. */
 async function isBlocked(hashA: string, hashB: string): Promise<boolean> {
@@ -74,6 +75,18 @@ export async function POST(req: NextRequest) {
     if (await isBlocked(senderHash, recipientHash)) {
       return NextResponse.json({ success: false, error: 'Cannot message this user' }, { status: 403 })
     }
+
+    // Both sender and recipient must be in named mode
+    const [senderUser, recipientUser] = await Promise.all([
+      getUserByNullifier(senderHash),
+      getUserByNullifier(recipientHash),
+    ])
+    const senderMode = (senderUser?.identityMode ?? 'anonymous') as 'anonymous' | 'alias' | 'named'
+    const recipientMode = (recipientUser?.identityMode ?? 'anonymous') as 'anonymous' | 'alias' | 'named'
+    if (!canDM(senderMode, recipientMode)) {
+      return NextResponse.json({ success: false, error: 'DMs are only available between named users' }, { status: 403 })
+    }
+
     if (!rateLimit(`dm:${senderHash}`, 30, 60_000)) {
       return NextResponse.json({ success: false, error: 'Too many messages. Slow down.' }, { status: 429 })
     }

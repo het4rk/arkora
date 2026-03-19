@@ -49,6 +49,11 @@ export const posts = pgTable(
     type: text('type').notNull().default('text'), // 'text' | 'poll' | 'repost'
     pollOptions: jsonb('poll_options').$type<{ index: number; text: string }[]>(),
     pollEndsAt: timestamp('poll_ends_at', { withTimezone: true }),
+    // Identity isolation: real nullifier for internal use (rate limiting, moderation, bans).
+    // Never returned in API responses. nullifierHash becomes the derived public identifier.
+    authorNullifier: text('author_nullifier'),
+    // Identity mode at time of posting: 'anonymous' | 'alias' | 'named'
+    postIdentityMode: text('post_identity_mode').notNull().default('anonymous'),
   },
   (table) => ({
     boardIdx: index('posts_board_id_idx').on(table.boardId),
@@ -61,6 +66,8 @@ export const posts = pgTable(
     reportCountIdx: index('posts_report_count_idx').on(table.reportCount),
     // GIN index on tags array for efficient @> (contains) queries
     tagsIdx: index('posts_tags_idx').using('gin', table.tags),
+    // Internal identity lookups (rate limiting, moderation, following feed)
+    authorNullifierIdx: index('posts_author_nullifier_idx').on(table.authorNullifier),
   })
 )
 
@@ -81,6 +88,9 @@ export const replies = pgTable(
     downvotes: integer('downvotes').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
+    // Identity isolation - same pattern as posts
+    authorNullifier: text('author_nullifier'),
+    postIdentityMode: text('post_identity_mode').notNull().default('anonymous'),
   },
   (table) => ({
     postIdIdx: index('replies_post_id_idx').on(table.postId),
@@ -88,6 +98,7 @@ export const replies = pgTable(
     nullifierIdx: index('replies_nullifier_hash_idx').on(table.nullifierHash),
     // Covers getRepliesByPostId sort: filter by postId + order by upvotes DESC, createdAt DESC
     postSortIdx: index('replies_post_sort_idx').on(table.postId, table.upvotes, table.createdAt),
+    authorNullifierIdx: index('replies_author_nullifier_idx').on(table.authorNullifier),
   })
 )
 
@@ -319,6 +330,7 @@ export const tips = pgTable(
   },
   (t) => ({
     recipientIdx: index('tips_recipient_idx').on(t.recipientHash),
+    uniqueTxId: unique('tips_tx_id_unique').on(t.txId),
   })
 )
 
@@ -359,6 +371,7 @@ export const skinPurchases = pgTable(
   (t) => ({
     buyerIdx: index('skin_purchases_buyer_idx').on(t.buyerHash),
     uniquePurchase: unique('skin_purchases_unique').on(t.buyerHash, t.skinId),
+    uniqueTxId: unique('skin_purchases_tx_id_unique').on(t.txId),
   })
 )
 
@@ -376,6 +389,7 @@ export const fontPurchases = pgTable(
   (t) => ({
     buyerIdx: index('font_purchases_buyer_idx').on(t.buyerHash),
     uniquePurchase: unique('font_purchases_unique').on(t.buyerHash, t.fontId),
+    uniqueTxId: unique('font_purchases_tx_id_unique').on(t.txId),
   })
 )
 

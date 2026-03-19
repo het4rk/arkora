@@ -3,7 +3,7 @@ import { upsertReplyVote, deleteReplyVote, getReplyNullifier, getReplyVoteByNull
 import { isVerifiedHuman } from '@/lib/db/users'
 import { updateKarma } from '@/lib/db/karma'
 import { rateLimit } from '@/lib/rateLimit'
-import { getCallerNullifier } from '@/lib/serverAuth'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,8 +45,24 @@ export async function POST(req: NextRequest) {
     if (!replyOwner) {
       return NextResponse.json({ success: false, error: 'Reply not found' }, { status: 404 })
     }
-    if (replyOwner === nullifierHash) {
+
+    // Resolve all linked identities (World ID 0x + wallet wlt_) for this user
+    const allLinked = await getLinkedNullifiers(nullifierHash)
+
+    // Self-vote check: block if any linked identity owns the reply
+    if (allLinked.includes(replyOwner)) {
       return NextResponse.json({ success: false, error: 'Cannot vote on your own reply' }, { status: 403 })
+    }
+
+    // Double-vote check: block if any linked identity already voted on this reply
+    if (oldDir === 0) {
+      for (const linked of allLinked) {
+        if (linked === nullifierHash) continue
+        const existing = await getReplyVoteByNullifier(replyId, linked)
+        if (existing) {
+          return NextResponse.json({ success: false, error: 'You have already voted on this reply' }, { status: 403 })
+        }
+      }
     }
 
     const counts = await upsertReplyVote(replyId, nullifierHash, direction as 1 | -1)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRoom, endRoom, getActiveParticipants } from '@/lib/db/rooms'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { pusherServer } from '@/lib/pusher'
+import { rateLimit } from '@/lib/rateLimit'
 
 // GET /api/rooms/[id]
 export async function GET(
@@ -9,6 +10,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = _req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    if (!rateLimit(`room-get:${ip}`, 120, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
+
     const { id } = await params
     const room = await getRoom(id)
 
@@ -33,6 +39,10 @@ export async function DELETE(
     const callerHash = await getCallerNullifier()
     if (!callerHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!rateLimit(`room-delete:${callerHash}`, 10, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const { id } = await params

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createPost, getPostNullifier } from '@/lib/db/posts'
+import { createPost, getPostAuthorNullifier } from '@/lib/db/posts'
 import { sanitizeLine, sanitizeText, parseMentions, parseHashtags } from '@/lib/sanitize'
 import { getFeedFollowing } from '@/lib/db/follows'
-import { isVerifiedHuman, getUsersByHandles } from '@/lib/db/users'
+import { isVerifiedHuman, getUsersByHandles, getUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { getCachedFeed, getCachedLocalFeed, getCachedHotFeed, invalidatePosts } from '@/lib/cache'
@@ -12,7 +12,10 @@ import { worldAppNotify } from '@/lib/worldAppNotify'
 import { ANONYMOUS_BOARDS } from '@/lib/types'
 import { FEATURED_BOARDS, resolveBoard, normalizeBoard } from '@/lib/boards'
 import type { BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
+import { getPublicNullifier } from '@/lib/identityRules'
+import type { IdentityMode } from '@/lib/identityRules'
 import { getCountryCode } from '@/lib/geo'
+import { isAllowedImageDomain } from '@/lib/storage/hippius'
 
 const FEATURED_IDS = FEATURED_BOARDS.map((b) => b.id)
 
@@ -104,6 +107,7 @@ export async function POST(req: NextRequest) {
       pseudoHandle?: string; imageUrl?: string; quotedPostId?: string
       lat?: number; lng?: number
       type?: string; pollOptions?: string[]; pollDuration?: number
+      identityMode?: string
     }
 
     const { title: rawTitle, body: rawBody, boardId: rawBoardId, pseudoHandle: rawHandle } = body
@@ -166,8 +170,20 @@ export async function POST(req: NextRequest) {
       if (autoBoard !== 'arkora') boardId = autoBoard
     }
 
+    // Resolve identity mode: prefer per-action choice from request body, fall back to DB profile
+    const validModes: IdentityMode[] = ['anonymous', 'alias', 'named']
+    const user = await getUserByNullifier(nullifierHash)
+    const requestedMode = validModes.includes(body.identityMode as IdentityMode)
+      ? (body.identityMode as IdentityMode)
+      : null
+    let identityMode: IdentityMode = requestedMode ?? (user?.identityMode as IdentityMode) ?? 'anonymous'
+
     // Force-anonymous on boards like Confessions - strip handle regardless of identity mode
-    const pseudoHandle = ANONYMOUS_BOARDS.has(boardId)
+    if (ANONYMOUS_BOARDS.has(boardId)) {
+      identityMode = 'anonymous'
+    }
+
+    const pseudoHandle = identityMode === 'anonymous'
       ? undefined
       : rawHandle ? sanitizeLine(rawHandle) : undefined
 
@@ -201,7 +217,7 @@ export async function POST(req: NextRequest) {
 
     const quotedPostId = typeof body.quotedPostId === 'string' ? body.quotedPostId : undefined
 
-    // Validate imageUrl if provided - reject non-http(s) schemes (e.g. javascript:)
+    // Validate imageUrl if provided - reject non-http(s) schemes and non-whitelisted domains
     const rawImageUrl = body.imageUrl
     if (rawImageUrl !== undefined && rawImageUrl !== null) {
       try {
@@ -210,6 +226,9 @@ export async function POST(req: NextRequest) {
         if (String(rawImageUrl).length > 2048) throw new Error()
       } catch {
         return NextResponse.json({ success: false, error: 'Invalid image URL' }, { status: 400 })
+      }
+      if (!isAllowedImageDomain(String(rawImageUrl))) {
+        return NextResponse.json({ success: false, error: 'Image URL must be hosted on an approved domain' }, { status: 400 })
       }
     }
 
@@ -233,10 +252,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Generate a pre-allocated post ID so we can derive the anon nullifier before insert.
+    // For named/alias modes, the DB-generated UUID is fine but we use the same pattern for consistency.
+    const preAllocatedId = crypto.randomUUID()
+
+    // Derive the public-facing nullifier based on identity mode
+    const publicNullifier = getPublicNullifier(nullifierHash, identityMode, preAllocatedId)
+
     const post = await createPost({
-      title, body: postBody, boardId, nullifierHash, pseudoHandle,
+      id: preAllocatedId,
+      title, body: postBody, boardId,
+      nullifierHash: publicNullifier,
+      pseudoHandle,
       imageUrl: rawImageUrl, quotedPostId, lat, lng, countryCode,
       type: isPoll ? 'poll' : isRepost ? 'repost' : 'text',
+      authorNullifier: nullifierHash,
+      postIdentityMode: identityMode,
       ...(tags.length > 0 && { tags }),
       ...(pollOptions !== undefined && { pollOptions }),
       ...(pollEndsAt !== undefined && { pollEndsAt }),
@@ -244,20 +275,22 @@ export async function POST(req: NextRequest) {
     invalidatePosts()
 
     // Notify quoted/reposted author + @mentions - fire-and-forget
+    // Only reveal actor identity for named-mode posts
+    const notifActor = identityMode === 'named' ? nullifierHash : undefined
     void (async () => {
       try {
         if (quotedPostId) {
-          const quotedOwner = await getPostNullifier(quotedPostId)
+          const quotedOwner = await getPostAuthorNullifier(quotedPostId)
           if (quotedOwner && quotedOwner !== nullifierHash) {
             const notifType = isRepost ? 'repost' : 'quote'
-            await createNotification(quotedOwner, notifType, quotedPostId, nullifierHash)
+            await createNotification(quotedOwner, notifType, quotedPostId, notifActor)
             void pusherServer.trigger(`private-user-${quotedOwner}`, 'notif-count', { delta: 1 })
             const label = isRepost ? 'reposted your post' : 'quoted your post'
             void worldAppNotify(quotedOwner, isRepost ? 'New repost' : 'New quote', `Someone ${label}`, `/posts/${quotedPostId}`)
           }
         }
 
-        // @mention notifications (named-mode posts only - body may have @handles)
+        // @mention notifications
         const rawBody = typeof body.body === 'string' ? body.body : ''
         const handles = parseMentions(rawBody)
         if (handles.length > 0) {
@@ -266,7 +299,7 @@ export async function POST(req: NextRequest) {
             mentioned
               .filter((u) => u.nullifierHash !== nullifierHash)
               .map(async (u) => {
-                await createNotification(u.nullifierHash, 'mention', post.id, nullifierHash)
+                await createNotification(u.nullifierHash, 'mention', post.id, notifActor)
                 void pusherServer.trigger(`private-user-${u.nullifierHash}`, 'notif-count', { delta: 1 })
                 void worldAppNotify(u.nullifierHash, 'You were mentioned', 'Someone mentioned you in a post', `/posts/${post.id}`)
               })

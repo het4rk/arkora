@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { leaveRoom, closeRoom, getActiveParticipantCount } from '@/lib/db/rooms'
 import { getCallerNullifier } from '@/lib/serverAuth'
+import { rateLimit } from '@/lib/rateLimit'
 
 // POST /api/rooms/[id]/leave
 export async function POST(
@@ -11,6 +12,10 @@ export async function POST(
     const callerHash = await getCallerNullifier()
     if (!callerHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!rateLimit(`room-leave:${callerHash}`, 10, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const { id } = await params

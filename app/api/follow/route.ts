@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { toggleFollow, isFollowing, getFollowerCount, getFollowingCount } from '@/lib/db/follows'
-import { isVerifiedHuman } from '@/lib/db/users'
+import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { createNotification } from '@/lib/db/notifications'
 import { rateLimit } from '@/lib/rateLimit'
-import { getCallerNullifier } from '@/lib/serverAuth'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 import { worldAppNotify } from '@/lib/worldAppNotify'
+import { canFollow } from '@/lib/identityRules'
 
 export async function GET(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    if (!rateLimit(`follow-get:${ip}`, 60, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
+
     const { searchParams } = new URL(req.url)
     const nullifierHash = searchParams.get('nullifierHash')
 
@@ -40,7 +46,8 @@ export async function POST(req: NextRequest) {
     if (!followedId) {
       return NextResponse.json({ success: false, error: 'followedId required' }, { status: 400 })
     }
-    if (followerId === followedId) {
+    const allLinked = await getLinkedNullifiers(followerId)
+    if (allLinked.includes(followedId)) {
       return NextResponse.json({ success: false, error: 'Cannot follow yourself' }, { status: 400 })
     }
     if (!rateLimit(`follow:${followerId}`, 30, 60_000)) {
@@ -49,6 +56,18 @@ export async function POST(req: NextRequest) {
     if (!(await isVerifiedHuman(followerId))) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
+
+    // Both follower and followed must be in named mode
+    const [followerUser, followedUser] = await Promise.all([
+      getUserByNullifier(followerId),
+      getUserByNullifier(followedId),
+    ])
+    const followerMode = (followerUser?.identityMode ?? 'anonymous') as 'anonymous' | 'alias' | 'named'
+    const followedMode = (followedUser?.identityMode ?? 'anonymous') as 'anonymous' | 'alias' | 'named'
+    if (!canFollow(followerMode, followedMode)) {
+      return NextResponse.json({ success: false, error: 'Follow is only available between named users' }, { status: 403 })
+    }
+
     const isNowFollowing = await toggleFollow(followerId, followedId)
     // Notify when following (not unfollowing)
     if (isNowFollowing) {

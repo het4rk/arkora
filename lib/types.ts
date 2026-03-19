@@ -32,6 +32,7 @@ export interface Post {
   pollEndsAt: Date | null
   contentHash: string | null
   authorKarmaScore?: number | null
+  postIdentityMode: 'anonymous' | 'alias' | 'named'
 }
 
 export interface PollResult {
@@ -51,6 +52,7 @@ export interface Reply {
   upvotes: number
   downvotes: number
   createdAt: Date
+  postIdentityMode: 'anonymous' | 'alias' | 'named'
 }
 
 export interface HumanUser {
@@ -95,6 +97,8 @@ export interface CreatePostInput {
   pollOptions?: { index: number; text: string }[]
   pollDuration?: number
   pollEndsAt?: Date | undefined
+  authorNullifier?: string | undefined
+  postIdentityMode?: 'anonymous' | 'alias' | 'named'
 }
 
 export interface CreateReplyInput {
@@ -104,6 +108,8 @@ export interface CreateReplyInput {
   nullifierHash: string
   pseudoHandle?: string | undefined
   imageUrl?: string | undefined
+  authorNullifier?: string | undefined
+  postIdentityMode?: 'anonymous' | 'alias' | 'named'
 }
 
 export interface Notification {

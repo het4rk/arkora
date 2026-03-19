@@ -7,6 +7,7 @@ import type { Post, CreatePostInput } from '@/lib/types'
 // Client-side submit type: pollOptions is string[] (API route converts to { index, text }[])
 type PostBody = Omit<CreatePostInput, 'nullifierHash' | 'countryCode' | 'pollOptions'> & {
   pollOptions?: string[]
+  identityMode?: 'anonymous' | 'alias' | 'named'
 }
 
 interface UsePostReturn {

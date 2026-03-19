@@ -2,16 +2,26 @@ import { db } from '@/lib/db'
 import { skinPurchases, humanUsers } from '@/lib/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 
+/** Records a skin purchase. Returns false if txId was already used (duplicate). */
 export async function recordSkinPurchase(
   buyerHash: string,
   skinId: string,
   amountWld: string,
-  txId: string | null
-): Promise<void> {
-  await db
-    .insert(skinPurchases)
-    .values({ buyerHash, skinId, amountWld, txId })
-    .onConflictDoNothing()
+  txId: string
+): Promise<boolean> {
+  try {
+    await db
+      .insert(skinPurchases)
+      .values({ buyerHash, skinId, amountWld, txId })
+      .onConflictDoNothing()
+    return true
+  } catch (err: unknown) {
+    const pgErr = err as { code?: string }
+    if (pgErr.code === '23505') {
+      return false
+    }
+    throw err
+  }
 }
 
 export async function getOwnedSkins(buyerHash: string): Promise<string[]> {

@@ -94,9 +94,9 @@ All user preferences are synced server-side in `humanUsers`. On login, `SessionH
 ### Database Schema (Key Tables)
 
 - `humanUsers` - nullifierHash (PK), walletAddress, pseudoHandle, avatarUrl, bio, identityMode, karmaScore, verifiedBlockNumber, activeSkinId, customHex, activeFontId, theme, notification booleans, locationEnabled, locationRadius
-- `posts` - id, title, body, boardId, nullifierHash, pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId, type ('text'|'poll'|'repost'), pollOptions (JSONB), pollEndsAt, reportCount, viewCount, contentHash
+- `posts` - id, title, body, boardId, nullifierHash (derived public identifier), authorNullifier (real, internal-only), pseudoHandle, sessionTag, imageUrl, upvotes, downvotes, lat, lng, countryCode, quotedPostId, type ('text'|'poll'|'repost'), pollOptions (JSONB), pollEndsAt, reportCount, viewCount, contentHash, postIdentityMode ('anonymous'|'alias'|'named')
 - `pollVotes` - postId, nullifierHash, optionIndex; UNIQUE(postId, nullifierHash) enforces sybil resistance
-- `replies` - id, postId, parentReplyId, content, nullifierHash, pseudoHandle, upvotes, downvotes
+- `replies` - id, postId, parentReplyId, body, nullifierHash (derived public identifier), authorNullifier (real, internal-only), pseudoHandle, upvotes, downvotes, postIdentityMode
 - `follows`, `bookmarks`, `postVotes`, `replyVotes`, `post_views`
 - `dmKeys` - nullifierHash, publicKey (Curve25519)
 - `dmMessages` - senderHash, recipientHash, ciphertext, nonce
@@ -142,6 +142,7 @@ All user preferences are synced server-side in `humanUsers`. On login, `SessionH
 | Pusher isolation | Private channels server-authorized via `/api/pusher/auth` |
 | Cookie validation | `getCallerNullifier()` validates format with regex before returning |
 | Rate limiting | Per-endpoint, per-user sliding window; full API key used (not truncated) |
+| Identity isolation | Named profile uses real nullifier; alias uses SHA256(real+":alias"); anon uses SHA256(real+":anon:"+postId). `authorNullifier` (internal) never in API responses. Follow/DM/tip gated to named mode. |
 
 Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set (cross-instance enforcement). Falls back to in-memory when env vars are missing (dev/local). Both sync `rateLimit()` and async `rateLimitAsync()` APIs are available.
 
@@ -153,6 +154,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | --- | --- |
 | `store/useArkoraStore.ts` | Single source of truth for all client state |
 | `lib/serverAuth.ts` | `getCallerNullifier()` - cookie auth with format validation |
+| `lib/identityRules.ts` | Sub-identity derivation (alias/anon nullifiers) + interaction permission checks |
 | `lib/db/schema.ts` | Drizzle schema (source of truth for DB shape) |
 | `lib/db/users.ts` | User CRUD + batch query + mention autocomplete |
 | `lib/db/posts.ts` | Post queries + hot feed (Wilson-score time-decay) |
@@ -246,6 +248,7 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 | Sprint | Shipped |
 | --- | --- |
+| 30 | Identity mode isolation - sub-identity system (SHA256-derived alias/anon nullifiers), authorNullifier column for internal use (rate limiting, moderation, ownership), postIdentityMode on posts/replies. Per-action identity mode: posts and replies accept `identityMode` from request body (defaults to DB profile), ReplyComposer has inline Anon/Alias/Named picker so users can reply anonymously on any thread without switching global mode. Social hardening: follow/DM/tip/subscribe gated to named-mode, profile returns "not available" for non-named, following feed filters to named-only posts, own profile shows ALL posts (anon/alias/named) via authorNullifier query, anon/alias badge in ProfilePostCard, notifications only reveal actor for named-mode actions, room join uses DB identity mode (blocks client override), PublicProfileView hides Follow/DM/Tip for non-named viewers. Migration 0005 with backfill. New utility: lib/identityRules.ts. |
 | 29 | Hardening v2 - linked-identity gap closure: reply vote, follow, block, subscribe, tip endpoints now check all linked nullifiers (0x + wlt_) for self-action and double-vote prevention. Postgres error-code detection (23505) replaces fragile constraint-name string matching in tips/skins/fonts. Redundant NOT-EQUAL filter removed from deleteReplyVote/deletePostVote recount queries. Rate limit added to subscribe/list GET. |
 | 28 | Security hardening (strip walletAddress/lat-lng/creatorWallet from public responses, rate limit health/postDetail/idkitContext, try/catch on dm/keys), dead code removal (verifyTransaction, contracts, ArkVotes.sol, form-data, 23 unused Db* types, unused exports), deps update (Next 16.2.0, idkit 4.0.10, sentry 10.44.0, pusher 5.3.3, pusher-js 8.4.2, drizzle-kit 0.31.10, CVE patches for fast-xml-parser + flatted), QA.md testing checklist, fix 0x-prefix cookie regex (unblocked desktop IDKit users) |
 | 27 | AgentKit v2 API (dual auth: AgentKit proof-of-human + API key fallback), premium analytics endpoints (sentiment, trends, demographics) with x402 402 responses when free trial exhausted, DrizzleAgentKitStorage for nonce replay + usage tracking, spec-compliant x402 payment instructions (USDC on World Chain eip155:480), MCP server for AI agent tooling, 13 new tests (82 total) |

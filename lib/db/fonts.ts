@@ -2,16 +2,26 @@ import { db } from '@/lib/db'
 import { fontPurchases, humanUsers } from '@/lib/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 
+/** Records a font purchase. Returns false if txId was already used (duplicate). */
 export async function recordFontPurchase(
   buyerHash: string,
   fontId: string,
   amountWld: string,
-  txId: string | null
-): Promise<void> {
-  await db
-    .insert(fontPurchases)
-    .values({ buyerHash, fontId, amountWld, txId })
-    .onConflictDoNothing()
+  txId: string
+): Promise<boolean> {
+  try {
+    await db
+      .insert(fontPurchases)
+      .values({ buyerHash, fontId, amountWld, txId })
+      .onConflictDoNothing()
+    return true
+  } catch (err: unknown) {
+    const pgErr = err as { code?: string }
+    if (pgErr.code === '23505') {
+      return false
+    }
+    throw err
+  }
 }
 
 export async function getOwnedFonts(buyerHash: string): Promise<string[]> {

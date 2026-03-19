@@ -199,9 +199,10 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           <div className="flex items-center gap-2 flex-wrap">
             <HumanBadge
               label={displayName}
+              nullifierHash={post.postIdentityMode === 'named' ? post.nullifierHash : null}
               size="md"
             />
-            {authorKarmaScore != null && <KarmaBadge score={authorKarmaScore} />}
+            {post.postIdentityMode === 'named' && authorKarmaScore != null && <KarmaBadge score={authorKarmaScore} />}
           </div>
         )}
 

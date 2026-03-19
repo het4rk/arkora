@@ -135,6 +135,7 @@ export function PostComposer() {
       pseudoHandle: getPseudoHandle(),
       imageUrl: isPoll ? undefined : (imageUrl ?? undefined),
       quotedPostId: composerQuotedPost?.id ?? undefined,
+      identityMode,
       lat,
       lng,
       ...(isPoll && {

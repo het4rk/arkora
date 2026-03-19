@@ -5,7 +5,7 @@ import { updateKarma } from '@/lib/db/karma'
 import { createNotification } from '@/lib/db/notifications'
 import { pusherServer } from '@/lib/pusher'
 import { rateLimit } from '@/lib/rateLimit'
-import { getCallerNullifier } from '@/lib/serverAuth'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,6 +35,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Resolve all linked identities (World ID 0x + wallet wlt_) for this user
+    const allLinked = await getLinkedNullifiers(nullifierHash)
+
     // Fetch old vote before any mutation so we can compute the karma delta
     const oldVote = await getVoteByNullifier(postId, nullifierHash)
     const oldDir = oldVote?.direction ?? 0
@@ -57,27 +60,44 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       )
     }
-    if (postOwner === nullifierHash) {
+
+    // Self-vote check: block if any linked identity owns the post
+    if (allLinked.includes(postOwner)) {
       return NextResponse.json(
         { success: false, error: 'Cannot vote on your own post' },
         { status: 403 }
       )
     }
 
+    // Double-vote check: block if any linked identity already voted on this post
+    if (oldDir === 0) {
+      for (const linked of allLinked) {
+        if (linked === nullifierHash) continue
+        const existing = await getVoteByNullifier(postId, linked)
+        if (existing) {
+          return NextResponse.json(
+            { success: false, error: 'You have already voted on this post' },
+            { status: 403 }
+          )
+        }
+      }
+    }
+
     await upsertVote(postId, nullifierHash, direction)
 
     // Karma delta: newDirection - oldDirection
-    // e.g. new=+1, old=0 → +1; new=-1, old=+1 → -2; new=+1, old=-1 → +2
+    // e.g. new=+1, old=0 -> +1; new=-1, old=+1 -> -2; new=+1, old=-1 -> +2
     const karmaDelta = direction - oldDir
     if (karmaDelta !== 0) {
       void updateKarma(postOwner, karmaDelta).catch(() => {/* silent */})
     }
 
     // Notify post owner on new upvote (not on un-vote, downvote, or re-vote same direction)
+    // Votes are anonymous by default - never reveal voter identity in notifications
     if (direction === 1 && oldDir !== 1) {
       void (async () => {
         try {
-          await createNotification(postOwner, 'like', postId, nullifierHash)
+          await createNotification(postOwner, 'like', postId, undefined)
           void pusherServer.trigger(`private-user-${postOwner}`, 'notif-count', { delta: 1 })
         } catch { /* non-critical */ }
       })()

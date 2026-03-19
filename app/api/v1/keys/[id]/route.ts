@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { revokeApiKey } from '@/lib/db/apiKeys'
+import { rateLimit } from '@/lib/rateLimit'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -14,6 +15,10 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const nullifierHash = await getCallerNullifier()
   if (!nullifierHash) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (!rateLimit(`key-revoke:${nullifierHash}`, 10, 60_000)) {
+    return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
   }
 
   try {

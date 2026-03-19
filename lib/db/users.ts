@@ -2,6 +2,7 @@ import { db } from './index'
 import { humanUsers } from './schema'
 import { eq, inArray, sql, and } from 'drizzle-orm'
 import type { HumanUser } from '@/lib/types'
+import { sanitizeText } from '@/lib/sanitize'
 
 function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
   return {
@@ -100,7 +101,7 @@ export async function updateBio(
 ): Promise<HumanUser> {
   const [row] = await db
     .update(humanUsers)
-    .set({ bio: bio ? bio.slice(0, 500) : null })
+    .set({ bio: bio ? sanitizeText(bio).slice(0, 500) : null })
     .where(eq(humanUsers.nullifierHash, nullifierHash))
     .returning()
 

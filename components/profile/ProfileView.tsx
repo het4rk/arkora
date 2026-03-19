@@ -118,9 +118,9 @@ export function ProfileView() {
         setFollowerCount(followJson.data.followerCount)
         setFollowingCount(followJson.data.followingCount)
       }
-      const subJson = (await subRes.json()) as { success: boolean; data?: { subscriberCount: number } }
-      if (subJson.success && subJson.data) {
-        setSubscriberCount(subJson.data.subscriberCount)
+      const subJson = (await subRes.json()) as { success: boolean; data?: { subscriberCount?: number; profileAvailable?: boolean } }
+      if (subJson.success && subJson.data && subJson.data.profileAvailable !== false) {
+        setSubscriberCount(subJson.data.subscriberCount ?? 0)
       }
     } catch { /* ignore */ }
   }

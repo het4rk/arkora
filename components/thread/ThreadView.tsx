@@ -240,11 +240,11 @@ export function ThreadView({ postId }: Props) {
           <div className="flex items-center gap-2 flex-wrap">
             <HumanBadge
               label={displayName}
-              nullifierHash={post.nullifierHash}
+              nullifierHash={post.postIdentityMode === 'named' ? post.nullifierHash : null}
               size="md"
             />
-            {post.pseudoHandle && <KarmaBadge score={authorKarmaScore} />}
-            {post.pseudoHandle && <InlineFollowButton targetHash={post.nullifierHash} />}
+            {post.postIdentityMode === 'named' && <KarmaBadge score={authorKarmaScore} />}
+            {post.postIdentityMode === 'named' && <InlineFollowButton targetHash={post.nullifierHash} />}
           </div>
 
           {/* Quoted post */}

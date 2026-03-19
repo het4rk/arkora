@@ -38,6 +38,17 @@ const s3 = new S3Client({
   },
 })
 
+const ALLOWED_IMAGE_DOMAINS = ['s3.hippius.com']
+
+export function isAllowedImageDomain(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return ALLOWED_IMAGE_DOMAINS.includes(parsed.hostname)
+  } catch {
+    return false
+  }
+}
+
 export const hippiusAdapter: StorageAdapter = {
   async upload(buffer, filename, mimetype): Promise<string> {
     // Prefix with timestamp to avoid collisions

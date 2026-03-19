@@ -16,6 +16,7 @@ import Link from 'next/link'
 
 interface ProfileData {
   user: HumanUser | null
+  profileAvailable?: boolean
   posts: Post[]
   followerCount: number
   followingCount: number
@@ -33,7 +34,7 @@ interface Props {
 
 export function PublicProfileView({ nullifierHash }: Props) {
   const router = useRouter()
-  const { nullifierHash: viewerHash, isVerified, setVerifySheetOpen } = useArkoraStore()
+  const { nullifierHash: viewerHash, isVerified, setVerifySheetOpen, identityMode: viewerMode } = useArkoraStore()
   const [data, setData] = useState<ProfileData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [followLoading, setFollowLoading] = useState(false)
@@ -83,6 +84,32 @@ export function PublicProfileView({ nullifierHash }: Props) {
         <div className="h-5 w-24 bg-surface-up rounded-full" />
         <div className="h-20 bg-surface-up rounded-2xl" />
         <div className="h-6 w-32 bg-surface-up rounded-full" />
+      </div>
+    )
+  }
+
+  // Profile not available for non-named users
+  if (data && data.profileAvailable === false) {
+    return (
+      <div className="min-h-dvh bg-background flex flex-col">
+        <div className="px-[5vw] pt-[max(env(safe-area-inset-top),20px)] pb-2">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-text-muted text-sm font-medium active:opacity-60 transition-opacity"
+          >
+            <svg width="7" height="12" viewBox="0 0 7 12" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 1L1 6l5 5" />
+            </svg>
+            Back
+          </button>
+        </div>
+        <div className="flex-1 flex items-center justify-center px-[5vw]">
+          <div className="glass rounded-[var(--r-xl)] px-6 py-8 text-center max-w-sm">
+            <p className="text-text font-semibold text-lg mb-2">Profile not available</p>
+            <p className="text-text-muted text-sm">This user is not in named mode. Only named profiles are publicly visible.</p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -147,36 +174,42 @@ export function PublicProfileView({ nullifierHash }: Props) {
                 </div>
               </div>
 
-              {/* Action buttons - hidden on own profile */}
+              {/* Action buttons - hidden on own profile. Follow/DM require named mode for both parties. */}
               {!isOwnProfile && (
                 <div className="shrink-0 flex flex-col gap-2">
-                  <button
-                    onClick={() => void handleFollow()}
-                    disabled={followLoading}
-                    className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 disabled:opacity-40 ${
-                      data?.isFollowing
-                        ? 'glass border border-accent/30 text-accent'
-                        : 'bg-accent text-background shadow-sm shadow-accent/30'
-                    }`}
-                  >
-                    {data?.isFollowing ? 'Following' : 'Follow'}
-                  </button>
-                  <Link
-                    href={`/dm/${nullifierHash}`}
-                    onClick={() => haptic('light')}
-                    className="px-4 py-2 glass rounded-[var(--r-full)] text-sm font-semibold text-text-muted text-center transition-all active:scale-95"
-                  >
-                    Message
-                  </Link>
-                  {/* Tip button */}
-                  <button
-                    onClick={() => { haptic('light'); setTipOpen(true) }}
-                    className="px-4 py-2 glass rounded-[var(--r-full)] text-sm font-semibold text-text-muted text-center transition-all active:scale-95"
-                  >
-                    Tip WLD
-                  </button>
-                  {/* Subscribe - only for named identity profiles */}
-                  {data?.user?.identityMode === 'named' && (
+                  {viewerMode === 'named' && (
+                    <button
+                      onClick={() => void handleFollow()}
+                      disabled={followLoading}
+                      className={`px-4 py-2 rounded-[var(--r-full)] text-sm font-semibold transition-all active:scale-95 disabled:opacity-40 ${
+                        data?.isFollowing
+                          ? 'glass border border-accent/30 text-accent'
+                          : 'bg-accent text-background shadow-sm shadow-accent/30'
+                      }`}
+                    >
+                      {data?.isFollowing ? 'Following' : 'Follow'}
+                    </button>
+                  )}
+                  {viewerMode === 'named' && (
+                    <Link
+                      href={`/dm/${nullifierHash}`}
+                      onClick={() => haptic('light')}
+                      className="px-4 py-2 glass rounded-[var(--r-full)] text-sm font-semibold text-text-muted text-center transition-all active:scale-95"
+                    >
+                      Message
+                    </Link>
+                  )}
+                  {/* Tip button - visible to alias and named viewers */}
+                  {viewerMode !== 'anonymous' && (
+                    <button
+                      onClick={() => { haptic('light'); setTipOpen(true) }}
+                      className="px-4 py-2 glass rounded-[var(--r-full)] text-sm font-semibold text-text-muted text-center transition-all active:scale-95"
+                    >
+                      Tip WLD
+                    </button>
+                  )}
+                  {/* Subscribe - both parties must be named */}
+                  {viewerMode === 'named' && data?.user?.identityMode === 'named' && (
                     <button
                       onClick={() => {
                         if (!isVerified || !viewerHash) { setVerifySheetOpen(true); return }

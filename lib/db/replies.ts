@@ -1,6 +1,6 @@
 import { db } from './index'
 import { replies, replyVotes, posts } from './schema'
-import { eq, desc, and, sql, inArray } from 'drizzle-orm'
+import { eq, desc, and, or, sql, inArray } from 'drizzle-orm'
 import type { Reply, CreateReplyInput } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
 import { incrementReplyCount, decrementReplyCount } from './posts'
@@ -18,6 +18,8 @@ function toReply(row: typeof replies.$inferSelect): Reply {
     upvotes: row.upvotes,
     downvotes: row.downvotes,
     createdAt: row.createdAt,
+    postIdentityMode: (row.postIdentityMode as 'anonymous' | 'alias' | 'named') ?? 'anonymous',
+    // authorNullifier is NEVER included - internal only
   }
 }
 
@@ -33,6 +35,8 @@ export async function createReply(input: CreateReplyInput): Promise<Reply> {
       pseudoHandle: input.pseudoHandle ?? null,
       sessionTag,
       imageUrl: input.imageUrl ?? null,
+      authorNullifier: input.authorNullifier ?? input.nullifierHash,
+      postIdentityMode: input.postIdentityMode ?? 'anonymous',
     })
     .returning()
 
@@ -55,9 +59,13 @@ export async function getRepliesByPostId(postId: string): Promise<Reply[]> {
 }
 
 export async function deleteReply(replyId: string, nullifierHash: string): Promise<boolean> {
+  // Check authorNullifier for ownership (real identity), falling back to nullifierHash for pre-migration data
   const result = await db
     .delete(replies)
-    .where(and(eq(replies.id, replyId), eq(replies.nullifierHash, nullifierHash)))
+    .where(and(
+      eq(replies.id, replyId),
+      or(eq(replies.authorNullifier, nullifierHash), eq(replies.nullifierHash, nullifierHash))!,
+    ))
     .returning({ id: replies.id, postId: replies.postId })
 
   if (result.length > 0 && result[0]) {
@@ -105,8 +113,8 @@ export async function deleteReplyVote(
         )
         UPDATE replies
         SET
-          upvotes   = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND nullifier_hash != ${nullifierHash} AND direction =  1),
-          downvotes = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND nullifier_hash != ${nullifierHash} AND direction = -1)
+          upvotes   = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction =  1),
+          downvotes = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction = -1)
         WHERE id = ${replyId}
         RETURNING upvotes, downvotes`
   )
@@ -185,6 +193,38 @@ export async function getRepliesByNullifiers(
     .from(replies)
     .innerJoin(posts, eq(replies.postId, posts.id))
     .where(inArray(replies.nullifierHash, nullifiers))
+    .orderBy(desc(replies.createdAt))
+    .limit(Math.min(limit, 50))
+
+  return rows.map(({ reply, postTitle }) => ({
+    ...toReply(reply),
+    postTitle: postTitle ?? null,
+  }))
+}
+
+/**
+ * Fetch replies by the internal author nullifier (real identity).
+ * Used for own-profile views where the user needs to see ALL their replies
+ * including anonymous and alias replies.
+ */
+export async function getRepliesByAuthorNullifiers(
+  nullifiers: string[],
+  limit = 30
+): Promise<Array<Reply & { postTitle: string | null }>> {
+  if (nullifiers.length === 0) return []
+
+  const condition = nullifiers.length === 1
+    ? or(eq(replies.authorNullifier, nullifiers[0]!), eq(replies.nullifierHash, nullifiers[0]!))!
+    : or(inArray(replies.authorNullifier, nullifiers), inArray(replies.nullifierHash, nullifiers))!
+
+  const rows = await db
+    .select({
+      reply: replies,
+      postTitle: posts.title,
+    })
+    .from(replies)
+    .innerJoin(posts, eq(replies.postId, posts.id))
+    .where(condition)
     .orderBy(desc(replies.createdAt))
     .limit(Math.min(limit, 50))
 

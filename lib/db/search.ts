@@ -30,6 +30,7 @@ function toPost(row: typeof posts.$inferSelect): Post {
     pollOptions: (row.pollOptions as { index: number; text: string }[] | null) ?? null,
     pollEndsAt: row.pollEndsAt ?? null,
     contentHash: row.contentHash ?? null,
+    postIdentityMode: (row.postIdentityMode as 'anonymous' | 'alias' | 'named') ?? 'anonymous',
   }
 }
 

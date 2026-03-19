@@ -6,6 +6,7 @@ import { getSubscriberCount, getActiveSubscription } from '@/lib/db/subscription
 import { getTipTotalReceived } from '@/lib/db/tips'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
+import { hasProfile } from '@/lib/identityRules'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -22,8 +23,17 @@ export async function GET(req: NextRequest, { params }: Params) {
 
     const viewerHash = await getCallerNullifier()
 
-    const [user, posts, profileStats, following, subscriberCount, activeSub, tipTotal] = await Promise.all([
-      getUserByNullifier(nullifierHash),
+    const user = await getUserByNullifier(nullifierHash)
+
+    // Profile is only available for named-mode users
+    if (!user || !hasProfile((user.identityMode as 'anonymous' | 'alias' | 'named') ?? 'anonymous')) {
+      return NextResponse.json({
+        success: true,
+        data: { user: null, profileAvailable: false },
+      })
+    }
+
+    const [posts, profileStats, following, subscriberCount, activeSub, tipTotal] = await Promise.all([
       getPostsByNullifier(nullifierHash, undefined, 30),
       getPublicProfileData(nullifierHash),
       viewerHash ? isFollowing(viewerHash, nullifierHash) : Promise.resolve(false),
@@ -50,11 +60,15 @@ export async function GET(req: NextRequest, { params }: Params) {
       createdAt: user.createdAt,
     } : null
 
+    // Only show named-mode posts on the public profile
+    const namedPosts = posts.filter((p) => p.postIdentityMode === 'named')
+
     return NextResponse.json({
       success: true,
       data: {
         user: safeUser,
-        posts,
+        posts: namedPosts,
+        profileAvailable: true,
         ...profileStats,
         isFollowing: following,
         subscriberCount,

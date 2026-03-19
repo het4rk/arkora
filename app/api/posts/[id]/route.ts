@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPostById, deletePost, recordView } from '@/lib/db/posts'
+import { getPostById, deletePost, recordView, getPostAuthorNullifier } from '@/lib/db/posts'
 import { getRepliesByPostId } from '@/lib/db/replies'
 import { getNotesByPostId } from '@/lib/db/communityNotes'
 import { getPollResults, getUserVote } from '@/lib/db/polls'
@@ -48,7 +48,14 @@ export async function GET(req: NextRequest, { params }: Params) {
     const pollResults = pollResultsRaw ?? null
     const userVote = userVoteRaw ?? null
 
-    return NextResponse.json({ success: true, data: { post, replies, notes, pollResults, userVote, authorKarmaScore } })
+    // Determine ownership using authorNullifier (internal) - safe to expose as a boolean
+    let isOwner = false
+    if (nullifierHash) {
+      const authorNullifier = await getPostAuthorNullifier(id)
+      isOwner = authorNullifier === nullifierHash || post.nullifierHash === nullifierHash
+    }
+
+    return NextResponse.json({ success: true, data: { post, replies, notes, pollResults, userVote, authorKarmaScore, isOwner } })
   } catch (err) {
     console.error('[posts/[id] GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(

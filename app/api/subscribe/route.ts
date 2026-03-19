@@ -6,8 +6,9 @@ import {
 } from '@/lib/db/subscriptions'
 import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
-import { getCallerNullifier } from '@/lib/serverAuth'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 import { isPaymentBlocked } from '@/lib/geo'
+import { isValidTxId } from '@/lib/txValidation'
 
 function daysLeft(expiresAt: Date): number {
   return Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000))
@@ -18,6 +19,10 @@ export async function GET(req: NextRequest) {
     const subscriberHash = await getCallerNullifier()
     if (!subscriberHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!rateLimit(`subscribe-get:${subscriberHash}`, 60, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const creatorHash = new URL(req.url).searchParams.get('creatorHash')
@@ -65,7 +70,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 })
     }
 
-    if (subscriberHash === creatorHash) {
+    if (!isValidTxId(txId)) {
+      return NextResponse.json({ success: false, error: 'Invalid transaction ID format' }, { status: 400 })
+    }
+
+    const allLinked = await getLinkedNullifiers(subscriberHash)
+    if (allLinked.includes(creatorHash)) {
       return NextResponse.json({ success: false, error: 'Cannot subscribe to yourself' }, { status: 400 })
     }
 
@@ -82,9 +92,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
 
-    const creator = await getUserByNullifier(creatorHash)
+    // Both subscriber and creator must be in named mode
+    const [subscriber, creator] = await Promise.all([
+      getUserByNullifier(subscriberHash),
+      getUserByNullifier(creatorHash),
+    ])
     if (!creator) {
       return NextResponse.json({ success: false, error: 'Creator not found' }, { status: 404 })
+    }
+    if (subscriber?.identityMode !== 'named') {
+      return NextResponse.json({ success: false, error: 'Subscriptions require named mode' }, { status: 403 })
     }
     if (creator.identityMode !== 'named' || !(await isVerifiedHuman(creatorHash))) {
       return NextResponse.json({ success: false, error: 'Subscriptions are only available for verified named profiles' }, { status: 403 })
@@ -110,6 +127,10 @@ export async function DELETE(req: NextRequest) {
     const callerHash = await getCallerNullifier()
     if (!callerHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!rateLimit(`subscribe-delete:${callerHash}`, 10, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const { creatorHash } = (await req.json()) as {

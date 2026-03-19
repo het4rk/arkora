@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { blocks } from '@/lib/db/schema'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
-import { getCallerNullifier } from '@/lib/serverAuth'
+import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 import { and, eq } from 'drizzle-orm'
 
 export async function POST(req: NextRequest) {
@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing target' }, { status: 400 })
     }
 
-    if (targetHash === nullifierHash) {
+    const allLinked = await getLinkedNullifiers(nullifierHash)
+    if (allLinked.includes(targetHash)) {
       return NextResponse.json({ success: false, error: 'Cannot block yourself' }, { status: 400 })
     }
 

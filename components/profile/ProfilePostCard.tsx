@@ -39,7 +39,18 @@ export function ProfilePostCard({ post, onDeleted }: Props) {
       onClick={() => router.push(`/post/${post.id}`)}
     >
       <div className="flex items-center justify-between">
-        <BoardTag boardId={post.boardId} />
+        <div className="flex items-center gap-2">
+          <BoardTag boardId={post.boardId} />
+          {post.postIdentityMode && post.postIdentityMode !== 'named' && (
+            <span className={`text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+              post.postIdentityMode === 'anonymous'
+                ? 'bg-text-muted/10 text-text-muted'
+                : 'bg-accent/10 text-accent/70'
+            }`}>
+              {post.postIdentityMode === 'anonymous' ? 'anon' : 'alias'}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
           <TimeAgo date={post.createdAt} />
           <button

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRoom, joinRoom } from '@/lib/db/rooms'
 import { getCallerNullifier } from '@/lib/serverAuth'
-import { isVerifiedHuman } from '@/lib/db/users'
+import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
 import { sanitizeLine } from '@/lib/sanitize'
+import { rateLimit } from '@/lib/rateLimit'
 
 // POST /api/rooms/[id]/join
 export async function POST(
@@ -13,6 +14,10 @@ export async function POST(
     const callerHash = await getCallerNullifier()
     if (!callerHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!rateLimit(`room-join:${callerHash}`, 10, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const verified = await isVerifiedHuman(callerHash)
@@ -35,19 +40,17 @@ export async function POST(
 
     const body = (await req.json()) as {
       displayHandle?: string
-      identityMode?: string
     }
 
-    const { displayHandle: rawHandle, identityMode: rawMode } = body
+    const { displayHandle: rawHandle } = body
 
     if (!rawHandle?.trim()) {
       return NextResponse.json({ success: false, error: 'Display handle required' }, { status: 400 })
     }
 
-    const validModes = ['anonymous', 'alias', 'named'] as const
-    const identityMode = validModes.includes(rawMode as typeof validModes[number])
-      ? (rawMode as typeof validModes[number])
-      : 'anonymous'
+    // Use the user's stored identity mode from DB - never trust client-supplied mode
+    const user = await getUserByNullifier(callerHash)
+    const identityMode = (user?.identityMode ?? 'anonymous') as 'anonymous' | 'alias' | 'named'
 
     const displayHandle = sanitizeLine(rawHandle).slice(0, 50)
     const participant = await joinRoom(id, callerHash, displayHandle, identityMode)
