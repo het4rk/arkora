@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",  // unsafe-inline required by Next.js; unsafe-eval removed for XSS hardening
+              "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",  // unsafe-inline required by Next.js; wasm-unsafe-eval required by IDKit v4 (WASM bridge)
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Tailwind + Google Fonts CSS
               "img-src 'self' data: blob: https://s3.hippius.com https://worldcoin.org https://*.worldcoin.org https://*.world.org", // Whitelisted image origins only
               "font-src 'self' https://fonts.gstatic.com",
