@@ -1,23 +1,42 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* ─── Tailwind v4 Theme ──────────────────────────────────────────────────────
+   Custom colors, fonts, and breakpoints defined via @theme.
+   Colors reference CSS custom properties set in :root / [data-theme].       */
+
+@theme {
+  --color-background: var(--clr-bg);
+  --color-surface: var(--clr-surface);
+  --color-surface-up: var(--clr-surface-up);
+  --color-border: var(--clr-border);
+  --color-text: var(--clr-text);
+  --color-text-secondary: var(--clr-text-sec);
+  --color-text-muted: var(--clr-text-muted);
+  --color-accent: var(--clr-accent);
+  --color-accent-hover: var(--accent-hover);
+
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+
+  --breakpoint-xs: 390px;
+}
 
 /* ─── Themed Color Tokens ─────────────────────────────────────────────────────
-   RGB channel triplets so Tailwind opacity modifiers work:
-   bg-background/80, border-border/40, text-text/60, etc.               */
+   Full color values so Tailwind v4 color-mix() opacity modifiers work:
+   bg-background/80, border-border/40, text-text/60, etc.                    */
 
 :root {
   /* Dark (default) */
-  --clr-bg:         10 10 10;
-  --clr-surface:    18 18 18;
-  --clr-surface-up: 26 26 26;
-  --clr-border:     44 44 44;
-  --clr-text:       255 255 255;
-  --clr-text-sec:   158 158 168;
-  --clr-text-muted: 88 88 96;
+  --clr-bg:         rgb(10, 10, 10);
+  --clr-surface:    rgb(18, 18, 18);
+  --clr-surface-up: rgb(26, 26, 26);
+  --clr-border:     rgb(44, 44, 44);
+  --clr-text:       rgb(255, 255, 255);
+  --clr-text-sec:   rgb(158, 158, 168);
+  --clr-text-muted: rgb(88, 88, 96);
 
   /* Brand - monochrome (white accent on dark) */
-  --accent-rgb:   255 255 255;
+  --clr-accent:   rgb(255, 255, 255);
   --accent-hex:   #FFFFFF;
   --accent-hover: #E0E0E0;
 
@@ -37,16 +56,16 @@
 }
 
 [data-theme="light"] {
-  --clr-bg:         244 244 246;
-  --clr-surface:    255 255 255;
-  --clr-surface-up: 237 237 241;
-  --clr-border:     208 208 216;
-  --clr-text:       18 18 20;
-  --clr-text-sec:   88 88 100;
-  --clr-text-muted: 150 150 162;
+  --clr-bg:         rgb(244, 244, 246);
+  --clr-surface:    rgb(255, 255, 255);
+  --clr-surface-up: rgb(237, 237, 241);
+  --clr-border:     rgb(208, 208, 216);
+  --clr-text:       rgb(18, 18, 20);
+  --clr-text-sec:   rgb(88, 88, 100);
+  --clr-text-muted: rgb(150, 150, 162);
 
   /* Brand - monochrome (near-black accent on light) */
-  --accent-rgb:   18 18 20;
+  --clr-accent:   rgb(18, 18, 20);
   --accent-hex:   #121214;
   --accent-hover: #2A2A2E;
 
@@ -76,8 +95,8 @@ html {
 
 html,
 body {
-  background-color: rgb(var(--clr-bg));
-  color: rgb(var(--clr-text));
+  background-color: var(--clr-bg);
+  color: var(--clr-text);
   /* SF Pro on iOS = premium system font, no extra loading needed.
      --font-override is set by FontProvider when a custom font is active. */
   font-family: var(--font-override, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
@@ -117,13 +136,13 @@ h1, h2, h3, h4, h5, h6 {
 * { -webkit-tap-highlight-color: transparent; }
 
 :focus-visible {
-  outline: 2px solid rgb(var(--accent-rgb));
+  outline: 2px solid var(--clr-accent);
   outline-offset: 3px;
   border-radius: 8px;
 }
 
 ::selection {
-  background: rgba(var(--accent-rgb), 0.25);
+  background: color-mix(in srgb, var(--clr-accent) 25%, transparent);
   color: #fff;
 }
 
@@ -136,9 +155,9 @@ h1, h2, h3, h4, h5, h6 {
 .skeleton {
   background: linear-gradient(
     90deg,
-    rgb(var(--clr-surface-up)) 25%,
+    var(--clr-surface-up) 25%,
     rgba(255,255,255,0.06)     50%,
-    rgb(var(--clr-surface-up)) 75%
+    var(--clr-surface-up) 75%
   );
   background-size: 1200px 100%;
   animation: shimmer 1.8s ease-in-out infinite;
@@ -306,13 +325,13 @@ h1, h2, h3, h4, h5, h6 {
 .glass-input {
   background: rgba(255,255,255,0.055);
   border: 1px solid rgba(255,255,255,0.10);
-  color: rgb(var(--clr-text));
+  color: var(--clr-text);
   transition: border-color 0.15s ease, background 0.15s ease;
 }
-.glass-input::placeholder { color: rgb(var(--clr-text-muted)); }
+.glass-input::placeholder { color: var(--clr-text-muted); }
 .glass-input:focus {
   background: rgba(255,255,255,0.08);
-  border-color: rgba(var(--accent-rgb), 0.45);
+  border-color: color-mix(in srgb, var(--clr-accent) 45%, transparent);
   outline: none;
 }
 [data-theme="light"] .glass-input {
@@ -321,7 +340,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 [data-theme="light"] .glass-input:focus {
   background: #fff;
-  border-color: rgba(var(--accent-rgb), 0.45);
+  border-color: color-mix(in srgb, var(--clr-accent) 45%, transparent);
 }
 
 

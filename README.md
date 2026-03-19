@@ -80,7 +80,7 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 | Framework | Next.js 15 (App Router, Turbopack) |
 | Language | TypeScript 5.6 (strict mode) |
 | Database | Neon Postgres + Drizzle ORM |
-| Auth | SIWE (Sign-In with Ethereum) + World MiniKit + IDKit |
+| Auth | SIWE (Sign-In with Ethereum) + World MiniKit + IDKit v4 |
 | Real-time | Pusher Channels (private, server-authorized) |
 | File storage | Hippius S3 - decentralized storage on Bittensor subnet 14 |
 | State | Zustand (with localStorage persistence) |

@@ -27,11 +27,11 @@ pnpm db:seed          # Seed database (reads .env.local)
 
 - **Framework**: Next.js 15 App Router + Turbopack
 - **Language**: TypeScript 5.6 strict mode (`noUncheckedIndexedAccess`, `noImplicitAny`, `noImplicitReturns`)
-- **Styling**: Tailwind CSS 3 + custom glass-morphism classes in `globals.css`
+- **Styling**: Tailwind CSS 4 (CSS-first config via `@theme` in `globals.css`) + custom glass-morphism classes
 - **State**: Zustand with localStorage persistence (`store/useArkoraStore.ts`)
 - **Database**: Neon Postgres via Drizzle ORM (`lib/db/schema.ts`)
 - **Real-time**: Pusher (server `lib/pusher.ts`, client `pusher-js`)
-- **Auth**: World ID MiniKit (`@worldcoin/minikit-js`, `@worldcoin/minikit-react`) + IDKit (`@worldcoin/idkit`) for desktop
+- **Auth**: World ID MiniKit (`@worldcoin/minikit-js`, `@worldcoin/minikit-react`) + IDKit v4 (`@worldcoin/idkit`) for desktop/mobile-browser
 - **Blockchain**: viem on World Chain (WorldIDRouter onchain proof verification, chain 480)
 - **Crypto**: `@noble/curves` (Curve25519 ECDH), `@noble/hashes` (HKDF-SHA256), Web Crypto (AES-256-GCM)
 - **File storage**: Hippius S3 (`lib/storage/hippius.ts`, S3-compatible)
@@ -63,8 +63,9 @@ Two separate auth steps:
 
 1. **walletAuth** (SIWE) - runs automatically after `hasOnboarded=true`. User signs in World App -> `POST /api/auth/wallet` verifies signature -> sets httpOnly cookies: `arkora-nh` (nullifierHash), `wallet-address`.
 
-2. **World ID verification** - user-triggered. Mobile: MiniKit `verify` command. Desktop: IDKit QR code modal (`hooks/useVerification.ts` + `components/auth/VerifyHuman.tsx`). Sends proof to `POST /api/verify`.
+2. **World ID verification** - user-triggered. Mobile: MiniKit `verify` command. Desktop/mobile-browser: IDKit v4 `IDKitRequestWidget` with `orbLegacy()` preset (`hooks/useVerification.ts` + `components/auth/VerifyHuman.tsx`). Client fetches RP context from `GET /api/idkit/context` (server-side signing via `signRequest()`), then opens the widget. Sends proof to `POST /api/verify`.
    - **Engine: Onchain.** Proof validated via viem `readContract` against WorldIDRouter (`0x17B354dD2595411ff79041f930e491A4Df39A278`) on World Chain mainnet (chain 480). See `lib/worldid.ts`.
+   - IDKit v4 uses `allow_legacy_proofs: true` with `orbLegacy()` preset to return v3-format proofs compatible with existing on-chain verification.
    - `verifiedBlockNumber` (bigint, nullable) recorded at verification time. Shown in profile + settings.
 
 Cookie names: `arkora-nh`, `wallet-address`, `siwe-nonce`. Server reads identity via `getCallerNullifier()`.
@@ -173,7 +174,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | `lib/i18n/en.ts` | English dictionary (source of truth for all TKey types) |
 | `lib/i18n/index.ts` | Locale type, lazy dictionary loader, detectLocale() |
 | `hooks/useT.ts` | `useT()` translation hook - returns `(key: TKey) => string` |
-| `hooks/useVerification.ts` | World ID verify flow (MiniKit mobile + IDKit desktop) |
+| `hooks/useVerification.ts` | World ID verify flow (MiniKit mobile + IDKit v4 desktop/mobile-browser) |
 | `hooks/useFeed.ts` | Feed data fetching + pagination + cache |
 | `hooks/useMentionAutocomplete.ts` | @mention detection + debounced autocomplete |
 | `components/auth/SessionHydrator.tsx` | Hydrates Zustand from server on login (skins, fonts, preferences) |
@@ -183,6 +184,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | `components/settings/FontShop.tsx` | Font purchase + live preview before purchase |
 | `components/settings/SettingsView.tsx` | Full settings page |
 | `components/search/SearchSheet.tsx` | Multi-entity search modal |
+| `app/api/idkit/context/route.ts` | Generates RP context (signRequest) for IDKit v4 widget |
 | `next.config.ts` | CSP headers, HSTS, remotePatterns, Sentry config |
 
 ---
@@ -208,6 +210,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 - [ ] `WORLDCOIN_API_KEY` for World App push notifications
 - [ ] `ADMIN_NULLIFIER_HASHES` for `/api/admin/metrics`
 - [ ] `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` for cross-instance rate limiting
+- [ ] `IDKIT_RP_ID` + `IDKIT_SIGNING_KEY` for IDKit v4 desktop/mobile-browser verification
 - [x] `WORLD_ID_ROUTER=0x17B354dD2595411ff79041f930e491A4Df39A278`
 - [x] `WORLD_CHAIN_RPC=https://worldchain-mainnet.g.alchemy.com/public`
 - [x] `SENTRY_AUTH_TOKEN` + `NEXT_PUBLIC_SENTRY_DSN` in Vercel
@@ -236,6 +239,7 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 | Sprint | Shipped |
 | --- | --- |
+| 26 | Tailwind CSS v4 migration (CSS-first @theme config, color-mix opacity, autoprefixer removed), IDKit v4 migration (IDKitRequestWidget, orbLegacy preset, server-side RP context signing), eslint-config-next v16.2, dependency bumps (idkit, vercel/analytics, vercel/speed-insights, viem, zustand, framer-motion, Next 16.1.7) |
 | 25 | i18n system (10 locales: EN/ES/PT/FR/DE/JA/KO/TH/ID/TR), lazy-loaded dictionaries, useT() hook, auto-detection, html lang sync, language picker in Settings |
 | 24 | Font shop (7 Google Fonts, 1 WLD each), perpetual polls, server-synced preferences, CodeQL fixes |
 | 23 | Multi-entity search (boards + people + posts), World ID action cleanup, ESLint v9 migration |
