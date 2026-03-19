@@ -22,7 +22,7 @@ export function ConversationList() {
   const { nullifierHash, isVerified, dmPrivateKey, setDmPrivateKey, setVerifySheetOpen } = useArkoraStore()
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // On mount: ensure the user has a DM key pair generated and registered
   useEffect(() => {
@@ -51,14 +51,14 @@ export function ConversationList() {
 
   async function fetchConversations() {
     if (!nullifierHash) return
-    setError(false)
+    setError(null)
     try {
       const res = await authFetch('/api/dm/conversations', { signal: AbortSignal.timeout(10000) })
-      const json = (await res.json()) as { success: boolean; data?: ConversationSummary[] }
-      if (json.success && json.data) setConversations(json.data)
-      else if (!json.success) setError(true)
-    } catch {
-      setError(true)
+      const json = (await res.json()) as { success: boolean; data?: ConversationSummary[]; error?: string }
+      if (json.success) setConversations(json.data ?? [])
+      else setError(json.error ?? `HTTP ${res.status}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error')
     } finally {
       setIsLoading(false)
     }
@@ -102,7 +102,8 @@ export function ConversationList() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-20 px-8 text-center">
         <p className="text-text font-semibold mb-2">Could not load messages</p>
-        <p className="text-text-muted text-sm mb-5">Check your connection and try again.</p>
+        <p className="text-text-muted text-sm mb-1">Check your connection and try again.</p>
+        <p className="text-text-muted text-xs mb-5 opacity-50">{error}</p>
         <button
           type="button"
           onClick={() => { setIsLoading(true); void fetchConversations() }}
