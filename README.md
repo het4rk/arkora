@@ -69,7 +69,11 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 ### Public API
 
 - REST API for verified-human posts, polls, boards, and stats
-- API key authentication with CORS support
+- v1: API key authentication with CORS support
+- v2: AgentKit proof-of-human auth for AI agents + API key fallback
+- Premium analytics: sentiment, trends, geographic demographics (AgentKit-only)
+- x402 micropayments for premium data (USDC on World Chain)
+- MCP server for native AI agent tooling (Claude, GPT, etc.)
 
 ---
 
@@ -210,6 +214,38 @@ All responses follow the format: `{ success: true, data: [...], nextCursor: "...
 
 **Getting an API key:** Open Arkora in World App, go to Settings, scroll to "Developer API", and tap "New API key". You must be a World ID-verified user. Keys are prefixed `ark_` and shown once - copy immediately.
 
+### v2 API (AgentKit + Premium Analytics)
+
+**Base URL:** `https://arkora.vercel.app/api/v2`
+
+v2 endpoints accept dual authentication:
+- **AgentKit** (recommended for AI agents) - `agentkit` header with proof-of-human delegation. Agents get 2x rate limits and access to premium endpoints.
+- **API key** fallback - same `X-API-Key` header as v1.
+
+| Method | Path | Description | Auth |
+| --- | --- | --- | --- |
+| GET | `/v2/posts` | List posts | AgentKit or API key |
+| GET | `/v2/polls` | List polls with vote counts | AgentKit or API key |
+| GET | `/v2/boards` | All boards with post counts | AgentKit or API key |
+| GET | `/v2/stats` | Platform aggregate stats | AgentKit or API key |
+| GET | `/v2/sentiment` | Sentiment score per board | AgentKit only |
+| GET | `/v2/trends` | Trending topics by velocity | AgentKit only |
+| GET | `/v2/demographics` | Geographic vote distribution | AgentKit only |
+
+Premium endpoints (sentiment, trends, demographics) include 50 free requests per day per human. After that, x402 micropayments apply.
+
+### MCP Server
+
+Arkora ships a standalone MCP server so AI agents (Claude, GPT, etc.) can query verified-human data natively.
+
+```bash
+cd mcp && pnpm install
+ARKORA_API_KEY=ark_... npx tsx index.ts       # stdio transport
+ARKORA_API_KEY=ark_... npx tsx index.ts --sse  # SSE on port 3001
+```
+
+Available tools: `arkora_search_posts`, `arkora_get_poll_results`, `arkora_get_sentiment`, `arkora_get_trends`, `arkora_get_stats`.
+
 ---
 
 ## Project Structure
@@ -264,7 +300,7 @@ pnpm test:watch        # watch mode
 pnpm test:coverage     # coverage report
 ```
 
-69 unit tests covering input sanitization, rate limiting, E2E DM encryption (Curve25519 + AES-256-GCM), karma tiers, and utility functions. Tests run in CI before lint and build.
+82 unit tests covering input sanitization, rate limiting, E2E DM encryption (Curve25519 + AES-256-GCM), karma tiers, and utility functions. Tests run in CI before lint and build.
 
 ---
 

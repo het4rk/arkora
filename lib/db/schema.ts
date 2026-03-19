@@ -501,3 +501,25 @@ export const apiKeys = pgTable(
 )
 
 export type DbApiKey = typeof apiKeys.$inferSelect
+
+// ── AgentKit Usage Tracking ──────────────────────────────────────────────────
+export const agentkitUsage = pgTable(
+  'agentkit_usage',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    humanId: text('human_id').notNull(),
+    endpoint: text('endpoint').notNull(),
+    usedAt: timestamp('used_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    humanEndpointIdx: index('agentkit_usage_human_endpoint_idx').on(table.humanId, table.endpoint, table.usedAt),
+  })
+)
+
+export const agentkitNonces = pgTable('agentkit_nonces', {
+  nonce: text('nonce').primaryKey(),
+  recordedAt: timestamp('recorded_at').defaultNow().notNull(),
+})
+
+export type DbAgentkitUsage = typeof agentkitUsage.$inferSelect
+export type DbAgentkitNonce = typeof agentkitNonces.$inferSelect

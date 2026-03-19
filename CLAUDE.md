@@ -14,7 +14,7 @@ This file is loaded automatically by Claude Code at the start of every session. 
 pnpm dev              # Next.js dev server (Turbopack)
 pnpm build            # Production build
 pnpm lint             # ESLint
-pnpm test             # Run all tests (69 Vitest unit tests)
+pnpm test             # Run all tests (82 Vitest unit tests)
 pnpm db:push          # Push Drizzle schema to database
 pnpm db:generate      # Generate Drizzle migrations
 pnpm db:studio        # Open Drizzle Studio GUI
@@ -171,6 +171,10 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | `lib/fonts.ts` | Font catalog (7 entries), `getFontById()`, `isValidFontId()` |
 | `lib/skins.ts` | Skin catalog, hex utilities |
 | `lib/apiKeyAuth.ts` | `requireApiKey()` middleware for v1 routes |
+| `lib/agentAuth.ts` | `requireV2Auth()` + `requireAgentKitOnly()` for v2 routes |
+| `lib/db/agentkit.ts` | DrizzleAgentKitStorage (nonce + usage tracking) |
+| `lib/db/analytics.ts` | Sentiment, trends, demographics query builders |
+| `lib/x402.ts` | x402 micropayment pricing config |
 | `lib/i18n/en.ts` | English dictionary (source of truth for all TKey types) |
 | `lib/i18n/index.ts` | Locale type, lazy dictionary loader, detectLocale() |
 | `hooks/useT.ts` | `useT()` translation hook - returns `(key: TKey) => string` |
@@ -214,6 +218,9 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 - [x] `WORLD_ID_ROUTER=0x17B354dD2595411ff79041f930e491A4Df39A278`
 - [x] `WORLD_CHAIN_RPC=https://worldchain-mainnet.g.alchemy.com/public`
 - [x] `SENTRY_AUTH_TOKEN` + `NEXT_PUBLIC_SENTRY_DSN` in Vercel
+- [ ] `AGENTKIT_APP_ID` for AgentBook registration (optional)
+- [ ] `AGENTKIT_RPC_URL` for AgentBook lookups (optional, has default)
+- [ ] `X402_PAYMENT_WALLET` for micropayment receipts (World Chain USDC)
 - [ ] Developer Portal redirect URL = production domain
 - [ ] `pnpm db:push` run against production DB
 - [ ] UptimeRobot monitor on `/api/health`
@@ -239,6 +246,7 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 | Sprint | Shipped |
 | --- | --- |
+| 27 | AgentKit v2 API (dual auth: AgentKit proof-of-human + API key fallback), premium analytics endpoints (sentiment, trends, demographics) with x402 402 responses when free trial exhausted, DrizzleAgentKitStorage for nonce replay + usage tracking, spec-compliant x402 payment instructions (USDC on World Chain eip155:480), MCP server for AI agent tooling, 13 new tests (82 total) |
 | 26 | Tailwind CSS v4 migration (CSS-first @theme config, color-mix opacity, autoprefixer removed), IDKit v4 migration (IDKitRequestWidget, orbLegacy preset, server-side RP context signing), eslint-config-next v16.2, dependency bumps (idkit, vercel/analytics, vercel/speed-insights, viem, zustand, framer-motion, Next 16.1.7) |
 | 25 | i18n system (10 locales: EN/ES/PT/FR/DE/JA/KO/TH/ID/TR), lazy-loaded dictionaries, useT() hook, auto-detection, html lang sync, language picker in Settings |
 | 24 | Font shop (7 Google Fonts, 1 WLD each), perpetual polls, server-synced preferences, CodeQL fixes |
@@ -259,10 +267,95 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 ---
 
+## v2 API + AgentKit
+
+### Architecture
+
+v2 API mirrors v1 endpoints with dual authentication:
+
+1. **AgentKit auth** (primary) - AI agents prove they're delegated by a World ID-verified human. Header: `agentkit` or `x-agentkit`. Verified via `parseAgentkitHeader()` -> `validateAgentkitMessage()` -> `verifyAgentkitSignature()` -> `agentBook.lookupHuman()`.
+2. **API key fallback** - same as v1, `X-API-Key` header.
+3. **Neither** - returns 402 with AgentKit extension declaration.
+
+Auth middleware: `requireV2Auth()` (dual) and `requireAgentKitOnly()` (premium endpoints) in `lib/agentAuth.ts`.
+
+### Rate Limits
+
+| Endpoint | API Key | AgentKit |
+| --- | --- | --- |
+| v2/posts, polls | 120/min | 240/min |
+| v2/boards | 60/min | 120/min |
+| v2/stats | 30/min | 60/min |
+| v2/sentiment, trends | blocked | 50/day free-trial, then 60/min |
+| v2/demographics | blocked | 50/day free-trial, then 30/min |
+
+### Premium Endpoints (AgentKit-only)
+
+- `GET /api/v2/sentiment?boardId=X&window=24h|7d|30d` - sentiment score (0-1) + volume
+- `GET /api/v2/trends?limit=10&window=24h` - trending boards by post velocity delta
+- `GET /api/v2/demographics?boardId=X&window=7d` - vote distribution by country
+
+Auth flow: `requirePremiumAuth(req, endpointKey)` in `lib/agentAuth.ts`:
+1. No AgentKit header -> 402 with AgentKit extension declaration + x402 payment params
+2. Valid AgentKit header, within 50/day free trial -> grant access, increment usage
+3. Valid AgentKit header, free trial exhausted -> 402 with x402 payment params (USDC on World Chain)
+
+### DB Tables
+
+- `agentkit_usage` - per-human, per-endpoint usage tracking (free-trial daily quotas)
+- `agentkit_nonces` - nonce replay protection
+
+### x402 Micropayments
+
+Pricing config in `lib/x402.ts`. When free-trial quota exhausted, 402 response includes x402 payment parameters (USDC on World Chain).
+
+### MCP Server
+
+Standalone server in `mcp/` directory. Exposes Arkora data as MCP tools:
+- `arkora_search_posts`, `arkora_get_poll_results`, `arkora_get_sentiment`, `arkora_get_trends`, `arkora_get_stats`
+
+Run: `cd mcp && npx tsx index.ts` (stdio) or `npx tsx index.ts --sse` (SSE on port 3001).
+
+### New Environment Variables
+
+```
+AGENTKIT_APP_ID          - World ID app ID (reference only - server does not use this directly;
+                           agents use it when registering delegation in AgentBook)
+AGENTKIT_RPC_URL         - RPC for AgentBook lookups (optional, has default)
+X402_PAYMENT_WALLET      - Wallet to receive micropayments (World Chain USDC)
+X402_PRICE_SENTIMENT     - Override default $0.001/req
+X402_PRICE_TRENDS        - Override default $0.001/req
+X402_PRICE_DEMOGRAPHICS  - Override default $0.002/req
+ARKORA_API_URL           - MCP server target (default: http://localhost:3000)
+ARKORA_API_KEY           - MCP server API key
+MCP_PORT                 - MCP SSE port (default: 3001)
+```
+
+### Key Files
+
+| File | Purpose |
+| --- | --- |
+| `lib/agentAuth.ts` | Dual auth middleware (AgentKit + API key fallback) |
+| `lib/db/agentkit.ts` | DrizzleAgentKitStorage (nonce + usage tracking) |
+| `lib/db/analytics.ts` | Shared analytics query builders (sentiment, trends, demographics) |
+| `lib/x402.ts` | x402 micropayment pricing config |
+| `app/api/v2/posts/route.ts` | v2 posts (dual auth) |
+| `app/api/v2/polls/route.ts` | v2 polls (dual auth) |
+| `app/api/v2/boards/route.ts` | v2 boards (dual auth) |
+| `app/api/v2/stats/route.ts` | v2 stats (dual auth) |
+| `app/api/v2/sentiment/route.ts` | Sentiment aggregation (AgentKit-only) |
+| `app/api/v2/trends/route.ts` | Trending topics (AgentKit-only) |
+| `app/api/v2/demographics/route.ts` | Geographic demographics (AgentKit-only) |
+| `mcp/index.ts` | MCP server entry (stdio + SSE) |
+| `mcp/tools.ts` | MCP tool definitions |
+
+---
+
 ## Remaining Work
 
 - [ ] Brand assets (og-image, favicons, PWA icons) - blocks PWA install + social sharing
 - [x] Upgrade rate limiter to Upstash Redis (with in-memory fallback)
+- [x] v2 API with AgentKit auth + premium analytics + MCP server
 - [ ] Upgrade DB driver to `@neondatabase/serverless`
 - [ ] Rooms Phase 2 - audio (WebRTC or LiveKit)
 - [ ] Admin moderation queue for reports

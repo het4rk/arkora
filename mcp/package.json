@@ -1,0 +1,18 @@
+{
+  "name": "arkora-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Arkora verified-human opinion data",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "@types/node": "^25.5.0"
+  }
+}
