@@ -92,7 +92,7 @@ describe('DrizzleAgentKitStorage', () => {
   it('satisfies AgentKitStorage interface shape', () => {
     const methods = ['getUsageCount', 'incrementUsage', 'hasUsedNonce', 'recordNonce']
     for (const method of methods) {
-      expect(typeof (storage as Record<string, unknown>)[method]).toBe('function')
+      expect(typeof (storage as unknown as Record<string, unknown>)[method]).toBe('function')
     }
   })
 })
