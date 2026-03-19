@@ -17,7 +17,7 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 
 ### Feed and Posts
 
-- TikTok-style vertical scroll feed with board filtering
+- Infinite-scroll feed with board filtering
 - Three feed modes: Curated (hot-ranked), Following, Local (GPS radius)
 - 40+ topic boards with fuzzy search and dynamic creation
 - Post quotes, reposts, and threaded replies
@@ -33,7 +33,7 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 
 ### Identity and Privacy
 
-- Three identity modes: Random (fresh tag each post), Alias (persistent handle), Named (World ID username)
+- Three identity modes: Anonymous (fresh tag each post), Alias (persistent derived handle), Named (World ID username)
 - Per-action identity: choose anon/alias/named on each post or reply independently
 - Social gating: follow, DM, tip, and subscribe require named mode
 - Confessions board - force-anonymous, completely unlinkable
@@ -144,9 +144,9 @@ World ID Orb verification is a separate step. The proof is validated onchain via
 
 | Mode | Description |
 | --- | --- |
-| **Random** | Fresh `Human #XXXX` tag each post (default, most anonymous) |
-| **Alias** | Consistent user-chosen handle, persisted locally |
-| **Named** | World ID username shown publicly |
+| **Anonymous** | Fresh `Human #XXXX` tag each post (default, most anonymous, unlinkable) |
+| **Alias** | SHA256-derived persistent handle, linkable across posts but not to real identity |
+| **Named** | World ID username shown publicly, required for social features (follow, DM, tip) |
 
 ### Feed Modes
 
@@ -294,7 +294,7 @@ hooks/                Custom React hooks (mentions, search, feed, tips, ...)
 lib/
   db/                 Drizzle schema + per-entity query modules
   crypto/             DM encryption (Curve25519 + AES-256-GCM)
-  i18n/               Translation dictionaries (en, es, ja, ko, th, pt) + lazy loader
+  i18n/               Translation dictionaries (10 locales) + lazy loader
   storage/            Hippius S3 adapter
   rateLimit.ts        In-memory sliding-window rate limiter
   cache.ts            Feed cache with TTL
