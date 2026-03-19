@@ -100,7 +100,7 @@ export interface ConversationSummary {
 export async function getConversations(myHash: string): Promise<ConversationSummary[]> {
   // Wraps DISTINCT ON in a subquery so the outer ORDER BY last_message_at DESC
   // can sort conversations without conflicting with the DISTINCT ON ordering rule.
-  const rows = await db.execute(sql`
+  const result = await db.execute(sql`
     SELECT * FROM (
       SELECT DISTINCT ON (
         CASE WHEN sender_hash = ${myHash} THEN recipient_hash ELSE sender_hash END
@@ -119,7 +119,9 @@ export async function getConversations(myHash: string): Promise<ConversationSumm
     ORDER BY last_message_at DESC
   `)
 
-  const rawRows = rows as unknown as Array<{
+  // db.execute() returns { rows: [...] } in newer Drizzle, plain array in older
+  const resultAny = result as unknown as (Array<Record<string, unknown>> | { rows: Array<Record<string, unknown>> })
+  const rawRows = (Array.isArray(resultAny) ? resultAny : resultAny.rows) as Array<{
     other_hash: string
     last_message_at: Date
     last_ciphertext: string
@@ -127,7 +129,7 @@ export async function getConversations(myHash: string): Promise<ConversationSumm
     last_sender_hash: string
   }>
 
-  if (rawRows.length === 0) return []
+  if (!rawRows || rawRows.length === 0) return []
 
   // Fetch user info for all conversation partners in a single query
   const otherHashes = rawRows.map((r) => r.other_hash)
