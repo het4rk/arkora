@@ -53,7 +53,7 @@ export function VoteReactionsSheet({ isOpen, onClose, postId, upvoteCount, downv
             onClick={onClose}
           />
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-50 glass-sheet rounded-t-3xl"
+            className="fixed bottom-0 z-50 app-fixed glass-sheet rounded-t-3xl"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { authFetch } from '@/lib/authFetch'
 
 interface RoomComposerProps {
   roomId: string
@@ -22,7 +23,7 @@ export function RoomComposer({ roomId, isMuted, onSent }: RoomComposerProps) {
     setSendError(null)
     setDraft('')
     try {
-      const res = await fetch(`/api/rooms/${roomId}/message`, {
+      const res = await authFetch(`/api/rooms/${roomId}/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),

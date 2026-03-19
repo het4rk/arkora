@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { authFetch } from '@/lib/authFetch'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { RoomCard } from '@/components/rooms/RoomCard'
 import { CreateRoomSheet } from '@/components/rooms/CreateRoomSheet'
@@ -26,7 +27,7 @@ export function RoomsDiscovery() {
       const url = selectedBoard
         ? `/api/rooms?boardId=${selectedBoard}`
         : '/api/rooms'
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+      const res = await authFetch(url, { signal: AbortSignal.timeout(10000) })
       const json = (await res.json()) as { success: boolean; data?: Room[] }
       if (json.success && json.data) setRooms(json.data)
       else if (!json.success) setError(true)
@@ -40,7 +41,7 @@ export function RoomsDiscovery() {
   useEffect(() => { void load() }, [load])
 
   async function handleJoin(room: Room, displayHandle: string, identityMode: 'anonymous' | 'alias' | 'named') {
-    const res = await fetch(`/api/rooms/${room.id}/join`, {
+    const res = await authFetch(`/api/rooms/${room.id}/join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ displayHandle, identityMode }),

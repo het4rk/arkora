@@ -29,7 +29,7 @@ export function RoomMiniPlayer() {
     <AnimatePresence>
       {activeRoomId && (
         <motion.div
-          className="fixed bottom-[calc(64px+env(safe-area-inset-bottom,0px))] inset-x-0 z-30 px-3"
+          className="fixed bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-30 app-fixed px-3"
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}

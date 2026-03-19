@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { authFetch } from '@/lib/authFetch'
 import {
   Room as LiveKitRoom,
   RoomEvent,
@@ -61,7 +62,7 @@ export function useVoiceRoom(roomId: string, nullifierHash: string | null): UseV
     let lkRoom: LiveKitRoom | null = null
     try {
       // Fetch a short-lived token from our API
-      const res = await fetch(`/api/rooms/${roomId}/voice-token`, { method: 'POST' })
+      const res = await authFetch(`/api/rooms/${roomId}/voice-token`, { method: 'POST' })
       const json = (await res.json()) as { success: boolean; data?: { token: string }; error?: string }
       if (!json.success || !json.data) {
         setVoiceError(json.error ?? 'Could not get voice access')

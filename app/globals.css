@@ -19,6 +19,52 @@
   --font-mono: var(--font-geist-mono), monospace;
 
   --breakpoint-xs: 390px;
+
+  /* Responsive app column width */
+  --app-col: 100%;
+}
+
+/* ─── Responsive App Column ──────────────────────────────────────────────────
+   Mobile/mini-app: full width. Desktop: centered column with breathing room.
+   All fixed-position chrome (nav bars, sheets, composers) use app-col to
+   stay aligned with the content column.                                      */
+
+@media (min-width: 768px) {
+  :root { --app-col: 680px; }
+}
+@media (min-width: 1024px) {
+  :root { --app-col: 720px; }
+}
+@media (min-width: 1280px) {
+  :root { --app-col: 760px; }
+}
+
+/* Content column */
+.app-col {
+  max-width: var(--app-col);
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+/* Fixed-position elements constrained to the app column.
+   Uses left/right: 0 + max-width + margin auto to center without transform,
+   so Framer Motion y-axis animations are not disrupted. */
+.app-fixed {
+  left: 0;
+  right: 0;
+  max-width: var(--app-col);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Desktop: subtle side borders on the content column for visual containment */
+@media (min-width: 768px) {
+  .app-shell {
+    border-left: 1px solid var(--glass-border);
+    border-right: 1px solid var(--glass-border);
+    min-height: 100dvh;
+  }
 }
 
 /* ─── Themed Color Tokens ─────────────────────────────────────────────────────

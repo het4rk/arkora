@@ -31,7 +31,7 @@ export function RoomParticipants({
             onClick={onClose}
           />
           <motion.div
-            className="fixed bottom-0 inset-x-0 z-50 glass-sidebar rounded-t-[var(--r-2xl)] pb-[max(env(safe-area-inset-bottom),24px)] max-h-[70vh] flex flex-col"
+            className="fixed bottom-0 z-50 app-fixed glass-sidebar rounded-t-[var(--r-2xl)] pb-[max(env(safe-area-inset-bottom),24px)] max-h-[70vh] flex flex-col"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { authFetch } from '@/lib/authFetch'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { FEATURED_BOARDS } from '@/lib/boards'
 import { BoardPicker } from '@/components/ui/BoardPicker'
@@ -32,7 +33,7 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
     setIsCreating(true)
     setError(null)
     try {
-      const res = await fetch('/api/rooms', {
+      const res = await authFetch('/api/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -46,7 +47,7 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
         setError(json.error ?? 'Failed to create room')
         return
       }
-      const joinRes = await fetch(`/api/rooms/${json.data.id}/join`, {
+      const joinRes = await authFetch(`/api/rooms/${json.data.id}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ displayHandle: resolveHostHandle(), identityMode }),
@@ -77,7 +78,7 @@ export function CreateRoomSheet({ open, onClose, onCreated }: CreateRoomSheetPro
             onClick={onClose}
           />
           <motion.div
-            className="fixed bottom-0 inset-x-0 z-50 glass-sidebar rounded-t-[var(--r-2xl)] pb-[max(env(safe-area-inset-bottom),24px)]"
+            className="fixed bottom-0 z-50 app-fixed glass-sidebar rounded-t-[var(--r-2xl)] pb-[max(env(safe-area-inset-bottom),24px)]"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}

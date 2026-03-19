@@ -73,7 +73,7 @@ export function BottomSheet({ isOpen, onClose, children, title, className }: Pro
           <motion.div
             ref={sheetRef}
             className={cn(
-              'fixed bottom-0 left-0 right-0 z-50',
+              'fixed bottom-0 z-50 app-fixed',
               'glass-sheet',
               'rounded-t-3xl',
               'max-h-[90dvh] overflow-y-auto',

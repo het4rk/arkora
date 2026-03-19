@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { Avatar } from '@/components/ui/Avatar'
 import { generateDmKeyPair } from '@/lib/crypto/dm'
+import { authFetch } from '@/lib/authFetch'
 import type { ConversationSummary } from '@/lib/db/dm'
 
 function TimeAgoShort({ date }: { date: Date }) {
@@ -40,7 +41,7 @@ export function ConversationList() {
       privateKey = pair.privateKeyB64
       setDmPrivateKey(privateKey)
       // Register public key with server
-      await fetch('/api/dm/keys', {
+      await authFetch('/api/dm/keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ publicKey: pair.publicKeyB64 }),
@@ -52,7 +53,7 @@ export function ConversationList() {
     if (!nullifierHash) return
     setError(false)
     try {
-      const res = await fetch('/api/dm/conversations', { signal: AbortSignal.timeout(10000) })
+      const res = await authFetch('/api/dm/conversations', { signal: AbortSignal.timeout(10000) })
       const json = (await res.json()) as { success: boolean; data?: ConversationSummary[] }
       if (json.success && json.data) setConversations(json.data)
       else if (!json.success) setError(true)

@@ -7,6 +7,7 @@ import { useArkoraStore } from '@/store/useArkoraStore'
 import { Avatar } from '@/components/ui/Avatar'
 import { encryptDm, decryptDm, generateDmKeyPair } from '@/lib/crypto/dm'
 import { haptic, formatDisplayName } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 import type { RawDmMessage } from '@/lib/db/dm'
 
 interface DecryptedMessage {
@@ -46,7 +47,7 @@ export function ConversationView({ otherHash }: Props) {
     // Generate fresh key pair
     const pair = generateDmKeyPair()
     setDmPrivateKey(pair.privateKeyB64)
-    await fetch('/api/dm/keys', {
+    await authFetch('/api/dm/keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ publicKey: pair.publicKeyB64 }),
@@ -68,9 +69,9 @@ export function ConversationView({ otherHash }: Props) {
     try {
     const initSignal = AbortSignal.timeout(10000)
     const [keyRes, profileRes, msgsRes] = await Promise.all([
-      fetch(`/api/dm/keys?nullifierHash=${encodeURIComponent(otherHash)}`, { signal: initSignal }),
-      fetch(`/api/u/${encodeURIComponent(otherHash)}`, { signal: initSignal }),
-      fetch(`/api/dm/messages?otherHash=${encodeURIComponent(otherHash)}`, { signal: initSignal }),
+      authFetch(`/api/dm/keys?nullifierHash=${encodeURIComponent(otherHash)}`, { signal: initSignal }),
+      authFetch(`/api/u/${encodeURIComponent(otherHash)}`, { signal: initSignal }),
+      authFetch(`/api/dm/messages?otherHash=${encodeURIComponent(otherHash)}`, { signal: initSignal }),
     ])
 
     const keyJson = (await keyRes.json()) as { success: boolean; data?: { publicKey: string } }
@@ -183,7 +184,7 @@ export function ConversationView({ otherHash }: Props) {
     setIsSending(true)
     try {
       const encrypted = await encryptDm(myPrivateKey, otherPublicKey, text)
-      const res = await fetch('/api/dm/messages', {
+      const res = await authFetch('/api/dm/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -321,7 +322,7 @@ export function ConversationView({ otherHash }: Props) {
           </div>
 
           {/* Input bar */}
-          <div className="fixed bottom-0 left-0 right-0 px-[5vw] pb-[max(env(safe-area-inset-bottom),16px)] pt-3 bg-background/80 backdrop-blur-xl border-t border-border/25">
+          <div className="fixed bottom-0 z-40 app-fixed px-[5vw] pb-[max(env(safe-area-inset-bottom),16px)] pt-3 bg-background/80 backdrop-blur-xl border-t border-border/25">
             {sendError && (
               <p className="text-[11px] text-text-secondary mb-2 text-center">{sendError}</p>
             )}

@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect } from 'react'
+import { authFetch } from '@/lib/authFetch'
 import { useArkoraStore, type Theme } from '@/store/useArkoraStore'
 import type { HumanUser } from '@/lib/types'
 import type { SkinId } from '@/lib/skins'
 import type { FontId } from '@/lib/fonts'
 
 function fetchWithTimeout(url: string, ms = 8000): Promise<Response> {
-  return fetch(url, { signal: AbortSignal.timeout(ms) })
+  return authFetch(url, { signal: AbortSignal.timeout(ms) })
 }
 
 export function SessionHydrator() {

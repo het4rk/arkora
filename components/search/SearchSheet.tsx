@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useSearch } from '@/hooks/useSearch'
@@ -75,7 +75,7 @@ export function SearchSheet() {
 
           {/* Sheet */}
           <motion.div
-            className="fixed top-0 left-0 right-0 z-50 glass-sheet rounded-b-3xl flex flex-col"
+            className="fixed top-0 z-50 app-fixed glass-sheet rounded-b-3xl flex flex-col"
             style={{ maxHeight: '92dvh' }}
             initial={{ y: '-100%' }}
             animate={{ y: 0 }}
@@ -167,22 +167,7 @@ export function SearchSheet() {
 
               {/* Empty state: featured boards */}
               {!isSearching && !hasSearched && !query && (
-                <div className="px-5 py-6">
-                  <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-4">
-                    Boards
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {BOARDS.map((b) => (
-                      <button
-                        key={b.id}
-                        onClick={() => handleSelectBoard(b.id)}
-                        className="glass px-3 py-2 rounded-[var(--r-full)] text-sm text-text-secondary font-medium active:scale-95 transition-all"
-                      >
-                        #{b.id}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <FeaturedBoards onSelect={handleSelectBoard} />
               )}
 
               {/* Grouped results */}
@@ -224,6 +209,40 @@ export function SearchSheet() {
         </>
       )}
     </AnimatePresence>
+  )
+}
+
+const INITIAL_BOARD_COUNT = 12
+
+function FeaturedBoards({ onSelect }: { onSelect: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const visible = expanded ? BOARDS : BOARDS.slice(0, INITIAL_BOARD_COUNT)
+
+  return (
+    <div className="px-5 py-6">
+      <p className="text-text-muted text-[11px] font-semibold uppercase tracking-[0.12em] mb-4">
+        Boards
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {visible.map((b) => (
+          <button
+            key={b.id}
+            onClick={() => onSelect(b.id)}
+            className="glass px-3 py-2 rounded-[var(--r-full)] text-sm text-text-secondary font-medium active:scale-95 transition-all"
+          >
+            #{b.id}
+          </button>
+        ))}
+        {!expanded && BOARDS.length > INITIAL_BOARD_COUNT && (
+          <button
+            onClick={() => setExpanded(true)}
+            className="px-3 py-2 rounded-[var(--r-full)] text-sm text-accent font-semibold active:scale-95 transition-all"
+          >
+            +{BOARDS.length - INITIAL_BOARD_COUNT} more
+          </button>
+        )}
+      </div>
+    </div>
   )
 }
 

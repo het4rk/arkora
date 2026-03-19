@@ -71,7 +71,7 @@ export default function RootLayout({
           <PostComposer />
           <VerifyHuman />
           <ErrorBoundary>
-            <main className="pb-20 safe-top-bar max-w-[640px] mx-auto">{children}</main>
+            <main className="pb-20 safe-top-bar app-col app-shell">{children}</main>
           </ErrorBoundary>
           <RoomMiniPlayer />
           <BottomNav />

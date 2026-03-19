@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type JSX } from 'react'
 import { useRouter } from 'next/navigation'
+import { authFetch } from '@/lib/authFetch'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import type { EnrichedNotification, Notification } from '@/lib/types'
@@ -55,11 +56,11 @@ export function NotificationList() {
   async function load() {
     if (!nullifierHash) return
     try {
-      const res = await fetch('/api/notifications')
+      const res = await authFetch('/api/notifications')
       const json = (await res.json()) as { success: boolean; data?: { notifications: EnrichedNotification[]; unreadCount: number } }
       if (json.success && json.data) setNotifications(json.data.notifications)
       // Mark all as read after viewing
-      void fetch('/api/notifications', { method: 'POST' })
+      void authFetch('/api/notifications', { method: 'POST' })
         .then(() => setUnreadNotificationCount(0))
     } finally {
       setIsLoading(false)

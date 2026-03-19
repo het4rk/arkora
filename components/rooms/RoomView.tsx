@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Pusher from 'pusher-js'
+import { authFetch } from '@/lib/authFetch'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { RoomMessageRow } from '@/components/rooms/RoomMessage'
 import { RoomComposer } from '@/components/rooms/RoomComposer'
@@ -178,7 +179,7 @@ export function RoomView({ roomId }: RoomViewProps) {
   useEffect(() => {
     void (async () => {
       try {
-        const res = await fetch(`/api/rooms/${roomId}`)
+        const res = await authFetch(`/api/rooms/${roomId}`)
         const json = (await res.json()) as {
           success: boolean
           data?: { room: Room; participants: RoomParticipant[] }
@@ -209,7 +210,7 @@ export function RoomView({ roomId }: RoomViewProps) {
   useEffect(() => {
     return () => {
       if (!skipLeaveOnUnmountRef.current && nullifierHash) {
-        void fetch(`/api/rooms/${roomId}/leave`, { method: 'POST' })
+        void authFetch(`/api/rooms/${roomId}/leave`, { method: 'POST' })
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,7 +339,7 @@ export function RoomView({ roomId }: RoomViewProps) {
   }, [nullifierHash, room, roomId, router, scrollToBottom, markSpeaking])
 
   async function handleMute(targetHash: string) {
-    await fetch(`/api/rooms/${roomId}/mute`, {
+    await authFetch(`/api/rooms/${roomId}/mute`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetHash }),
@@ -346,7 +347,7 @@ export function RoomView({ roomId }: RoomViewProps) {
   }
 
   async function handleKick(targetHash: string) {
-    await fetch(`/api/rooms/${roomId}/kick`, {
+    await authFetch(`/api/rooms/${roomId}/kick`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetHash }),
@@ -358,7 +359,7 @@ export function RoomView({ roomId }: RoomViewProps) {
     skipLeaveOnUnmountRef.current = true
     setActiveRoomId(null)
     setActiveRoomTitle(null)
-    await fetch(`/api/rooms/${roomId}`, { method: 'DELETE' })
+    await authFetch(`/api/rooms/${roomId}`, { method: 'DELETE' })
     router.push('/rooms')
   }
 
@@ -367,7 +368,7 @@ export function RoomView({ roomId }: RoomViewProps) {
     skipLeaveOnUnmountRef.current = true
     setActiveRoomId(null)
     setActiveRoomTitle(null)
-    await fetch(`/api/rooms/${roomId}/leave`, { method: 'POST' })
+    await authFetch(`/api/rooms/${roomId}/leave`, { method: 'POST' })
     router.push('/rooms')
   }
 
