@@ -185,11 +185,23 @@ Arkora is being progressively decentralized across every layer:
 | Layer | Status | Approach |
 | --- | --- | --- |
 | **Identity** | Live | World ID Orb proofs validated onchain via WorldIDRouter on World Chain |
-| **File storage** | Live | User-uploaded media stored on [Hippius](https://hippius.com) (Bittensor subnet 14) |
-| **Compute** | Planned | Migrate platform logic to Bittensor subnet infrastructure |
+| **File storage** | Live (beta) | User-uploaded media stored on [Hippius](https://hippius.com) (Bittensor subnet 14, S3-compatible API). Production transition will move to Hippius mainnet with replication guarantees. |
+| **Compute** | Planned | Migrate backend to [Chutes](https://chutes.ai) (Bittensor subnet 64) with TEE-attested execution |
 | **Database** | Planned | Evaluate decentralized or verifiable data storage options |
 
 The goal: a social platform where proof of humanity, content storage, and application logic are all decentralized - no single operator can censor, surveil, or shut down the network.
+
+#### Compute Migration - Chutes (Subnet 64)
+
+When Arkora transitions out of beta, backend compute will move from centralized Vercel serverless functions to [Chutes](https://chutes.ai) on Bittensor subnet 64. Chutes provides decentralized GPU/CPU compute with Trusted Execution Environment (TEE) attestation, meaning application logic runs inside hardware-isolated enclaves (Intel TDX / AMD SEV-SNP) where neither the node operator nor the host OS can inspect or tamper with the running process.
+
+**Integration plan:**
+
+- **TEE attestation** - Each Chutes compute node generates a cryptographic attestation report signed by the CPU's hardware root of trust. Arkora will verify these attestation chains before routing requests, ensuring every API call is processed inside a genuine TEE enclave. This guarantees that even the compute provider cannot read user data, session tokens, or encryption keys in memory.
+- **Containerized deployment** - Arkora's Next.js server and API routes will be packaged as OCI containers deployed to Chutes nodes. The container image hash is included in the TEE attestation, so clients can verify they're talking to the exact published build - no hidden modifications.
+- **Decentralized routing** - Requests will be load-balanced across multiple Chutes miners on subnet 64 via the Bittensor incentive mechanism. Miners are scored on latency, uptime, and attestation validity. Poor performers lose stake; reliable nodes earn TAO emissions.
+- **Key management** - Database credentials and signing keys will be provisioned inside the TEE via sealed storage (keys encrypted to the enclave's identity). Keys are never exposed to the host filesystem or operator. Rotation happens through re-sealing to new enclave measurements.
+- **Verifiable compute chain** - Combined with World ID onchain verification (World Chain) and Hippius decentralized storage (subnet 14), this creates an end-to-end verifiable stack: identity proven onchain, data stored on decentralized storage, and compute executed in attested TEEs - no single trusted party in the critical path.
 
 ---
 
