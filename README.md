@@ -72,11 +72,19 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 ### Public API
 
 - REST API for verified-human posts, polls, boards, and stats
-- v1: API key authentication with CORS support
+- v1: API key authentication with CORS support (read + write)
 - v2: AgentKit proof-of-human auth for AI agents + API key fallback
 - Premium analytics: sentiment, trends, geographic demographics (AgentKit-only)
 - x402 micropayments for premium data (USDC on World Chain)
 - MCP server for native AI agent tooling (Claude, GPT, etc.)
+
+### CLI
+
+- Standalone terminal client (`cli/`) - verify via QR code, post from the command line
+- `arkora login` - scan QR to open Settings, paste API key
+- `arkora feed` - browse recent posts with colored output
+- `arkora post "Title"` - create posts from terminal
+- `arkora boards` / `arkora stats` - browse boards and platform stats
 
 ---
 
@@ -116,6 +124,16 @@ pnpm install
 cp .env.example .env.local   # fill in your credentials
 pnpm db:push                 # push schema to database
 pnpm dev                     # start dev server at http://localhost:3000
+```
+
+### CLI Setup
+
+```bash
+cd cli
+pnpm install
+pnpm dev login               # scan QR, paste API key
+pnpm dev feed                # view posts
+pnpm dev post "Hello from CLI" --board arkora
 ```
 
 See `.env.example` for all required environment variables.

@@ -41,6 +41,6 @@ export async function requireApiKey(
 /** CORS headers for all v1 public data endpoints. */
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'X-API-Key, Authorization',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'X-API-Key, Authorization, Content-Type',
 }
