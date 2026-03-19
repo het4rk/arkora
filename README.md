@@ -300,7 +300,9 @@ pnpm test:watch        # watch mode
 pnpm test:coverage     # coverage report
 ```
 
-82 unit tests covering input sanitization, rate limiting, E2E DM encryption (Curve25519 + AES-256-GCM), karma tiers, and utility functions. Tests run in CI before lint and build.
+82 unit tests covering input sanitization, rate limiting, E2E DM encryption (Curve25519 + AES-256-GCM), karma tiers, AgentKit auth middleware, and utility functions. Tests run in CI before lint and build.
+
+See [QA.md](./QA.md) for the full manual testing checklist (80+ test cases across auth, feed, posts, DMs, rooms, monetization, API, and security).
 
 ---
 

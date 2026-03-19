@@ -200,7 +200,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 - **DM private key in localStorage.** Users lose DM history if they clear browser data. By design for MVP.
 - **Country code** inferred from `x-vercel-ip-country` header. GPS optional, sent only when `locationEnabled=true`.
 - **Brand assets** (`/og-image.png`, `/icon-192.png`, `/icon-512.png`, `/favicon.ico`, `/apple-touch-icon.png`) must be created - blocks PWA install and social sharing previews.
-- **pnpm audit** - zero vulnerabilities. Patched via pnpm overrides: `minimatch >=10.2.3`, `fast-xml-parser >=5.3.8`.
+- **pnpm audit** - zero vulnerabilities. Patched via pnpm overrides: `minimatch >=10.2.3`, `fast-xml-parser >=5.5.6`, `flatted >=3.4.0`.
 
 ---
 
@@ -246,8 +246,9 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 | Sprint | Shipped |
 | --- | --- |
+| 28 | Security hardening (strip walletAddress/lat-lng/creatorWallet from public responses, rate limit health/postDetail/idkitContext, try/catch on dm/keys), dead code removal (verifyTransaction, contracts, ArkVotes.sol, form-data, 23 unused Db* types, unused exports), deps update (Next 16.2.0, idkit 4.0.10, sentry 10.44.0, pusher 5.3.3, pusher-js 8.4.2, drizzle-kit 0.31.10, CVE patches for fast-xml-parser + flatted), QA.md testing checklist, fix 0x-prefix cookie regex (unblocked desktop IDKit users) |
 | 27 | AgentKit v2 API (dual auth: AgentKit proof-of-human + API key fallback), premium analytics endpoints (sentiment, trends, demographics) with x402 402 responses when free trial exhausted, DrizzleAgentKitStorage for nonce replay + usage tracking, spec-compliant x402 payment instructions (USDC on World Chain eip155:480), MCP server for AI agent tooling, 13 new tests (82 total) |
-| 26 | Tailwind CSS v4 migration (CSS-first @theme config, color-mix opacity, autoprefixer removed), IDKit v4 migration (IDKitRequestWidget, orbLegacy preset, server-side RP context signing), eslint-config-next v16.2, dependency bumps (idkit, vercel/analytics, vercel/speed-insights, viem, zustand, framer-motion, Next 16.1.7) |
+| 26 | Tailwind CSS v4 migration (CSS-first @theme config, color-mix opacity, autoprefixer removed), IDKit v4 migration (IDKitRequestWidget, orbLegacy preset, server-side RP context signing), eslint-config-next v16.2, dependency bumps (idkit, vercel/analytics, vercel/speed-insights, viem, zustand, framer-motion, Next 16.2.0) |
 | 25 | i18n system (10 locales: EN/ES/PT/FR/DE/JA/KO/TH/ID/TR), lazy-loaded dictionaries, useT() hook, auto-detection, html lang sync, language picker in Settings |
 | 24 | Font shop (7 Google Fonts, 1 WLD each), perpetual polls, server-synced preferences, CodeQL fixes |
 | 23 | Multi-entity search (boards + people + posts), World ID action cleanup, ESLint v9 migration |
@@ -277,7 +278,7 @@ v2 API mirrors v1 endpoints with dual authentication:
 2. **API key fallback** - same as v1, `X-API-Key` header.
 3. **Neither** - returns 402 with AgentKit extension declaration.
 
-Auth middleware: `requireV2Auth()` (dual) and `requireAgentKitOnly()` (premium endpoints) in `lib/agentAuth.ts`.
+Auth middleware: `requireV2Auth()` (dual) and `requirePremiumAuth()` (premium endpoints) in `lib/agentAuth.ts`.
 
 ### Rate Limits
 
@@ -356,8 +357,13 @@ MCP_PORT                 - MCP SSE port (default: 3001)
 - [ ] Brand assets (og-image, favicons, PWA icons) - blocks PWA install + social sharing
 - [x] Upgrade rate limiter to Upstash Redis (with in-memory fallback)
 - [x] v2 API with AgentKit auth + premium analytics + MCP server
+- [x] Security audit + hardening (Sprint 28)
+- [x] Dead code cleanup + dependency audit (Sprint 28)
 - [ ] Upgrade DB driver to `@neondatabase/serverless`
 - [ ] Rooms Phase 2 - audio (WebRTC or LiveKit)
 - [ ] Admin moderation queue for reports
 - [ ] Playwright E2E tests
 - [ ] Custom domain
+- [ ] eslint 10 upgrade (blocked by eslint-plugin-react compatibility)
+- [ ] Migrate sync `rateLimit()` to `rateLimitAsync()` on internal endpoints
+- [ ] On-chain purchase transaction verification
