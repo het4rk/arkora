@@ -14,6 +14,17 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // Redirect arkora.vercel.app to arkora.app (keep vercel subdomain as preview only)
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'arkora.vercel.app' }],
+        destination: 'https://arkora.app/:path*',
+        permanent: true,
+      },
+    ]
+  },
   // Required for MiniKit - allows World App to frame the app.
   // Note: CSP frame-ancestors supersedes X-Frame-Options in all modern browsers.
   async headers() {
