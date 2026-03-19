@@ -18,6 +18,7 @@ import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic, formatDisplayName } from '@/lib/utils'
 import type { Reply } from '@/lib/types'
 import { BodyText } from '@/components/ui/BodyText'
+import { authFetch } from '@/lib/authFetch'
 
 interface ThreadData {
   post: Post
@@ -113,7 +114,7 @@ export function ThreadView({ postId }: Props) {
     setNoteSubmitting(true)
     setNoteError(null)
     try {
-      const res = await fetch('/api/community-notes', {
+      const res = await authFetch('/api/community-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ postId, body: noteDraft.trim() }),
@@ -136,7 +137,7 @@ export function ThreadView({ postId }: Props) {
     const next = prev === helpful ? null : helpful
     noteVotesRef.current.set(noteId, next)
     try {
-      const res = await fetch('/api/community-notes/vote', {
+      const res = await authFetch('/api/community-notes/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // next === null → toggle-off, send helpful: null to delete the vote in DB
@@ -150,7 +151,7 @@ export function ThreadView({ postId }: Props) {
 
   const fetchThread = useCallback(async () => {
     try {
-      const res = await fetch(`/api/posts/${postId}`)
+      const res = await authFetch(`/api/posts/${postId}`)
       if (!res.ok) {
         if (res.status === 404) { router.replace('/'); return }
         throw new Error('Failed to fetch thread')

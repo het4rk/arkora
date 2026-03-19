@@ -55,16 +55,7 @@ export async function voteOnNote(
 
   // Recount + auto-promote: promote when ≥3 helpful AND helpful > notHelpful×2
   // RETURNING all fields avoids a second round-trip to the DB.
-  const [updated] = await db.execute<{
-    id: string
-    post_id: string
-    body: string
-    submitter_nullifier_hash: string
-    helpful_votes: number
-    not_helpful_votes: number
-    is_promoted: boolean
-    created_at: string
-  }>(
+  const voteResult = await db.execute(
     sql`UPDATE community_notes
         SET
           helpful_votes     = (SELECT COUNT(*) FROM community_note_votes WHERE note_id = ${noteId} AND helpful = true),
@@ -78,10 +69,10 @@ export async function voteOnNote(
         WHERE id = ${noteId}
         RETURNING id, post_id, body, submitter_nullifier_hash,
                   helpful_votes, not_helpful_votes, is_promoted, created_at`
-  ) as unknown as [{
-    id: string; post_id: string; body: string; submitter_nullifier_hash: string
-    helpful_votes: number; not_helpful_votes: number; is_promoted: boolean; created_at: string
-  }]
+  )
+  const voteAny = voteResult as unknown as (NoteRow[] | { rows: NoteRow[] })
+  const voteRows = (Array.isArray(voteAny) ? voteAny : voteAny.rows)
+  const [updated] = voteRows
 
   if (!updated) throw new Error('Note not found')
   return {
@@ -106,7 +97,7 @@ export async function deleteNoteVote(
   noteId: string,
   nullifierHash: string
 ): Promise<CommunityNote> {
-  const [updated] = await db.execute<NoteRow>(
+  const deleteResult = await db.execute(
     sql`WITH deleted AS (
           DELETE FROM community_note_votes
           WHERE note_id = ${noteId} AND nullifier_hash = ${nullifierHash}
@@ -124,7 +115,10 @@ export async function deleteNoteVote(
         WHERE id = ${noteId}
         RETURNING id, post_id, body, submitter_nullifier_hash,
                   helpful_votes, not_helpful_votes, is_promoted, created_at`
-  ) as unknown as [NoteRow]
+  )
+  const deleteAny = deleteResult as unknown as (NoteRow[] | { rows: NoteRow[] })
+  const deleteRows = (Array.isArray(deleteAny) ? deleteAny : deleteAny.rows)
+  const [updated] = deleteRows
 
   if (!updated) throw new Error('Note not found')
   return {

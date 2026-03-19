@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 
 interface Props {
   postId: string
@@ -18,7 +19,7 @@ export function BookmarkButton({ postId, initialBookmarked, className }: Props) 
   // Only fetch on mount when the parent hasn't pre-fetched the state
   useEffect(() => {
     if (initialBookmarked !== undefined || !nullifierHash) return
-    void fetch(`/api/bookmarks?postId=${encodeURIComponent(postId)}`)
+    void authFetch(`/api/bookmarks?postId=${encodeURIComponent(postId)}`)
       .then((r) => r.json())
       .then((j: { success: boolean; data?: { isBookmarked: boolean } }) => {
         if (j.success && j.data) setBookmarked(j.data.isBookmarked)
@@ -36,7 +37,7 @@ export function BookmarkButton({ postId, initialBookmarked, className }: Props) 
     setBookmarked(next) // optimistic
     setLoading(true)
     try {
-      const res = await fetch('/api/bookmarks', {
+      const res = await authFetch('/api/bookmarks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ postId }),

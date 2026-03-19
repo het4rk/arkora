@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { haptic } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 
 interface Voter {
   display: string
@@ -27,7 +28,7 @@ export function VoteReactionsSheet({ isOpen, onClose, postId, upvoteCount, downv
     if (!isOpen) return
     setTab(initialTab)
     setLoading(true)
-    fetch(`/api/vote/reactions?postId=${postId}`)
+    authFetch(`/api/vote/reactions?postId=${postId}`)
       .then((r) => r.json())
       .then((json: { success: boolean; data?: { upvoters: Voter[]; downvoters: Voter[] } }) => {
         if (json.success && json.data) {

@@ -6,6 +6,7 @@ import type { Reply } from '@/lib/types'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { haptic } from '@/lib/utils'
 import { useArkoraStore } from '@/store/useArkoraStore'
+import { authFetch } from '@/lib/authFetch'
 
 interface Props {
   reply: Reply & { postTitle: string | null }
@@ -23,7 +24,7 @@ export function ProfileReplyCard({ reply, onDeleted }: Props) {
     haptic('medium')
     setIsDeleting(true)
     try {
-      const res = await fetch(`/api/replies/${reply.id}`, {
+      const res = await authFetch(`/api/replies/${reply.id}`, {
         method: 'DELETE',
       })
       if (res.ok) onDeleted?.(reply.id)

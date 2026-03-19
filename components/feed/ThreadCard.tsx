@@ -17,6 +17,7 @@ import { ImageViewer } from '@/components/ui/ImageViewer'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useT } from '@/hooks/useT'
 import { haptic, formatDisplayName, shareUrl } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 
 interface Props {
   post: Post
@@ -84,7 +85,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
     setIsReposting(true)
     setRepostMenuOpen(false)
     try {
-      const res = await fetch('/api/posts', {
+      const res = await authFetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'repost', quotedPostId: post.id, boardId: post.boardId }),
@@ -105,7 +106,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
     setIsDeleting(true)
     setDeleteError(null)
     try {
-      const res = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' })
+      const res = await authFetch(`/api/posts/${post.id}`, { method: 'DELETE' })
       if (res.ok) {
         onDeleted?.(post.id)
       } else {

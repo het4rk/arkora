@@ -9,6 +9,7 @@ import { useArkoraStore } from '@/store/useArkoraStore'
 import { useT } from '@/hooks/useT'
 import { haptic, formatDisplayName } from '@/lib/utils'
 import { BodyText } from '@/components/ui/BodyText'
+import { authFetch } from '@/lib/authFetch'
 
 type VoteDir = 1 | -1 | null
 
@@ -49,7 +50,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
 
     setIsVoting(true)
     try {
-      const res = await fetch('/api/replies/vote', {
+      const res = await authFetch('/api/replies/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ replyId: reply.id, direction: next ?? 0 }),
@@ -80,7 +81,7 @@ export function ReplyCard({ reply, isTopReply, onReplyTo, onDeleted }: Props) {
     haptic('medium')
     setIsDeleting(true)
     try {
-      const res = await fetch(`/api/replies/${reply.id}`, {
+      const res = await authFetch(`/api/replies/${reply.id}`, {
         method: 'DELETE',
       })
       if (res.ok) {

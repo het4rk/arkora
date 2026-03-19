@@ -3,6 +3,7 @@
 import { useState, type JSX } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { haptic } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 
 const REASONS: { id: string; label: string; icon: JSX.Element }[] = [
   { id: 'spam', label: 'Spam', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg> },
@@ -30,7 +31,7 @@ export function ReportSheet({ isOpen, onClose, targetType, targetId }: Props) {
     if (!reason) return
     setIsSubmitting(true)
     try {
-      const res = await fetch('/api/report', {
+      const res = await authFetch('/api/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetType, targetId, reason, details: details.trim() || undefined }),

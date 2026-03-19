@@ -6,6 +6,7 @@ import { MiniKit } from '@worldcoin/minikit-js'
 import { sendWld } from '@/hooks/useTip'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 
 interface Props {
   recipientHash: string
@@ -45,7 +46,7 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
       // Use pre-fetched wallet if provided; otherwise fetch from profile API
       let wallet = recipientWallet
       if (!wallet) {
-        const profileRes = await fetch(`/api/u/${encodeURIComponent(recipientHash)}`)
+        const profileRes = await authFetch(`/api/u/${encodeURIComponent(recipientHash)}`)
         const profileJson = (await profileRes.json()) as {
           success: boolean
           data?: { user?: { walletAddress: string } }
@@ -60,7 +61,7 @@ export function TipModal({ recipientHash, recipientName, recipientWallet, onClos
         setState('pick')
         return
       }
-      await fetch('/api/tip', {
+      await authFetch('/api/tip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipientHash, amountWld: amount.toString(), txId: result.txId }),

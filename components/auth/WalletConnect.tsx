@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { MiniKit, type MiniAppWalletAuthSuccessPayload } from '@worldcoin/minikit-js'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import type { HumanUser } from '@/lib/types'
+import { authFetch } from '@/lib/authFetch'
 
 // Silently triggers walletAuth on app open, then auto-verifies the user
 // using a wallet-derived identity - no separate World ID ZK step required.
@@ -73,7 +74,7 @@ export function WalletConnect() {
 
       void (async () => {
         try {
-          const res = await fetch('/api/nonce')
+          const res = await authFetch('/api/nonce')
           const { nonce } = (await res.json()) as { nonce: string }
 
           const { finalPayload } = await MiniKit.commandsAsync.walletAuth({
@@ -86,7 +87,7 @@ export function WalletConnect() {
 
           if (finalPayload.status === 'error') return
 
-          const authRes = await fetch('/api/auth', {
+          const authRes = await authFetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -125,7 +126,7 @@ export function WalletConnect() {
 
   async function callUserEndpoint(address: string, username?: string) {
     try {
-      const userRes = await fetch('/api/auth/user', {
+      const userRes = await authFetch('/api/auth/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: address, username }),

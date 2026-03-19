@@ -12,6 +12,7 @@ import { TipModal } from '@/components/ui/TipModal'
 import { SubscribeModal } from '@/components/ui/SubscribeModal'
 import { haptic, formatDisplayName } from '@/lib/utils'
 import type { Post, HumanUser } from '@/lib/types'
+import { authFetch } from '@/lib/authFetch'
 import Link from 'next/link'
 
 interface ProfileData {
@@ -44,7 +45,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const res = await fetch(`/api/u/${encodeURIComponent(nullifierHash)}`)
+      const res = await authFetch(`/api/u/${encodeURIComponent(nullifierHash)}`)
       const json = (await res.json()) as { success: boolean; data?: ProfileData }
       if (json.success && json.data) setData(json.data)
     } finally {
@@ -59,7 +60,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
     haptic('light')
     setFollowLoading(true)
     try {
-      const res = await fetch('/api/follow', {
+      const res = await authFetch('/api/follow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ followedId: nullifierHash }),

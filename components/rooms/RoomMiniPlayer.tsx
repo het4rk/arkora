@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useArkoraStore } from '@/store/useArkoraStore'
+import { authFetch } from '@/lib/authFetch'
 
 /**
  * Floating mini-player bar shown when user minimizes a live room.
@@ -17,7 +18,7 @@ export function RoomMiniPlayer() {
     if (!activeRoomId) return
     setActiveRoomId(null)
     setActiveRoomTitle(null)
-    void fetch(`/api/rooms/${activeRoomId}/leave`, { method: 'POST' })
+    void authFetch(`/api/rooms/${activeRoomId}/leave`, { method: 'POST' })
   }
 
   function handleExpand() {

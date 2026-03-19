@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 
 interface Props {
   targetHash: string
@@ -23,7 +24,7 @@ export function InlineFollowButton({ targetHash }: Props) {
 
   useEffect(() => {
     if (!nullifierHash || isSelf) return
-    void fetch(
+    void authFetch(
       `/api/follow?nullifierHash=${encodeURIComponent(targetHash)}`
     )
       .then((r) => r.json())
@@ -51,7 +52,7 @@ export function InlineFollowButton({ targetHash }: Props) {
     const optimistic = !isFollowing
     setIsFollowing(optimistic)
     try {
-      const res = await fetch('/api/follow', {
+      const res = await authFetch('/api/follow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ followedId: targetHash }),

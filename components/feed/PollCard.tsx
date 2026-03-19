@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import type { Post, PollResult } from '@/lib/types'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 
 interface Props {
   post: Post
@@ -64,7 +65,7 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
     setIsVoting(true)
     setVoteError(null)
     try {
-      const res = await fetch(`/api/polls/${post.id}/vote`, {
+      const res = await authFetch(`/api/polls/${post.id}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ optionIndex }),

@@ -16,6 +16,7 @@ import { QuotedPost } from '@/components/ui/QuotedPost'
 import { PollOptionInputs, type PollOption } from '@/components/compose/PollOptionInputs'
 import { BoardPicker } from '@/components/ui/BoardPicker'
 import { parseHashtags } from '@/lib/sanitize'
+import { authFetch } from '@/lib/authFetch'
 
 export function PostComposer() {
   const router = useRouter()
@@ -54,7 +55,7 @@ export function PostComposer() {
   const [allBoards, setAllBoards] = useState(FEATURED_BOARDS)
   const featuredIds = useRef(FEATURED_BOARDS.map((b) => b.id))
   useEffect(() => {
-    void fetch('/api/boards')
+    void authFetch('/api/boards')
       .then((r) => r.json())
       .then((j: { success: boolean; data?: typeof FEATURED_BOARDS }) => {
         if (j.success && j.data) setAllBoards(j.data)

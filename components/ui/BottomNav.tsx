@@ -8,6 +8,7 @@ import { cn, haptic } from '@/lib/utils'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useT } from '@/hooks/useT'
 import { SearchSheet } from '@/components/search/SearchSheet'
+import { authFetch } from '@/lib/authFetch'
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -20,7 +21,7 @@ export function BottomNav() {
     if (!nullifierHash || !isVerified) return
 
     // Hydrate on mount
-    void fetch('/api/notifications?countOnly=1')
+    void authFetch('/api/notifications?countOnly=1')
       .then((r) => r.json())
       .then((j: { success: boolean; data?: { count: number } }) => {
         if (j.success && j.data) setUnreadNotificationCount(j.data.count)

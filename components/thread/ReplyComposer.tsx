@@ -7,6 +7,7 @@ import { generateAlias } from '@/lib/session'
 import { ImagePicker } from '@/components/ui/ImagePicker'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useT } from '@/hooks/useT'
+import { authFetch } from '@/lib/authFetch'
 
 type ReplyMode = 'anonymous' | 'alias' | 'named'
 
@@ -67,7 +68,7 @@ export function ReplyComposer({ postId, onSuccess, parentReplyId, replyingToName
     setError(null)
 
     try {
-      const res = await fetch('/api/replies', {
+      const res = await authFetch('/api/replies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

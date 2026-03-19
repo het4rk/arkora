@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { sendWld } from '@/hooks/useTip'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 
 interface Props {
   creatorHash: string
@@ -50,7 +51,7 @@ export function SubscribeModal({
       const result = await sendWld(creatorWallet, PRICE_WLD, `Subscribe to ${creatorName}`)
       if (!result) throw new Error('Transaction cancelled')
       setLoadingLabel('Recording subscription…')
-      const res = await fetch('/api/subscribe', {
+      const res = await authFetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,7 +83,7 @@ export function SubscribeModal({
     setLoading(true)
     setLoadingLabel('Cancelling…')
     try {
-      const res = await fetch('/api/subscribe', {
+      const res = await authFetch('/api/subscribe', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ creatorHash }),

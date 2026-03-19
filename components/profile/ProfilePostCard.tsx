@@ -7,6 +7,7 @@ import { BoardTag } from '@/components/ui/BoardTag'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { haptic } from '@/lib/utils'
 import { useArkoraStore } from '@/store/useArkoraStore'
+import { authFetch } from '@/lib/authFetch'
 
 interface Props {
   post: Post
@@ -24,7 +25,7 @@ export function ProfilePostCard({ post, onDeleted }: Props) {
     haptic('medium')
     setIsDeleting(true)
     try {
-      const res = await fetch(`/api/posts/${post.id}`, {
+      const res = await authFetch(`/api/posts/${post.id}`, {
         method: 'DELETE',
       })
       if (res.ok) onDeleted?.(post.id)

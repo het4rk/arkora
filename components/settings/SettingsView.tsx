@@ -15,6 +15,7 @@ import { getSkinById } from '@/lib/skins'
 import { getFontById } from '@/lib/fonts'
 import { Avatar } from '@/components/ui/Avatar'
 import { AvatarCropper } from '@/components/ui/AvatarCropper'
+import { authFetch } from '@/lib/authFetch'
 
 // Discrete radius options in miles; -1 means "entire country"
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
@@ -65,7 +66,7 @@ export function SettingsView() {
 
   // Fire-and-forget sync of preference changes to the server
   const syncPref = (patch: Record<string, unknown>) => {
-    void fetch('/api/preferences', {
+    void authFetch('/api/preferences', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
@@ -103,7 +104,7 @@ export function SettingsView() {
   useEffect(() => {
     if (!nullifierHash || !isVerified) return
     setApiKeysLoading(true)
-    void fetch('/api/v1/keys')
+    void authFetch('/api/v1/keys')
       .then((r) => r.json())
       .then((j: { success: boolean; data?: ApiKey[] }) => {
         if (j.success && j.data) setApiKeysList(j.data)
@@ -115,7 +116,7 @@ export function SettingsView() {
     setCreatingKey(true)
     setKeyError(null)
     try {
-      const res = await fetch('/api/v1/keys', {
+      const res = await authFetch('/api/v1/keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ label: newKeyLabel.trim() }),
@@ -143,7 +144,7 @@ export function SettingsView() {
     setRevokingKeyId(id)
     setKeyError(null)
     try {
-      const res = await fetch(`/api/v1/keys/${id}`, { method: 'DELETE' })
+      const res = await authFetch(`/api/v1/keys/${id}`, { method: 'DELETE' })
       const json = (await res.json()) as { success: boolean; error?: string }
       if (json.success) {
         setApiKeysList((prev) => prev.filter((k) => k.id !== id))
@@ -180,7 +181,7 @@ export function SettingsView() {
   useEffect(() => {
     if (!nullifierHash || !isVerified) return
     setSubsLoading(true)
-    void fetch('/api/subscribe/list')
+    void authFetch('/api/subscribe/list')
       .then((r) => r.json())
       .then((j: { success: boolean; data?: SubRow[] }) => {
         if (j.success && j.data) setSubs(j.data)
@@ -192,7 +193,7 @@ export function SettingsView() {
     if (!nullifierHash) return
     setCancellingHash(creatorHash)
     try {
-      const res = await fetch('/api/subscribe', {
+      const res = await authFetch('/api/subscribe', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ creatorHash }),
@@ -218,7 +219,7 @@ export function SettingsView() {
   async function deleteAccount() {
     setDeleting(true)
     try {
-      await fetch('/api/user', { method: 'DELETE' })
+      await authFetch('/api/user', { method: 'DELETE' })
       signOut()
       window.location.href = '/'
     } finally {
@@ -235,7 +236,7 @@ export function SettingsView() {
     setAvatarSaving(true)
     setAvatarError(null)
     try {
-      const res = await fetch('/api/auth/user', {
+      const res = await authFetch('/api/auth/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ avatarUrl: url }),
@@ -346,7 +347,7 @@ export function SettingsView() {
                 try {
                   const form = new FormData()
                   form.append('file', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }))
-                  const res = await fetch('/api/upload', { method: 'POST', body: form })
+                  const res = await authFetch('/api/upload', { method: 'POST', body: form })
                   const json = (await res.json()) as { success: boolean; url?: string; error?: string }
                   if (!json.success || !json.url) throw new Error(json.error ?? 'Upload failed')
                   await saveAvatar(json.url)
@@ -373,7 +374,7 @@ export function SettingsView() {
                       setIdentityMode(opt.mode)
                       // Sync to server so the profile API can gate subscriptions
                       if (nullifierHash) {
-                        void fetch('/api/auth/user', {
+                        void authFetch('/api/auth/user', {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ identityMode: opt.mode }),
@@ -568,7 +569,7 @@ export function SettingsView() {
             {isVerified && (
               <button
                 onClick={async () => {
-                  await fetch('/api/signout', { method: 'POST' })
+                  await authFetch('/api/signout', { method: 'POST' })
                   signOut()
                   window.location.href = '/'
                 }}

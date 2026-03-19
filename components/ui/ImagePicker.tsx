@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { authFetch } from '@/lib/authFetch'
 
 interface Props {
   onUpload: (url: string) => void
@@ -34,7 +35,7 @@ export function ImagePicker({ onUpload, onClear, previewUrl, className }: Props)
     try {
       const form = new FormData()
       form.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: form })
+      const res = await authFetch('/api/upload', { method: 'POST', body: form })
       const json = (await res.json()) as { success: boolean; url?: string; error?: string }
       if (!json.success || !json.url) throw new Error(json.error ?? 'Upload failed')
       onUpload(json.url)

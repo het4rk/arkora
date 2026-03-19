@@ -8,6 +8,7 @@ import { MiniKit } from '@worldcoin/minikit-js'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
 import { useT } from '@/hooks/useT'
+import { authFetch } from '@/lib/authFetch'
 
 const TREASURY_WALLET = process.env.NEXT_PUBLIC_TREASURY_WALLET ?? ''
 
@@ -47,7 +48,7 @@ export function FontShop() {
     if (isOwned(fontId)) {
       // Activate immediately + persist to server
       setActiveFont(fontId)
-      void fetch('/api/fonts/activate', {
+      void authFetch('/api/fonts/activate', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fontId }),
@@ -91,7 +92,7 @@ export function FontShop() {
       return
     }
 
-    const res = await fetch('/api/fonts/purchase', {
+    const res = await authFetch('/api/fonts/purchase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fontId: confirmFont, txId: result.txId }),
@@ -111,7 +112,7 @@ export function FontShop() {
     setPurchasing(null)
     setConfirmFont(null)
     // Persist activation to server
-    void fetch('/api/fonts/activate', {
+    void authFetch('/api/fonts/activate', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fontId: confirmFont }),

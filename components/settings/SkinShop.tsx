@@ -8,6 +8,7 @@ import { MiniKit } from '@worldcoin/minikit-js'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
 import { useT } from '@/hooks/useT'
+import { authFetch } from '@/lib/authFetch'
 
 const TREASURY_WALLET = process.env.NEXT_PUBLIC_TREASURY_WALLET ?? ''
 
@@ -33,7 +34,7 @@ export function SkinShop() {
       // Activate immediately + persist to server
       const hex = skinId === 'hex' ? hexInput : undefined
       setActiveSkin(skinId, hex)
-      void fetch('/api/skins/activate', {
+      void authFetch('/api/skins/activate', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skinId, customHex: hex }),
@@ -78,7 +79,7 @@ export function SkinShop() {
       return
     }
 
-    const res = await fetch('/api/skins/purchase', {
+    const res = await authFetch('/api/skins/purchase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ skinId: confirmSkin, txId: result.txId }),
@@ -98,7 +99,7 @@ export function SkinShop() {
     setPurchasing(null)
     setConfirmSkin(null)
     // Persist activation to server
-    void fetch('/api/skins/activate', {
+    void authFetch('/api/skins/activate', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ skinId: confirmSkin, customHex: confirmSkin === 'hex' ? hexInput : undefined }),
@@ -110,7 +111,7 @@ export function SkinShop() {
     setHexInput(hex)
     if (activeSkinId === 'hex' && /^#[0-9A-Fa-f]{6}$/.test(hex)) {
       setActiveSkin('hex', hex)
-      void fetch('/api/skins/activate', {
+      void authFetch('/api/skins/activate', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skinId: 'hex', customHex: hex }),

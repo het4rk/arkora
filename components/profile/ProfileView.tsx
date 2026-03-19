@@ -12,6 +12,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { ProfilePostCard } from './ProfilePostCard'
 import { ProfileReplyCard } from './ProfileReplyCard'
 import type { Post, Reply, HumanUser } from '@/lib/types'
+import { authFetch } from '@/lib/authFetch'
 
 type Tab = 'posts' | 'replies' | 'votes' | 'saved'
 
@@ -59,7 +60,7 @@ export function ProfileView() {
     if (!nullifierHash || !user || !handleDraft.trim()) return
     setHandleSaving(true)
     try {
-      const res = await fetch('/api/auth/user', {
+      const res = await authFetch('/api/auth/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pseudoHandle: handleDraft.trim() }),
@@ -84,7 +85,7 @@ export function ProfileView() {
     if (!nullifierHash || !isVerified) return
     void (async () => {
       try {
-        const res = await fetch('/api/auth/user')
+        const res = await authFetch('/api/auth/user')
         const json = (await res.json()) as { success: boolean; user?: HumanUser }
         if (json.success && json.user) {
           setVerified(nullifierHash, json.user)
@@ -110,8 +111,8 @@ export function ProfileView() {
     if (!nullifierHash) return
     try {
       const [followRes, subRes] = await Promise.all([
-        fetch(`/api/follow?nullifierHash=${encodeURIComponent(nullifierHash)}`),
-        fetch(`/api/u/${encodeURIComponent(nullifierHash)}`),
+        authFetch(`/api/follow?nullifierHash=${encodeURIComponent(nullifierHash)}`),
+        authFetch(`/api/u/${encodeURIComponent(nullifierHash)}`),
       ])
       const followJson = (await followRes.json()) as { success: boolean; data?: { followerCount: number; followingCount: number } }
       if (followJson.success && followJson.data) {
@@ -129,7 +130,7 @@ export function ProfileView() {
     if (!nullifierHash || !user) return
     setSaving(true)
     try {
-      const res = await fetch('/api/auth/user', {
+      const res = await authFetch('/api/auth/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bio: bioDraft.trim() || null }),
@@ -150,12 +151,12 @@ export function ProfileView() {
     setError(null)
     try {
       if (t === 'saved') {
-        const res = await fetch(`/api/bookmarks`)
+        const res = await authFetch(`/api/bookmarks`)
         const json = (await res.json()) as { success: boolean; data?: Post[]; error?: string }
         if (!json.success) throw new Error(json.error ?? 'Failed to load')
         setSaved(json.data ?? [])
       } else {
-        const res = await fetch(`/api/profile?tab=${t}`)
+        const res = await authFetch(`/api/profile?tab=${t}`)
         if (res.status === 401) { signOut(); return }
         const json = (await res.json()) as { success: boolean; data?: { items: unknown[] }; error?: string }
         if (!json.success) throw new Error(json.error ?? 'Failed to load')

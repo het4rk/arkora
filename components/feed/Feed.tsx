@@ -10,6 +10,7 @@ import { haptic } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { useT } from '@/hooks/useT'
 import type { PollResult } from '@/lib/types'
+import { authFetch } from '@/lib/authFetch'
 
 // Discrete radius options in miles; -1 means "entire country"
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100, 250, -1] as const
@@ -89,7 +90,7 @@ export function Feed() {
   const fetchPollData = useCallback((pollPostIds: string[]) => {
     if (pollPostIds.length === 0) return
     const ids = pollPostIds.join(',')
-    void fetch(`/api/polls/batch?postIds=${encodeURIComponent(ids)}`, { signal: AbortSignal.timeout(10000) })
+    void authFetch(`/api/polls/batch?postIds=${encodeURIComponent(ids)}`, { signal: AbortSignal.timeout(10000) })
       .then((r) => r.json())
       .then((j: { success: boolean; data?: Record<string, { results: PollResult[]; userVote: number | null }> }) => {
         if (j.success && j.data) {
@@ -170,7 +171,7 @@ export function Feed() {
   const fetchBookmarks = useCallback((postIds: string[], userHash: string) => {
     if (postIds.length === 0 || !userHash) return
     const ids = postIds.join(',')
-    void fetch(`/api/bookmarks?postIds=${encodeURIComponent(ids)}`, { signal: AbortSignal.timeout(10000) })
+    void authFetch(`/api/bookmarks?postIds=${encodeURIComponent(ids)}`, { signal: AbortSignal.timeout(10000) })
       .then((r) => r.json())
       .then((j: { success: boolean; data?: { bookmarkedIds: string[] } }) => {
         if (j.success && j.data) {

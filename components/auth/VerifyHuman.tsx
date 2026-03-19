@@ -6,6 +6,7 @@ import { HumanBadge } from '@/components/ui/HumanBadge'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useVerification } from '@/hooks/useVerification'
 import { IDKitRequestWidget, orbLegacy, type IDKitResult, type IDKitErrorCodes, type RpContext } from '@worldcoin/idkit'
+import { authFetch } from '@/lib/authFetch'
 
 export function VerifyHuman() {
   const { isVerifySheetOpen, setVerifySheetOpen, isVerified } = useArkoraStore()
@@ -15,7 +16,7 @@ export function VerifyHuman() {
 
   const fetchRpContext = useCallback(async (): Promise<RpContext | null> => {
     try {
-      const res = await fetch('/api/idkit/context')
+      const res = await authFetch('/api/idkit/context')
       const json = (await res.json()) as { success: boolean; data?: RpContext; error?: string }
       if (!res.ok || !json.success || !json.data) {
         setError(json.error ?? 'Failed to initialize verification')
