@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { MiniKit, VerificationLevel, type ISuccessResult } from '@worldcoin/minikit-js'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import type { HumanUser } from '@/lib/types'
-import type { IDKitResult, ResponseItemV3 } from '@worldcoin/idkit'
+import type { IDKitResult } from '@worldcoin/idkit'
 
 type VerificationStatus = 'idle' | 'pending' | 'success' | 'error'
 
@@ -24,25 +24,6 @@ function friendlyVerifyError(serverError: string | undefined): string {
     default:
       return serverError ?? 'Verification failed. Please try again.'
   }
-}
-
-/**
- * Converts an IDKit v4 result (v3 legacy format) to the ISuccessResult format
- * expected by the verify API endpoint.
- */
-function idkitResultToPayload(result: IDKitResult): ISuccessResult {
-  if (result.protocol_version === '3.0') {
-    const response = result.responses[0] as ResponseItemV3
-    return {
-      proof: response.proof,
-      merkle_root: response.merkle_root,
-      nullifier_hash: response.nullifier,
-      verification_level: VerificationLevel.Orb,
-    }
-  }
-  // v4 proofs have a different format - for now we use legacy proofs via orbLegacy()
-  // so this path shouldn't be reached with allow_legacy_proofs: true
-  throw new Error('Unexpected v4 proof format. Only legacy (v3) proofs are supported.')
 }
 
 /**
@@ -182,12 +163,11 @@ export function useVerification(): UseVerificationReturn {
   }, [isVerified, nullifierHash, walletAddress, setVerified])
 
   // IDKit v4 flow (mobile browser + desktop)
+  // Sends the raw IDKit result to the server for cloud verification via World ID v4 API
   const handleDesktopVerify = useCallback(
     async (result: IDKitResult): Promise<void> => {
       setStatus('pending')
       setError(null)
-
-      const payload = idkitResultToPayload(result)
 
       let res: Response
       try {
@@ -195,8 +175,7 @@ export function useVerification(): UseVerificationReturn {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            payload,
-            action: process.env.NEXT_PUBLIC_ACTION_ID ?? '',
+            idkitResult: result,
           }),
           signal: AbortSignal.timeout(15000),
         })

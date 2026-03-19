@@ -95,6 +95,7 @@ function identifyContractError(message: string): string | null {
 
 /**
  * Verifies a World ID proof against the WorldIDRouter contract on World Chain.
+ * Used for MiniKit (in-app) proofs which use v3 format.
  * This is an eth_call (view function) - no gas, no transaction, no user signing.
  *
  * If the contract doesn't revert, the proof is valid.
@@ -129,7 +130,6 @@ export async function verifyWorldIdProof(
   // Retry on NonExistentRoot - the root may not have propagated to our RPC yet.
   // World App generates the proof against the latest tree; a few seconds' lag is common.
   const MAX_ATTEMPTS = 3
-  let lastContractError: string | null = null
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -143,7 +143,6 @@ export async function verifyWorldIdProof(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       const contractError = identifyContractError(message)
-      lastContractError = contractError
 
       // Retry only on NonExistentRoot (root propagation lag). All other errors are deterministic.
       if (contractError === 'NonExistentRoot' || contractError === 'InvalidRoot') {
@@ -189,6 +188,69 @@ export async function verifyWorldIdProof(
 
   // Unreachable - all code paths inside the loop return. TypeScript needs this.
   return { success: false, error: 'expired_root' }
+}
+
+/**
+ * Verifies a World ID proof via the v4 cloud API.
+ * Used for IDKit (desktop/mobile-browser) proofs.
+ * Accepts both v3 (legacy) and v4 proof formats.
+ *
+ * POST https://developer.world.org/api/v4/verify/{rp_id}
+ * Body: the raw IDKit result (forwarded directly)
+ */
+export async function verifyWorldIdProofCloud(
+  idkitResult: Record<string, unknown>
+): Promise<VerifyResult> {
+  const rpId = process.env.IDKIT_RP_ID ?? process.env.NEXT_PUBLIC_RP_ID
+  if (!rpId) {
+    console.error('[worldid] FATAL: IDKIT_RP_ID env var not set!')
+    return { success: false, error: 'Server misconfiguration: IDKIT_RP_ID not set' }
+  }
+
+  try {
+    const res = await fetch(`https://developer.world.org/api/v4/verify/${rpId}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(idkitResult),
+      signal: AbortSignal.timeout(15000),
+    })
+
+    const json = await res.json() as {
+      success: boolean
+      nullifier?: string
+      action?: string
+      code?: string
+      detail?: string
+      results?: Array<{ identifier: string; success: boolean; nullifier?: string; code?: string; detail?: string }>
+    }
+
+    if (!res.ok || !json.success) {
+      const detail = json.detail ?? json.results?.[0]?.detail ?? 'Verification failed'
+      const code = json.code ?? json.results?.[0]?.code ?? 'unknown'
+      console.error('[worldid] Cloud verify failed:', code, detail)
+
+      if (code === 'all_verifications_failed' && detail.toLowerCase().includes('already')) {
+        return { success: false, error: 'max_verifications_reached' }
+      }
+      return { success: false, error: detail }
+    }
+
+    // Extract nullifier from response - check top-level first, then per-credential results
+    const nullifier = json.nullifier ?? json.results?.[0]?.nullifier
+    if (!nullifier) {
+      console.error('[worldid] Cloud verify succeeded but no nullifier returned')
+      return { success: false, error: 'No nullifier in verification response' }
+    }
+
+    return { success: true, nullifierHash: nullifier }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[worldid] Cloud verify error:', message)
+    if (message.includes('timeout') || message.includes('abort')) {
+      return { success: false, error: 'network_error' }
+    }
+    return { success: false, error: 'network_error' }
+  }
 }
 
 /**
