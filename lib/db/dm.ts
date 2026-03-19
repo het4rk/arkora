@@ -98,41 +98,37 @@ export interface ConversationSummary {
 }
 
 export async function getConversations(myHash: string): Promise<ConversationSummary[]> {
-  // Wraps DISTINCT ON in a subquery so the outer ORDER BY last_message_at DESC
-  // can sort conversations without conflicting with the DISTINCT ON ordering rule.
-  const result = await db.execute(sql`
-    SELECT * FROM (
-      SELECT DISTINCT ON (
-        CASE WHEN sender_hash = ${myHash} THEN recipient_hash ELSE sender_hash END
-      )
-        CASE WHEN sender_hash = ${myHash} THEN recipient_hash ELSE sender_hash END AS other_hash,
-        created_at   AS last_message_at,
-        ciphertext   AS last_ciphertext,
-        nonce        AS last_nonce,
-        sender_hash  AS last_sender_hash
-      FROM dm_messages
-      WHERE sender_hash = ${myHash} OR recipient_hash = ${myHash}
-      ORDER BY
-        CASE WHEN sender_hash = ${myHash} THEN recipient_hash ELSE sender_hash END,
-        created_at DESC
-    ) sub
-    ORDER BY last_message_at DESC
-  `)
+  // Get all messages involving this user, then deduplicate in JS.
+  // The previous DISTINCT ON approach broke with parameterized queries because
+  // Postgres sees $1/$2/$3 as distinct expressions even when values are identical.
+  const rows = await db
+    .select({
+      senderHash: dmMessages.senderHash,
+      recipientHash: dmMessages.recipientHash,
+      createdAt: dmMessages.createdAt,
+      ciphertext: dmMessages.ciphertext,
+      nonce: dmMessages.nonce,
+    })
+    .from(dmMessages)
+    .where(or(
+      eq(dmMessages.senderHash, myHash),
+      eq(dmMessages.recipientHash, myHash),
+    ))
+    .orderBy(desc(dmMessages.createdAt))
 
-  // db.execute() returns { rows: [...] } in newer Drizzle, plain array in older
-  const resultAny = result as unknown as (Array<Record<string, unknown>> | { rows: Array<Record<string, unknown>> })
-  const rawRows = (Array.isArray(resultAny) ? resultAny : resultAny.rows) as Array<{
-    other_hash: string
-    last_message_at: Date
-    last_ciphertext: string
-    last_nonce: string
-    last_sender_hash: string
-  }>
+  if (rows.length === 0) return []
 
-  if (!rawRows || rawRows.length === 0) return []
+  // Deduplicate: keep only the most recent message per conversation partner
+  const seen = new Map<string, typeof rows[number]>()
+  for (const row of rows) {
+    const otherHash = row.senderHash === myHash ? row.recipientHash : row.senderHash
+    if (!seen.has(otherHash)) seen.set(otherHash, row)
+  }
+
+  const rawRows = Array.from(seen.entries())
 
   // Fetch user info for all conversation partners in a single query
-  const otherHashes = rawRows.map((r) => r.other_hash)
+  const otherHashes = rawRows.map(([hash]) => hash)
   const users = await db
     .select({ nullifierHash: humanUsers.nullifierHash, pseudoHandle: humanUsers.pseudoHandle, avatarUrl: humanUsers.avatarUrl })
     .from(humanUsers)
@@ -140,17 +136,17 @@ export async function getConversations(myHash: string): Promise<ConversationSumm
 
   const userMap = new Map(users.map((u) => [u.nullifierHash, u]))
 
-  // DB already sorted by last_message_at DESC - no in-app sort needed
-  return rawRows.map((r) => {
-    const u = userMap.get(r.other_hash)
+  // Already sorted by most recent first (rows were ordered by createdAt DESC)
+  return rawRows.map(([otherHash, row]) => {
+    const u = userMap.get(otherHash)
     return {
-      otherHash: r.other_hash,
+      otherHash,
       otherHandle: u?.pseudoHandle ?? null,
       otherAvatarUrl: u?.avatarUrl ?? null,
-      lastMessageAt: new Date(r.last_message_at),
-      lastCiphertext: r.last_ciphertext,
-      lastNonce: r.last_nonce,
-      lastSenderHash: r.last_sender_hash,
+      lastMessageAt: new Date(row.createdAt),
+      lastCiphertext: row.ciphertext,
+      lastNonce: row.nonce,
+      lastSenderHash: row.senderHash,
     }
   })
 }
