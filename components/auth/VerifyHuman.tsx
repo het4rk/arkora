@@ -1,34 +1,36 @@
 'use client'
 
-import { useRef, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { HumanBadge } from '@/components/ui/HumanBadge'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useVerification } from '@/hooks/useVerification'
-import { IDKitWidget, VerificationLevel, useIDKit, type ISuccessResult, type IErrorState } from '@worldcoin/idkit'
+import { IDKitRequestWidget, orbLegacy, type IDKitResult, type IDKitErrorCodes, type RpContext } from '@worldcoin/idkit'
 
 export function VerifyHuman() {
   const { isVerifySheetOpen, setVerifySheetOpen, isVerified } = useArkoraStore()
   const { status, error, setError, env, verify, handleDesktopVerify, onDesktopSuccess } = useVerification()
-  const idkitOpenRef = useRef<(() => void) | null>(null)
-  // Tracks whether handleDesktopVerify set an error (avoids stale closure in onError)
-  const verifySetErrorRef = useRef(false)
-  // IDKit's setOpen lets us auto-close the IDKit modal on verify failure,
-  // which triggers onError → shows our custom error sheet instead of IDKit's generic screen.
-  const { setOpen: idkitSetOpen } = useIDKit()
+  const [idkitOpen, setIdkitOpen] = useState(false)
+  const [rpContext, setRpContext] = useState<RpContext | null>(null)
 
-  const wrappedHandleVerify = useCallback(async (proof: ISuccessResult) => {
-    verifySetErrorRef.current = false
+  const fetchRpContext = useCallback(async (): Promise<RpContext | null> => {
     try {
-      await handleDesktopVerify(proof)
-    } catch (err) {
-      verifySetErrorRef.current = true
-      // Auto-dismiss IDKit's generic error screen so our custom error sheet shows instead.
-      // IDKit's onOpenChange(false) fires onError callbacks, which re-open our sheet.
-      setTimeout(() => idkitSetOpen(false), 50)
-      throw err
+      const res = await fetch('/api/idkit/context')
+      const json = (await res.json()) as { success: boolean; data?: RpContext; error?: string }
+      if (!res.ok || !json.success || !json.data) {
+        setError(json.error ?? 'Failed to initialize verification')
+        return null
+      }
+      return json.data
+    } catch {
+      setError('Network error. Please try again.')
+      return null
     }
-  }, [handleDesktopVerify, idkitSetOpen])
+  }, [setError])
+
+  const wrappedHandleVerify = useCallback(async (result: IDKitResult) => {
+    await handleDesktopVerify(result)
+  }, [handleDesktopVerify])
 
   if (isVerified) return null
 
@@ -38,13 +40,19 @@ export function VerifyHuman() {
   // IDKit handles both mobile-browser (deeplink to World App) and desktop (QR code).
   const needsIdKit = env === 'mobile-browser' || env === 'desktop'
 
-  function openIdKit() {
+  async function openIdKit() {
     setVerifySheetOpen(false)
-    setTimeout(() => idkitOpenRef.current?.(), 200)
+    const ctx = await fetchRpContext()
+    if (ctx) {
+      setRpContext(ctx)
+      setTimeout(() => setIdkitOpen(true), 200)
+    } else {
+      setVerifySheetOpen(true)
+    }
   }
 
   const subtitles = {
-    detecting: 'Detecting your environment…',
+    detecting: 'Detecting your environment...',
     minikit: 'Your proof is validated directly on World Chain - not on our servers. One verification, permanently on-chain.',
     'mobile-browser': "You're browsing outside of World App. Tap below to open a QR code, then scan it using your World App camera. For the best experience, open Arkora directly in World App.",
     desktop: 'Scan the QR code with World App on your phone. Your proof is validated on World Chain - not on a central server.',
@@ -52,14 +60,14 @@ export function VerifyHuman() {
 
   const footers = {
     detecting: 'Powered by World ID',
-    minikit: 'Proof validated on World Chain · Powered by World ID',
+    minikit: 'Proof validated on World Chain - Powered by World ID',
     'mobile-browser': 'For best results, open Arkora directly in World App',
-    desktop: 'Proof validated on World Chain · Scan with World App',
+    desktop: 'Proof validated on World Chain - Scan with World App',
   }
 
   const buttonLabel =
-    status === 'pending' ? 'Verifying…'
-    : env === 'detecting' ? 'Loading…'
+    status === 'pending' ? 'Verifying...'
+    : env === 'detecting' ? 'Loading...'
     : env === 'minikit' ? 'Verify with World ID'
     : 'Verify with QR Code'
 
@@ -71,27 +79,34 @@ export function VerifyHuman() {
 
   return (
     <>
-      {/* IDKitWidget lives outside the sheet so closing doesn't unmount it */}
-      {needsIdKit && (
-        <IDKitWidget
+      {/* IDKitRequestWidget lives outside the sheet so closing doesn't unmount it */}
+      {needsIdKit && rpContext && (
+        <IDKitRequestWidget
           app_id={appId}
           action={actionId}
-          verification_level={VerificationLevel.Orb}
+          rp_context={rpContext}
+          allow_legacy_proofs={true}
+          preset={orbLegacy()}
+          open={idkitOpen}
+          onOpenChange={(open) => {
+            setIdkitOpen(open)
+            if (!open) {
+              setTimeout(() => setVerifySheetOpen(true), 100)
+            }
+          }}
           handleVerify={wrappedHandleVerify}
           onSuccess={onDesktopSuccess}
-          onError={(idkitError: IErrorState) => {
-            if (!verifySetErrorRef.current) {
-              setError(idkitError?.message ?? 'Verification was declined. Please try again.')
-            }
-            verifySetErrorRef.current = false
+          onError={(errorCode: IDKitErrorCodes) => {
+            const message = errorCode === 'user_rejected'
+              ? 'Verification was declined. Please try again.'
+              : errorCode === 'max_verifications_reached'
+              ? 'You have already verified.'
+              : `Verification failed: ${errorCode}`
+            setError(message)
+            setIdkitOpen(false)
             setTimeout(() => setVerifySheetOpen(true), 100)
           }}
-        >
-          {({ open }: { open: () => void }) => {
-            idkitOpenRef.current = open
-            return <></>
-          }}
-        </IDKitWidget>
+        />
       )}
 
       <BottomSheet
@@ -135,7 +150,7 @@ export function VerifyHuman() {
             </button>
           ) : (
             <button
-              onClick={env === 'detecting' ? undefined : openIdKit}
+              onClick={env === 'detecting' ? undefined : () => void openIdKit()}
               disabled={status === 'pending' || env === 'detecting'}
               className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-background font-bold py-4 rounded-2xl transition-colors active:scale-95 text-base"
             >

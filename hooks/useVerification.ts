@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { MiniKit, VerificationLevel, type ISuccessResult } from '@worldcoin/minikit-js'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import type { HumanUser } from '@/lib/types'
+import type { IDKitResult, ResponseItemV3 } from '@worldcoin/idkit'
 
 type VerificationStatus = 'idle' | 'pending' | 'success' | 'error'
 
@@ -23,6 +24,25 @@ function friendlyVerifyError(serverError: string | undefined): string {
     default:
       return serverError ?? 'Verification failed. Please try again.'
   }
+}
+
+/**
+ * Converts an IDKit v4 result (v3 legacy format) to the ISuccessResult format
+ * expected by the verify API endpoint.
+ */
+function idkitResultToPayload(result: IDKitResult): ISuccessResult {
+  if (result.protocol_version === '3.0') {
+    const response = result.responses[0] as ResponseItemV3
+    return {
+      proof: response.proof,
+      merkle_root: response.merkle_root,
+      nullifier_hash: response.nullifier,
+      verification_level: VerificationLevel.Orb,
+    }
+  }
+  // v4 proofs have a different format - for now we use legacy proofs via orbLegacy()
+  // so this path shouldn't be reached with allow_legacy_proofs: true
+  throw new Error('Unexpected v4 proof format. Only legacy (v3) proofs are supported.')
 }
 
 /**
@@ -51,7 +71,7 @@ interface UseVerificationReturn {
   /** @deprecated use env === 'minikit' */
   isMiniKit: boolean
   verify: () => Promise<boolean>
-  handleDesktopVerify: (proof: ISuccessResult) => Promise<void>
+  handleDesktopVerify: (result: IDKitResult) => Promise<void>
   onDesktopSuccess: () => void
   isVerified: boolean
 }
@@ -65,7 +85,7 @@ export function useVerification(): UseVerificationReturn {
 
   // Detect environment after mount.
   // MiniKit requires the World App WebView to inject window.WorldApp, which can
-  // take 300–600 ms. We poll up to ~3 s (15 × 200 ms) before concluding
+  // take 300-600 ms. We poll up to ~3 s (15 x 200 ms) before concluding
   // MiniKit is unavailable - same strategy as WalletConnect.tsx.
   useEffect(() => {
     let retries = 0
@@ -99,7 +119,7 @@ export function useVerification(): UseVerificationReturn {
     return () => { if (timer !== null) clearTimeout(timer) }
   }, [])
 
-  // ─── MiniKit flow (World App) ──────────────────────────────────────────
+  // MiniKit flow (World App)
   const verify = useCallback(async (): Promise<boolean> => {
     if (isVerified && nullifierHash) return true
 
@@ -161,11 +181,13 @@ export function useVerification(): UseVerificationReturn {
     }
   }, [isVerified, nullifierHash, walletAddress, setVerified])
 
-  // ─── IDKit flow (mobile browser + desktop) ────────────────────────────
+  // IDKit v4 flow (mobile browser + desktop)
   const handleDesktopVerify = useCallback(
-    async (proof: ISuccessResult): Promise<void> => {
+    async (result: IDKitResult): Promise<void> => {
       setStatus('pending')
       setError(null)
+
+      const payload = idkitResultToPayload(result)
 
       let res: Response
       try {
@@ -173,7 +195,7 @@ export function useVerification(): UseVerificationReturn {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            payload: proof,
+            payload,
             action: process.env.NEXT_PUBLIC_ACTION_ID ?? '',
           }),
           signal: AbortSignal.timeout(15000),
