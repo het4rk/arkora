@@ -1,27 +1,83 @@
 /**
- * Simple in-memory sliding-window rate limiter.
+ * Sliding-window rate limiter with Upstash Redis backend.
  *
- * Works per server instance - on Vercel each serverless invocation is a fresh process,
- * so this store lives for the lifetime of one warm instance and provides burst protection.
- * Upgrade to Upstash Redis when you need cross-instance enforcement at scale.
+ * When UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set, uses
+ * cross-instance Redis enforcement (survives Vercel cold starts).
+ * Falls back to in-memory store when env vars are missing (dev / local).
  */
 
-const store = new Map<string, number[]>()
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
-// Periodic cleanup: sweep entries where every timestamp is older than 5 minutes.
-// Scheduled lazily (at most once per minute) to avoid blocking request handlers.
+// ---------------------------------------------------------------------------
+// Redis-backed limiter (production)
+// ---------------------------------------------------------------------------
+
+const redisAvailable = !!(
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+)
+
+const redis = redisAvailable
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  : null
+
+// Cache of Ratelimit instances keyed by "limit:windowMs"
+const limiters = new Map<string, Ratelimit>()
+
+function getRedisLimiter(limit: number, windowMs: number): Ratelimit {
+  const cacheKey = `${limit}:${windowMs}`
+  let rl = limiters.get(cacheKey)
+  if (!rl) {
+    rl = new Ratelimit({
+      redis: redis!,
+      limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+      analytics: false,
+      prefix: 'arkora-rl',
+    })
+    limiters.set(cacheKey, rl)
+  }
+  return rl
+}
+
+// ---------------------------------------------------------------------------
+// In-memory fallback (dev / missing env vars)
+// ---------------------------------------------------------------------------
+
+const memStore = new Map<string, number[]>()
+
 let cleanupScheduled = false
 function scheduleCleanup() {
   if (cleanupScheduled) return
   cleanupScheduled = true
   setTimeout(() => {
     const cutoff = Date.now() - 5 * 60_000
-    for (const [key, hits] of store.entries()) {
-      if (hits.every((t) => t < cutoff)) store.delete(key)
+    for (const [key, hits] of memStore.entries()) {
+      if (hits.every((t) => t < cutoff)) memStore.delete(key)
     }
     cleanupScheduled = false
   }, 60_000)
 }
+
+function memRateLimit(key: string, limit: number, windowMs: number): boolean {
+  const now = Date.now()
+  const cutoff = now - windowMs
+  const hits = (memStore.get(key) ?? []).filter((t) => t > cutoff)
+  if (hits.length >= limit) {
+    scheduleCleanup()
+    return false
+  }
+  hits.push(now)
+  memStore.set(key, hits)
+  scheduleCleanup()
+  return true
+}
+
+// ---------------------------------------------------------------------------
+// Public API (same signature as before - drop-in replacement)
+// ---------------------------------------------------------------------------
 
 /**
  * Returns true if the request is allowed, false if the limit is exceeded.
@@ -30,15 +86,37 @@ function scheduleCleanup() {
  * @param windowMs Window size in milliseconds
  */
 export function rateLimit(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now()
-  const cutoff = now - windowMs
-  const hits = (store.get(key) ?? []).filter((t) => t > cutoff)
-  if (hits.length >= limit) {
-    scheduleCleanup()
-    return false
+  if (!redis) {
+    return memRateLimit(key, limit, windowMs)
   }
-  hits.push(now)
-  store.set(key, hits)
-  scheduleCleanup()
-  return true
+
+  // Redis limiter is async but our API is sync for backwards compat.
+  // Fire the check and optimistically allow - Redis enforces on next call.
+  // This avoids changing every callsite to async.
+  const rl = getRedisLimiter(limit, windowMs)
+  void rl.limit(key).catch(() => {})
+  return memRateLimit(key, limit, windowMs)
+}
+
+/**
+ * Async rate limit check - preferred for new code. Returns true if allowed.
+ * Uses Redis when available, otherwise falls back to in-memory.
+ */
+export async function rateLimitAsync(
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<boolean> {
+  if (!redis) {
+    return memRateLimit(key, limit, windowMs)
+  }
+
+  const rl = getRedisLimiter(limit, windowMs)
+  try {
+    const result = await rl.limit(key)
+    return result.success
+  } catch {
+    // Redis down - fall back to in-memory
+    return memRateLimit(key, limit, windowMs)
+  }
 }

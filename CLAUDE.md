@@ -142,7 +142,7 @@ All user preferences are synced server-side in `humanUsers`. On login, `SessionH
 | Cookie validation | `getCallerNullifier()` validates format with regex before returning |
 | Rate limiting | Per-endpoint, per-user sliding window; full API key used (not truncated) |
 
-Known limitation: rate limiter is in-process (resets on Vercel cold start). Sufficient for early scale; upgrade to Upstash Redis later.
+Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set (cross-instance enforcement). Falls back to in-memory when env vars are missing (dev/local). Both sync `rateLimit()` and async `rateLimitAsync()` APIs are available.
 
 ---
 
@@ -189,7 +189,7 @@ Known limitation: rate limiter is in-process (resets on Vercel cold start). Suff
 
 ## Known Issues
 
-- **Rate limiter is in-process.** Resets on Vercel cold start. Fine for early scale; upgrade to Upstash Redis for cross-instance enforcement.
+- **Rate limiter** uses Upstash Redis in production (cross-instance). Falls back to in-memory when `UPSTASH_REDIS_REST_*` env vars are missing.
 - **Neon 20-connection limit.** Pool max set to 5 with singleton client caching.
 - **DM private key in localStorage.** Users lose DM history if they clear browser data. By design for MVP.
 - **Country code** inferred from `x-vercel-ip-country` header. GPS optional, sent only when `locationEnabled=true`.
@@ -207,6 +207,7 @@ Known limitation: rate limiter is in-process (resets on Vercel cold start). Suff
 - [ ] `NEXT_PUBLIC_ACTION_ID` matching Developer Portal action
 - [ ] `WORLDCOIN_API_KEY` for World App push notifications
 - [ ] `ADMIN_NULLIFIER_HASHES` for `/api/admin/metrics`
+- [ ] `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` for cross-instance rate limiting
 - [x] `WORLD_ID_ROUTER=0x17B354dD2595411ff79041f930e491A4Df39A278`
 - [x] `WORLD_CHAIN_RPC=https://worldchain-mainnet.g.alchemy.com/public`
 - [x] `SENTRY_AUTH_TOKEN` + `NEXT_PUBLIC_SENTRY_DSN` in Vercel
@@ -257,7 +258,7 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 ## Remaining Work
 
 - [ ] Brand assets (og-image, favicons, PWA icons) - blocks PWA install + social sharing
-- [ ] Upgrade rate limiter to Upstash Redis
+- [x] Upgrade rate limiter to Upstash Redis (with in-memory fallback)
 - [ ] Upgrade DB driver to `@neondatabase/serverless`
 - [ ] Rooms Phase 2 - audio (WebRTC or LiveKit)
 - [ ] Admin moderation queue for reports

@@ -67,7 +67,7 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.locationEnabled === 'boolean') {
     updates.locationEnabled = body.locationEnabled
   }
-  if (typeof body.locationRadius === 'number' && Number.isFinite(body.locationRadius)) {
+  if (typeof body.locationRadius === 'number' && Number.isFinite(body.locationRadius) && body.locationRadius > 0 && body.locationRadius <= 5000) {
     updates.locationRadius = body.locationRadius
   }
 
