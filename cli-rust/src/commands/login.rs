@@ -161,6 +161,9 @@ pub async fn run(color: (u8, u8, u8)) -> Result<()> {
                                 println!("{}", theme::accent_bold(&format!("Welcome, @{handle}"), color));
                             }
                             println!("{}", theme::green("Verified. Logged in successfully."));
+                            if poll_data.handle.is_none() {
+                                println!("{}", theme::dim("Open Arkora in World App to sync your username."));
+                            }
                             println!("{}", theme::dim("Config saved to ~/.config/arkora/config.json"));
                             return Ok(());
                         }
