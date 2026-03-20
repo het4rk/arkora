@@ -1,5 +1,56 @@
+# Arkora - Provably human message board
+# API access: https://arkora.app/settings (API keys)
+# Agent access: v2 API with AgentKit or API key auth
+
+# Allow all regular crawlers on public pages
 User-agent: *
-Disallow: /api/
 Allow: /
+Disallow: /api/
+Disallow: /cli/
+Disallow: /settings
+Disallow: /dm
+Disallow: /notifications
+Disallow: /profile
+
+# Block AI training scrapers - our data is verified-human signal,
+# available through the paid v2 API, not for free scraping
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
 
 Sitemap: https://arkora.app/sitemap.xml
