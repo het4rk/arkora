@@ -225,31 +225,26 @@ export async function GET(req: NextRequest) {
       nullifierHash = verifyResult.nullifierHash
     }
 
-    // Create/find user and resolve linked identities (same logic as /api/verify)
+    // Create/find user and resolve linked identities
     let raw: string
     let handle: string | null = null
     try {
       const effectiveWallet = `idkit_${nullifierHash.slice(0, 40)}`
       const worldIdUser = await getOrCreateUser(nullifierHash, effectiveWallet, undefined, true)
+      handle = worldIdUser?.pseudoHandle ?? null
 
-      // If the World ID user has a real wallet, prefer the wallet identity
-      // (this links CLI login to the same user as the web app)
+      // Resolve to wallet identity if linked (matches /api/verify logic)
       const { walletToNullifier } = await import('@/lib/serverAuth')
       if (
-        worldIdUser &&
-        worldIdUser.walletAddress &&
+        worldIdUser?.walletAddress &&
         !worldIdUser.walletAddress.startsWith('idkit_')
       ) {
         const wltNullifier = walletToNullifier(worldIdUser.walletAddress)
         const walletUser = await getUserByNullifier(wltNullifier)
         if (walletUser) {
           nullifierHash = wltNullifier
-          handle = walletUser.pseudoHandle ?? null
-        } else {
-          handle = worldIdUser.pseudoHandle ?? null
+          handle = walletUser.pseudoHandle ?? handle
         }
-      } else {
-        handle = worldIdUser?.pseudoHandle ?? null
       }
 
       const activeKeys = await countActiveKeysByOwner(nullifierHash)
