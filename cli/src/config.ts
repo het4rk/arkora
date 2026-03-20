@@ -8,6 +8,8 @@ const CONFIG_FILE = join(CONFIG_DIR, 'config.json')
 interface ArkoraConfig {
   apiKey?: string
   apiUrl?: string
+  skinId?: string
+  customHex?: string
 }
 
 export function getConfig(): ArkoraConfig {
@@ -29,7 +31,7 @@ export function getApiKey(): string | undefined {
 }
 
 export function getApiUrl(): string {
-  return getConfig().apiUrl ?? 'https://arkora.app'
+  return process.env.ARKORA_API_URL ?? getConfig().apiUrl ?? 'https://arkora.app'
 }
 
 export function requireApiKey(): string {

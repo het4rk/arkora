@@ -1,6 +1,6 @@
-import chalk from 'chalk'
 import { requireApiKey } from '../config.js'
 import { api } from '../api.js'
+import { accentBold, dim, board } from '../theme.js'
 
 interface Board {
   id: string
@@ -14,19 +14,19 @@ export async function boardsCommand(): Promise<void> {
   const boards = res.data ?? []
 
   if (boards.length === 0) {
-    console.log(chalk.dim('No boards found.'))
+    console.log(dim('No boards found.'))
     return
   }
 
   console.log()
-  console.log(chalk.bold('Boards'))
+  console.log(accentBold('Boards'))
   console.log()
 
   const maxLabel = Math.max(...boards.map((b) => b.label.length))
-  for (const board of boards) {
-    const label = board.label.padEnd(maxLabel + 2)
-    const count = chalk.dim(`${board.postCount} posts`)
-    console.log(`  ${chalk.cyan(label)} ${count}`)
+  for (const b of boards) {
+    const label = b.label.padEnd(maxLabel + 2)
+    const count = dim(`${b.postCount} posts`)
+    console.log(`  ${board(b.id).padEnd(maxLabel + 12)} ${label} ${count}`)
   }
   console.log()
 }

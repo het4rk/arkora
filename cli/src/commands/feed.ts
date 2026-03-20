@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import { requireApiKey } from '../config.js'
 import { api } from '../api.js'
+import { accentBold, dim, up, down, board } from '../theme.js'
 
 interface FeedPost {
   id: string
@@ -29,16 +30,15 @@ export async function feedCommand(options: { board?: string; limit?: string }): 
   const posts = res.data ?? []
 
   if (posts.length === 0) {
-    console.log(chalk.dim('No posts found.'))
+    console.log(dim('No posts found.'))
     return
   }
 
   console.log()
   for (const post of posts) {
-    const author = post.author.handle ?? chalk.dim('anon')
-    const board = chalk.cyan(`#${post.boardId}`)
-    const votes = chalk.green(`+${post.upvotes}`) + '/' + chalk.red(`-${post.downvotes}`)
-    const replies = chalk.dim(`${post.replyCount} replies`)
+    const author = post.author.handle ?? dim('anon')
+    const votes = up(`+${post.upvotes}`) + '/' + down(`-${post.downvotes}`)
+    const replies = dim(`${post.replyCount} replies`)
     const time = new Date(post.createdAt).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -46,11 +46,11 @@ export async function feedCommand(options: { board?: string; limit?: string }): 
       minute: '2-digit',
     })
 
-    console.log(`${chalk.bold(post.title)}`)
-    console.log(`  ${author} in ${board}  ${votes}  ${replies}  ${chalk.dim(time)}`)
+    console.log(`${accentBold(post.title)}  ${dim(post.id.slice(0, 8))}`)
+    console.log(`  ${author} in ${board(post.boardId)}  ${votes}  ${replies}  ${dim(time)}`)
     if (post.body) {
       const preview = post.body.length > 120 ? post.body.slice(0, 120) + '...' : post.body
-      console.log(`  ${chalk.dim(preview)}`)
+      console.log(`  ${dim(preview)}`)
     }
     console.log()
   }

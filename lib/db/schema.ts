@@ -512,3 +512,22 @@ export const agentkitNonces = pgTable('agentkit_nonces', {
   recordedAt: timestamp('recorded_at').defaultNow().notNull(),
 })
 
+// ── CLI Device Authorization Sessions ──────────────────────────────────────
+export const cliSessions = pgTable(
+  'cli_sessions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    token: text('token').notNull(),
+    status: text('status').notNull().default('pending'),
+    apiKey: text('api_key'),
+    nullifierHash: text('nullifier_hash'),
+    ipAddress: text('ip_address'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    consumedAt: timestamp('consumed_at'),
+  },
+  (table) => ({
+    tokenIdx: uniqueIndex('cli_sessions_token_idx').on(table.token),
+  })
+)
+

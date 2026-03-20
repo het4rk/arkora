@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import { requireApiKey } from '../config.js'
 import { api } from '../api.js'
+import { accent, dim, board } from '../theme.js'
 
 interface PostResult {
   id: string
@@ -26,9 +27,9 @@ export async function postCommand(
 
   const post = res.data!
   console.log()
-  console.log(chalk.green('Post created.'))
+  console.log(accent('Post created.'))
   console.log(`  ${chalk.bold(post.title)}`)
-  console.log(`  Board: ${chalk.cyan(`#${post.boardId}`)}`)
-  console.log(`  ID: ${chalk.dim(post.id)}`)
+  console.log(`  Board: ${board(post.boardId)}`)
+  console.log(`  ID: ${dim(post.id)}`)
   console.log()
 }

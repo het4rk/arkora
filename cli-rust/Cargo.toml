@@ -1,0 +1,23 @@
+[package]
+name = "arkora"
+version = "2.0.0"
+edition = "2024"
+description = "CLI for Arkora - the provably human message board"
+
+[[bin]]
+name = "arkora"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+dirs = "6"
+chrono = { version = "0.4", features = ["serde"] }
+colored = "3"
+qrcode = "0.14"
+urlencoding = "2"
+libc = "0.2"

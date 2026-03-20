@@ -80,8 +80,8 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 
 ### CLI
 
-- Standalone terminal client (`cli/`) - verify via QR code, post from the command line
-- `arkora login` - scan QR to open Settings, paste API key
+- Standalone terminal client (`cli/`) - World ID verification directly in terminal
+- `arkora login` - World ID QR code appears in terminal, scan with World App, verified and logged in instantly
 - `arkora feed` - browse recent posts with colored output
 - `arkora post "Title"` - create posts from terminal
 - `arkora boards` / `arkora stats` - browse boards and platform stats

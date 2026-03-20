@@ -1,6 +1,6 @@
-import chalk from 'chalk'
 import { requireApiKey } from '../config.js'
 import { api } from '../api.js'
+import { accent, accentBold, dim } from '../theme.js'
 
 interface Stats {
   totalPosts: number
@@ -17,13 +17,13 @@ export async function statsCommand(): Promise<void> {
   const stats = res.data!
 
   console.log()
-  console.log(chalk.bold('Arkora Stats'))
+  console.log(accentBold('Arkora Stats'))
   console.log()
-  console.log(`  Posts:     ${chalk.green(stats.totalPosts.toLocaleString())}`)
-  console.log(`  Replies:   ${chalk.green(stats.totalReplies.toLocaleString())}`)
-  console.log(`  Users:     ${chalk.green(stats.totalUsers.toLocaleString())}`)
-  console.log(`  Votes:     ${chalk.green(stats.totalVotes.toLocaleString())}`)
-  console.log(`  Boards:    ${chalk.green(stats.totalBoards.toLocaleString())}`)
-  console.log(`  Today:     ${chalk.yellow(stats.postsToday.toLocaleString())} posts`)
+  console.log(`  Posts:     ${accent(stats.totalPosts.toLocaleString())}`)
+  console.log(`  Replies:   ${accent(stats.totalReplies.toLocaleString())}`)
+  console.log(`  Users:     ${accent(stats.totalUsers.toLocaleString())}`)
+  console.log(`  Votes:     ${accent(stats.totalVotes.toLocaleString())}`)
+  console.log(`  Boards:    ${accent(stats.totalBoards.toLocaleString())}`)
+  console.log(`  Today:     ${accent(stats.postsToday.toLocaleString())} posts`)
   console.log()
 }
