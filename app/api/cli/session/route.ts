@@ -22,8 +22,7 @@ export async function POST(req: NextRequest) {
       data: { token, verifyUrl, expiresAt: expiresAt.toISOString() },
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[cli/session]', msg)
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    console.error('[cli/session]', err instanceof Error ? err.message : String(err))
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

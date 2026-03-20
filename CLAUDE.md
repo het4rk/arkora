@@ -21,11 +21,18 @@ pnpm db:studio        # Open Drizzle Studio GUI
 pnpm db:seed          # Seed database (reads .env.local)
 
 # CLI (standalone package in cli/)
-cd cli && pnpm dev login   # QR code login flow
-cd cli && pnpm dev feed    # View recent posts
-cd cli && pnpm dev post "Title" --body "Body" --board arkora
-cd cli && pnpm dev boards  # List boards
-cd cli && pnpm dev stats   # Platform stats
+cd cli-rust && cargo build --release   # Build Rust CLI
+arkora login                          # World ID QR login
+arkora me                             # Profile + sync skin color
+arkora feed                           # Browse posts
+arkora view <id>                      # Post + replies
+arkora post "Title" --body "Body"     # Create post
+arkora reply <id> --body "Text"       # Reply
+arkora vote <id> --up                 # Vote
+arkora search "query"                 # Search
+arkora notifications                  # Notifications
+arkora boards                         # List boards
+arkora stats                          # Platform stats
 ```
 
 ---

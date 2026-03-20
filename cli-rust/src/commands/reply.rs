@@ -21,7 +21,7 @@ pub async fn run(post_id: &str, body: &str, color: (u8, u8, u8)) -> Result<()> {
 
     let payload = serde_json::json!({ "postId": post_id, "body": body });
     let resp = api.post::<ReplyResult>("/replies", &payload).await?;
-    let reply = resp.data.unwrap();
+    let reply = resp.data.ok_or_else(|| anyhow::anyhow!("No data in response"))?;
 
     println!();
     println!("{}", theme::accent("Reply posted.", color));

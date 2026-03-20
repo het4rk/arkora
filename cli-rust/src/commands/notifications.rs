@@ -49,7 +49,7 @@ pub async fn run(mark_read: bool, color: (u8, u8, u8)) -> Result<()> {
     }
 
     let resp = api.get::<NotifData>("/notifications").await?;
-    let data = resp.data.unwrap();
+    let data = resp.data.ok_or_else(|| anyhow::anyhow!("No data in response"))?;
 
     println!();
     if data.unread_count > 0 {
@@ -79,7 +79,7 @@ pub async fn run(mark_read: bool, color: (u8, u8, u8)) -> Result<()> {
             .as_deref()
             .map(|r| format!(" ({}...)", &r[..r.len().min(8)]))
             .unwrap_or_default();
-        let time = &n.created_at[..10];
+        let time = n.created_at.get(..10).unwrap_or(&n.created_at);
 
         println!(
             "  {actor} {action}{ref_dim}{unread_mark}  {time_dim}",

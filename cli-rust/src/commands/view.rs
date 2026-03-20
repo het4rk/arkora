@@ -59,7 +59,7 @@ struct ViewData {
 
 fn time_ago(date: &str) -> String {
     let Ok(dt) = chrono::DateTime::parse_from_rfc3339(date) else {
-        return date[..10].to_string();
+        return date.get(..10).unwrap_or(date).to_string();
     };
     let diff = chrono::Utc::now().signed_duration_since(dt);
     if diff.num_minutes() < 60 {
@@ -77,7 +77,7 @@ pub async fn run(id: &str, color: (u8, u8, u8)) -> Result<()> {
     let api = ArkoraApi::new(&config::api_url(&cfg), &key);
 
     let resp = api.get::<ViewData>(&format!("/posts/{id}")).await?;
-    let data = resp.data.unwrap();
+    let data = resp.data.ok_or_else(|| anyhow::anyhow!("No data in response"))?;
     let post = &data.post;
 
     let author = post
@@ -164,7 +164,7 @@ pub async fn run(id: &str, color: (u8, u8, u8)) -> Result<()> {
                 theme::red(&format!("-{}", reply.downvotes))
             );
             let body = if reply.body.len() > 200 {
-                format!("{}...", &reply.body[..200])
+                format!("{}...", reply.body.chars().take(200).collect::<String>())
             } else {
                 reply.body.clone()
             };

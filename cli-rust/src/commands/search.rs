@@ -54,7 +54,7 @@ pub async fn run(query: &str, filter_type: &str, color: (u8, u8, u8)) -> Result<
         urlencoding::encode(query)
     );
     let resp = api.get::<SearchResults>(&path).await?;
-    let data = resp.data.unwrap();
+    let data = resp.data.ok_or_else(|| anyhow::anyhow!("No data in response"))?;
 
     let has_results = !data.boards.is_empty() || !data.people.is_empty() || !data.posts.is_empty();
     if !has_results {
@@ -105,12 +105,12 @@ pub async fn run(query: &str, filter_type: &str, color: (u8, u8, u8)) -> Result<
                 theme::board(&p.board_id, color),
                 theme::green(&format!("+{}", p.upvotes)),
                 theme::red(&format!("-{}", p.downvotes)),
-                theme::dim(&p.id[..8])
+                theme::dim(p.id.get(..8).unwrap_or(&p.id))
             );
             if let Some(body) = &p.body {
                 if !body.is_empty() {
                     let preview = if body.len() > 100 {
-                        format!("{}...", &body[..100])
+                        format!("{}...", body.chars().take(100).collect::<String>())
                     } else {
                         body.clone()
                     };

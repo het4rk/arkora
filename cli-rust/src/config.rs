@@ -38,6 +38,12 @@ pub fn save(config: &Config) -> Result<()> {
     }
     let json = serde_json::to_string_pretty(config)?;
     fs::write(&path, format!("{json}\n"))?;
+    // Restrict permissions - config contains API key
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
+    }
     Ok(())
 }
 

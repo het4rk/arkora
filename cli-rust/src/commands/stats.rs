@@ -20,7 +20,7 @@ pub async fn run(color: (u8, u8, u8)) -> Result<()> {
     let api = ArkoraApi::new(&config::api_url(&cfg), &key);
 
     let resp = api.get::<Stats>("/stats").await?;
-    let s = resp.data.unwrap();
+    let s = resp.data.ok_or_else(|| anyhow::anyhow!("No data in response"))?;
 
     println!();
     println!("{}", theme::accent_bold("Arkora Stats", color));

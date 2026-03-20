@@ -76,8 +76,7 @@ export async function POST(req: NextRequest) {
       data: { apiKey: raw },
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[cli/auth]', msg)
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    console.error('[cli/auth]', err instanceof Error ? err.message : String(err))
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

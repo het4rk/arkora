@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier } from '@/lib/serverAuth'
 import { getPendingCliSession, authorizeCliSession } from '@/lib/db/cliSessions'
-import { createApiKey, countActiveKeysByOwner } from '@/lib/db/apiKeys'
+import { createApiKey, countActiveKeysByOwner, revokeApiKey } from '@/lib/db/apiKeys'
 
 const TOKEN_RE = /^[0-9a-f]{64}$/
 
@@ -48,9 +48,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { raw } = await createApiKey(nullifierHash, 'CLI (auto)')
+    const { raw, id: keyId } = await createApiKey(nullifierHash, 'CLI (auto)')
     const ok = await authorizeCliSession(token, nullifierHash, raw)
     if (!ok) {
+      // Revoke orphaned key since session was already consumed
+      await revokeApiKey(keyId, nullifierHash)
       return NextResponse.json(
         { success: false, error: 'Session expired or already authorized' },
         { status: 409 }

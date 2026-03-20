@@ -34,9 +34,17 @@ const patchedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 
 // ── Session store on globalThis (survives Next.js hot-reloads) ────────
 type SessionEntry = { key: Buffer; requestId: string; createdAt: number }
+const SESSION_TTL = 5 * 60_000
 const g = globalThis as unknown as { __cliBridgeSessions?: Map<string, SessionEntry> }
 if (!g.__cliBridgeSessions) g.__cliBridgeSessions = new Map()
 const sessions = g.__cliBridgeSessions
+
+function pruneExpiredSessions() {
+  const cutoff = Date.now() - SESSION_TTL
+  for (const [id, s] of sessions) {
+    if (s.createdAt < cutoff) sessions.delete(id)
+  }
+}
 
 // ── AES-256-GCM decryption ────────────────────────────────────────────
 
@@ -59,6 +67,8 @@ export async function POST(req: NextRequest) {
     if (!rateLimit(`cli-bridge:${ip}`, 5, 600_000)) {
       return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429 })
     }
+
+    pruneExpiredSessions()
 
     const rpId = process.env.IDKIT_RP_ID
     const signingKey = process.env.IDKIT_SIGNING_KEY
@@ -112,9 +122,8 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     globalThis.fetch = originalFetch
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[cli/bridge POST]', msg)
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    console.error('[cli/bridge POST]', err instanceof Error ? err.message : String(err))
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -186,7 +195,7 @@ export async function GET(req: NextRequest) {
     }
 
     const verifyResult = await verifyWorldIdProof(
-      idkitResult as { merkle_root: string; nullifier_hash: string; proof: string; verification_level?: string },
+      idkitResult as unknown as import('@worldcoin/minikit-js').ISuccessResult,
       actionId,
       undefined
     )
@@ -254,8 +263,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[cli/bridge GET]', msg)
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    console.error('[cli/bridge GET]', err instanceof Error ? err.message : String(err))
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

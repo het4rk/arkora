@@ -27,7 +27,7 @@ struct Author {
 
 fn time_ago(date: &str) -> String {
     let Ok(dt) = chrono::DateTime::parse_from_rfc3339(date) else {
-        return date[..10].to_string();
+        return date.get(..10).unwrap_or(date).to_string();
     };
     let diff = chrono::Utc::now().signed_duration_since(dt);
     if diff.num_minutes() < 60 {
@@ -74,7 +74,7 @@ pub async fn run(board_filter: Option<String>, limit: u32, color: (u8, u8, u8)) 
         );
         let replies = theme::dim(&format!("{} replies", post.reply_count));
         let time = theme::dim(&time_ago(&post.created_at));
-        let id_short = theme::dim(&post.id[..8]);
+        let id_short = theme::dim(&post.id.get(..8).unwrap_or(&post.id));
 
         println!(
             "{}  {id_short}",
@@ -86,8 +86,8 @@ pub async fn run(board_filter: Option<String>, limit: u32, color: (u8, u8, u8)) 
         );
         if let Some(body) = &post.body {
             if !body.is_empty() {
-                let preview = if body.len() > 120 {
-                    format!("{}...", &body[..120])
+                let preview = if body.chars().count() > 120 {
+                    format!("{}...", body.chars().take(120).collect::<String>())
                 } else {
                     body.clone()
                 };

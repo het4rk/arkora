@@ -24,7 +24,7 @@ pub async fn run(title: &str, body: Option<&str>, board_id: &str, color: (u8, u8
     }
 
     let resp = api.post::<PostResult>("/posts", &payload).await?;
-    let post = resp.data.unwrap();
+    let post = resp.data.ok_or_else(|| anyhow::anyhow!("No data in response"))?;
 
     println!();
     println!("{}", theme::accent("Post created.", color));

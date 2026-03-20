@@ -22,7 +22,7 @@ pub async fn run(_color: (u8, u8, u8)) -> Result<()> {
     let api = ArkoraApi::new(&config::api_url(&cfg), &key);
 
     let resp = api.get::<MeData>("/me").await?;
-    let user = resp.data.unwrap();
+    let user = resp.data.ok_or_else(|| anyhow::anyhow!("No data in response"))?;
 
     // Save skin to config for future sessions
     let mut cfg = config::load();
@@ -37,7 +37,7 @@ pub async fn run(_color: (u8, u8, u8)) -> Result<()> {
         .pseudo_handle
         .as_deref()
         .unwrap_or("(no handle set)");
-    let joined = &user.created_at[..10]; // just the date
+    let joined = user.created_at.get(..10).unwrap_or(&user.created_at); // just the date
 
     println!();
     println!("{}", theme::accent_bold(name, color));
