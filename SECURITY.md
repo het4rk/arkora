@@ -16,7 +16,7 @@ Only the latest deployed version of Arkora receives security updates.
 If you discover a security vulnerability in Arkora, please report it responsibly through one of these channels:
 
 - **GitHub Private Vulnerability Reporting**: [Security Advisories](../../security/advisories/new) - preferred method
-- **Email**: [support@arkora.app](mailto:support@arkora.app) - for sensitive disclosures
+- **Email**: [security@arkora.app](mailto:security@arkora.app) - for sensitive disclosures
 
 ### What to Include
 
