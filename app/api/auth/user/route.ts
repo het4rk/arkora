@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrCreateUser, updateBio, updateIdentityMode, updatePseudoHandle, updateAvatarUrl, getUserByWalletAddressNonWlt, getUserByNullifier } from '@/lib/db/users'
+// Note: updatePseudoHandle still used in POST handler (MiniKit username sync) and migration logic
 import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
 import { sanitizeLine, sanitizeText } from '@/lib/sanitize'
 import { rateLimit } from '@/lib/rateLimit'
@@ -117,10 +118,9 @@ export async function PATCH(req: NextRequest) {
     const body = (await req.json()) as {
       bio?: string | null
       identityMode?: string
-      pseudoHandle?: string | null
       avatarUrl?: string | null
     }
-    const { bio, identityMode, pseudoHandle, avatarUrl } = body
+    const { bio, identityMode, avatarUrl } = body
     let user
     if (avatarUrl !== undefined) {
       // null = clear avatar; string = must be a valid URL from our storage domain
@@ -146,13 +146,6 @@ export async function PATCH(req: NextRequest) {
       }
       await updateIdentityMode(nullifierHash, identityMode as 'anonymous' | 'alias' | 'named')
       return NextResponse.json({ success: true })
-    } else if (pseudoHandle !== undefined) {
-      const sanitized = pseudoHandle ? sanitizeLine(pseudoHandle).slice(0, 50) : null
-      if (!sanitized) {
-        return NextResponse.json({ success: false, error: 'Handle cannot be empty' }, { status: 400 })
-      }
-      user = await updatePseudoHandle(nullifierHash, sanitized)
-      return NextResponse.json({ success: true, user })
     } else {
       return NextResponse.json({ success: false, error: 'Nothing to update' }, { status: 400 })
     }

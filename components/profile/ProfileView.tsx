@@ -38,41 +38,12 @@ export function ProfileView() {
   const [bioDraft, setBioDraft] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // Edit display name state
-  const [handleEditMode, setHandleEditMode] = useState(false)
-  const [handleDraft, setHandleDraft] = useState('')
-  const [handleSaving, setHandleSaving] = useState(false)
-
-  // Your own profile always shows your real World ID identity, regardless of chosen identity mode
+  // Display name comes from World ID username (via MiniKit or DB) - not user-editable
   function displayName(): string {
     const worldUsername = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
     const raw = worldUsername ?? user?.pseudoHandle ?? null
     if (raw) return formatDisplayName(raw)
-    return nullifierHash ? `Human #${nullifierHash.slice(-6)}` : '…'
-  }
-
-  function needsHandle(): boolean {
-    const worldUsername = MiniKit.isInstalled() ? (MiniKit.user?.username ?? null) : null
-    return !worldUsername && !user?.pseudoHandle
-  }
-
-  async function saveHandle() {
-    if (!nullifierHash || !user || !handleDraft.trim()) return
-    setHandleSaving(true)
-    try {
-      const res = await authFetch('/api/auth/user', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pseudoHandle: handleDraft.trim() }),
-      })
-      const json = (await res.json()) as { success: boolean; user?: typeof user }
-      if (json.success && json.user) {
-        setVerified(nullifierHash, json.user)
-        setHandleEditMode(false)
-      }
-    } finally {
-      setHandleSaving(false)
-    }
+    return nullifierHash ? `Human #${nullifierHash.slice(-6)}` : '...'
   }
 
   function openEdit() {
@@ -298,40 +269,6 @@ export function ProfileView() {
                 </div>
               </div>
 
-              {/* Set display name - only on desktop/IDKit (no World App username available) */}
-              {!MiniKit.isInstalled() && needsHandle() && !handleEditMode && (
-                <button
-                  onClick={() => { setHandleDraft(''); setHandleEditMode(true) }}
-                  className="text-accent text-[11px] font-medium mb-2 active:opacity-60 transition-opacity"
-                >
-                  + Set display name
-                </button>
-              )}
-              {!MiniKit.isInstalled() && handleEditMode && (
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    value={handleDraft}
-                    onChange={(e) => setHandleDraft(e.target.value.slice(0, 50))}
-                    placeholder="Display name…"
-                    autoFocus
-                    className="glass-input flex-1 rounded-[var(--r-md)] px-3 py-2 text-sm min-w-0"
-                  />
-                  <button
-                    onClick={() => void saveHandle()}
-                    disabled={!handleDraft.trim() || handleSaving}
-                    className="px-3 py-2 bg-accent text-background text-xs font-semibold rounded-[var(--r-md)] active:scale-95 transition-all disabled:opacity-40 shrink-0"
-                  >
-                    {handleSaving ? '…' : 'Set'}
-                  </button>
-                  <button
-                    onClick={() => setHandleEditMode(false)}
-                    className="px-3 py-2 glass text-text-muted text-xs font-semibold rounded-[var(--r-md)] active:opacity-60 shrink-0"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
 
               <div className="flex items-center gap-4 text-xs text-text-muted flex-wrap">
                 <span><span className="text-text font-semibold">{followerCount}</span> followers</span>
