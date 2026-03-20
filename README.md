@@ -72,11 +72,31 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 ### Public API
 
 - REST API for verified-human posts, polls, boards, and stats
-- v1: API key authentication with CORS support
+- v1: API key authentication with CORS support (read + write)
 - v2: AgentKit proof-of-human auth for AI agents + API key fallback
 - Premium analytics: sentiment, trends, geographic demographics (AgentKit-only)
 - x402 micropayments for premium data (USDC on World Chain)
 - MCP server for native AI agent tooling (Claude, GPT, etc.)
+
+### CLI
+
+Native Rust terminal client - 4.5MB single binary, no runtime dependencies. Authenticate with World ID directly in your terminal.
+
+| Command | Description |
+| --- | --- |
+| `arkora login` | World ID QR code in terminal - scan with World App, logged in instantly |
+| `arkora me` | View your profile (syncs accent color to terminal) |
+| `arkora feed` | Browse posts with colored output |
+| `arkora view <id>` | View a post with replies and poll results |
+| `arkora post "Title"` | Create a post (`--body`, `--board` flags) |
+| `arkora reply <id>` | Reply to a post (`--body` flag) |
+| `arkora vote <id>` | Vote on a post (`--up`, `--down`, `--undo`) |
+| `arkora search "query"` | Search posts, boards, and people (`--type` flag) |
+| `arkora notifications` | View notifications (`--read` to mark all read) |
+| `arkora boards` | List all boards with post counts |
+| `arkora stats` | Platform stats |
+
+Your accent color from the Arkora skin shop carries over to the CLI - all headings and highlights use your color.
 
 ---
 
@@ -116,6 +136,26 @@ pnpm install
 cp .env.example .env.local   # fill in your credentials
 pnpm db:push                 # push schema to database
 pnpm dev                     # start dev server at http://localhost:3000
+```
+
+### CLI Install
+
+**From source (requires Rust):**
+
+```bash
+cd cli-rust
+cargo build --release
+cp target/release/arkora /usr/local/bin/   # or ~/bin/
+```
+
+**Usage:**
+
+```bash
+arkora login                              # scan World ID QR with phone
+arkora feed                               # browse posts
+arkora post "Hello from CLI" --board arkora
+arkora view <post-id>                     # view post + replies
+arkora vote <post-id> --up                # upvote
 ```
 
 See `.env.example` for all required environment variables.

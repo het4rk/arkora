@@ -19,6 +19,20 @@ pnpm db:push          # Push Drizzle schema to database
 pnpm db:generate      # Generate Drizzle migrations
 pnpm db:studio        # Open Drizzle Studio GUI
 pnpm db:seed          # Seed database (reads .env.local)
+
+# CLI (standalone package in cli/)
+cd cli-rust && cargo build --release   # Build Rust CLI
+arkora login                          # World ID QR login
+arkora me                             # Profile + sync skin color
+arkora feed                           # Browse posts
+arkora view <id>                      # Post + replies
+arkora post "Title" --body "Body"     # Create post
+arkora reply <id> --body "Text"       # Reply
+arkora vote <id> --up                 # Vote
+arkora search "query"                 # Search
+arkora notifications                  # Notifications
+arkora boards                         # List boards
+arkora stats                          # Platform stats
 ```
 
 ---
@@ -111,6 +125,7 @@ All user preferences are synced server-side in `humanUsers`. On login, `SessionH
 - `rooms` - id, title, boardId, hostHash, isLive, endsAt, messageCount
 - `room_participants` - roomId, nullifierHash, displayHandle, identityMode, isMuted, isCoHost
 - `api_keys` - id (uuid), nullifierHash (owner), keyHash (SHA-256), label, lastUsedAt, revokedAt; max 5 active per user
+- `cli_sessions` - id (uuid), token (256-bit hex), status (pending/authorized), apiKey, nullifierHash, ipAddress, expiresAt, consumedAt; device authorization flow for CLI login
 
 ### Pusher
 
@@ -196,6 +211,15 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | `components/search/SearchSheet.tsx` | Multi-entity search modal |
 | `app/api/idkit/context/route.ts` | Generates RP context (signRequest) for IDKit v4 widget |
 | `next.config.ts` | CSP headers, HSTS, remotePatterns, Sentry config |
+| `cli/src/index.ts` | CLI entry point (commander setup) |
+| `cli/src/config.ts` | CLI config read/write (~/.config/arkora/config.json) |
+| `cli/src/api.ts` | CLI fetch wrapper with X-API-Key header |
+| `lib/db/cliSessions.ts` | CLI device auth session CRUD (create, getPending, authorize, consume) |
+| `app/api/cli/session/route.ts` | Create pending CLI auth session (no auth, rate limited) |
+| `app/api/cli/poll/route.ts` | CLI polls for authorization status + single-use key retrieval |
+| `app/api/cli/auth/route.ts` | Verify World ID proof + create API key (primary CLI auth) |
+| `app/api/cli/authorize/route.ts` | User authorizes CLI session (cookie auth, fallback flow) |
+| `app/cli/verify/page.tsx` | Web authorization page (fallback flow) |
 
 ---
 
@@ -252,6 +276,8 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 | Sprint | Shipped |
 | --- | --- |
+| 33 | CLI World ID direct auth - replaces manual API key copy-paste with one-scan World ID verification. CLI fetches RP context from server, creates World ID bridge request via IDKit WASM (patched fetch for Node.js WASM loading), displays the actual World ID QR code in terminal. User scans with World App, verifies identity, CLI polls bridge directly, sends proof to `POST /api/cli/auth` which verifies via cloud API and returns API key. One scan, no browser, no copy-paste. Also includes fallback device authorization flow via `cli_sessions` table + `/api/cli/session`, `/api/cli/poll`, `/api/cli/authorize` routes + `/cli/verify` web page. |
+| 32 | CLI tool (`cli/`) - standalone Node.js CLI with commander/chalk/qrcode-terminal. Commands: `arkora login` (QR code + API key validation), `arkora feed` (colored terminal output), `arkora post` (create text posts via v1 API), `arkora boards` (list boards), `arkora stats` (platform stats). Server-side: POST handler on `/api/v1/posts` (API key auth, rate limited 10/min, text-only, sanitized), `getNullifierByKeyHash()` in `lib/db/apiKeys.ts`, CORS updated to allow POST + Content-Type. |
 | 31 (v1.1.0) | Responsive layout system - CSS custom property `--app-col` scales from 100% (mobile) to 680/720/760px at md/lg/xl breakpoints, `.app-fixed` constrains all fixed chrome (TopBar, BottomNav, sheets, composers) to content column, `.app-shell` adds subtle side borders on desktop. Auth session recovery - `authFetch()` wrapper on all 60+ client-side API calls detects 401 and clears stale Zustand state. Bug fixes - DM conversations query rewritten from broken raw SQL DISTINCT ON to Drizzle builder + JS dedup, `db.execute()` return shape fixed in communityNotes. Hardening - try/catch added to 6 unprotected API routes (me, fonts, skins, preferences, nonce). Search UX - board chips limited to 12 with expandable "+N more" toggle. Version bump to 1.1.0. |
 | 30 | Identity mode isolation - sub-identity system (SHA256-derived alias/anon nullifiers), authorNullifier column for internal use (rate limiting, moderation, ownership), postIdentityMode on posts/replies. Per-action identity mode: posts and replies accept `identityMode` from request body (defaults to DB profile), ReplyComposer has inline Anon/Alias/Named picker so users can reply anonymously on any thread without switching global mode. Social hardening: follow/DM/tip/subscribe gated to named-mode, profile returns "not available" for non-named, following feed filters to named-only posts, own profile shows ALL posts (anon/alias/named) via authorNullifier query, anon/alias badge in ProfilePostCard, notifications only reveal actor for named-mode actions, room join uses DB identity mode (blocks client override), PublicProfileView hides Follow/DM/Tip for non-named viewers. Migration 0005 with backfill. New utility: lib/identityRules.ts. |
 | 29 | Hardening v2 - linked-identity gap closure: reply vote, follow, block, subscribe, tip endpoints now check all linked nullifiers (0x + wlt_) for self-action and double-vote prevention. Postgres error-code detection (23505) replaces fragile constraint-name string matching in tips/skins/fonts. Redundant NOT-EQUAL filter removed from deleteReplyVote/deletePostVote recount queries. Rate limit added to subscribe/list GET. |

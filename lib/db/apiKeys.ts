@@ -78,6 +78,16 @@ export async function revokeApiKey(id: string, nullifierHash: string): Promise<b
  * Validates a raw API key. Returns the key hash (safe for rate-limit keys) if valid.
  * Returns null for any invalid/revoked/malformed key.
  */
+/** Looks up the owner's nullifierHash by key hash. Returns null if not found or revoked. */
+export async function getNullifierByKeyHash(keyHash: string): Promise<string | null> {
+  const rows = await db
+    .select({ nullifierHash: apiKeys.nullifierHash })
+    .from(apiKeys)
+    .where(and(eq(apiKeys.keyHash, keyHash), isNull(apiKeys.revokedAt)))
+    .limit(1)
+  return rows[0]?.nullifierHash ?? null
+}
+
 export async function validateApiKey(raw: string): Promise<string | null> {
   if (!raw.startsWith('ark_') || raw.length !== 68) return null
   const hash = hashKey(raw)

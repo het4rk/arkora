@@ -4,6 +4,15 @@ import { rateLimit } from '@/lib/rateLimit'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { eq, and, or, lt, isNull, desc, sql } from 'drizzle-orm'
+import { getNullifierByKeyHash } from '@/lib/db/apiKeys'
+import { createPost } from '@/lib/db/posts'
+import { sanitizeLine, sanitizeText, parseHashtags } from '@/lib/sanitize'
+import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
+import { ANONYMOUS_BOARDS } from '@/lib/types'
+import { FEATURED_BOARDS, resolveBoard } from '@/lib/boards'
+import { getPublicNullifier } from '@/lib/identityRules'
+import { invalidatePosts } from '@/lib/cache'
+import type { IdentityMode } from '@/lib/identityRules'
 
 /**
  * GET /api/v1/posts
@@ -119,6 +128,142 @@ export async function GET(req: NextRequest) {
     console.error('[v1/posts GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
+      { status: 500, headers: CORS_HEADERS }
+    )
+  }
+}
+
+const FEATURED_IDS = FEATURED_BOARDS.map((b) => b.id)
+
+/**
+ * POST /api/v1/posts
+ * Create a text post via API key. Simplified version of cookie-auth POST /api/posts.
+ *
+ * Body (JSON):
+ *   title   - required, max 280 chars
+ *   body    - optional, max 10,000 chars
+ *   boardId - optional, defaults to "arkora"
+ *
+ * Auth: X-API-Key header (or Authorization: Bearer <key>)
+ */
+export async function POST(req: NextRequest) {
+  const auth = await requireApiKey(req)
+  if (auth instanceof NextResponse) return auth
+
+  if (!rateLimit(`v1post:${auth.key}`, 10, 60_000)) {
+    return NextResponse.json(
+      { success: false, error: 'Too many requests' },
+      { status: 429, headers: CORS_HEADERS }
+    )
+  }
+
+  try {
+    // Resolve the owner's nullifier from the key hash
+    const nullifierHash = await getNullifierByKeyHash(auth.key)
+    if (!nullifierHash) {
+      return NextResponse.json(
+        { success: false, error: 'API key owner not found' },
+        { status: 403, headers: CORS_HEADERS }
+      )
+    }
+
+    // Gate: must be a verified human
+    const verified = await isVerifiedHuman(nullifierHash)
+    if (!verified) {
+      return NextResponse.json(
+        { success: false, error: 'World ID verification required' },
+        { status: 403, headers: CORS_HEADERS }
+      )
+    }
+
+    const body = (await req.json()) as {
+      title?: string
+      body?: string
+      boardId?: string
+    }
+
+    const rawTitle = body.title
+    const rawBody = body.body
+    const rawBoardId = body.boardId
+
+    if (!rawTitle?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required field: title' },
+        { status: 400, headers: CORS_HEADERS }
+      )
+    }
+
+    const title = sanitizeLine(rawTitle)
+    const postBody = sanitizeText(rawBody ?? '')
+
+    if (title.length > 280) {
+      return NextResponse.json(
+        { success: false, error: 'Title exceeds 280 characters' },
+        { status: 400, headers: CORS_HEADERS }
+      )
+    }
+
+    if (postBody.length > 10000) {
+      return NextResponse.json(
+        { success: false, error: 'Body exceeds 10,000 characters' },
+        { status: 400, headers: CORS_HEADERS }
+      )
+    }
+
+    // Parse hashtags from title + body for multi-board discovery
+    const tags = parseHashtags(`${title} ${postBody}`)
+
+    // Resolve board
+    let boardId = resolveBoard(rawBoardId ?? 'arkora', FEATURED_IDS)
+    if (boardId === 'arkora' && tags.length > 0) {
+      const autoBoard = resolveBoard(tags[0]!, FEATURED_IDS)
+      if (autoBoard !== 'arkora') boardId = autoBoard
+    }
+
+    // Identity: always named mode unless anonymous board
+    const user = await getUserByNullifier(nullifierHash)
+    let identityMode: IdentityMode = (user?.identityMode as IdentityMode) ?? 'named'
+    if (ANONYMOUS_BOARDS.has(boardId)) {
+      identityMode = 'anonymous'
+    }
+
+    const pseudoHandle = identityMode === 'anonymous'
+      ? undefined
+      : user?.pseudoHandle ?? undefined
+
+    const preAllocatedId = crypto.randomUUID()
+    const publicNullifier = getPublicNullifier(nullifierHash, identityMode, preAllocatedId)
+
+    const post = await createPost({
+      id: preAllocatedId,
+      title,
+      body: postBody,
+      boardId,
+      nullifierHash: publicNullifier,
+      pseudoHandle,
+      type: 'text',
+      authorNullifier: nullifierHash,
+      postIdentityMode: identityMode,
+      ...(tags.length > 0 && { tags }),
+    })
+    invalidatePosts()
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          id: post.id,
+          title: post.title,
+          boardId: post.boardId,
+          createdAt: post.createdAt,
+        },
+      },
+      { status: 201, headers: CORS_HEADERS }
+    )
+  } catch (err) {
+    console.error('[v1/posts POST]', err instanceof Error ? err.message : String(err))
+    return NextResponse.json(
+      { success: false, error: 'Failed to create post' },
       { status: 500, headers: CORS_HEADERS }
     )
   }

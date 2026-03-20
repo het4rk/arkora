@@ -36,3 +36,7 @@ yarn-error.log*
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# CLI build artifacts
+cli-rust/target/
+cli/dist/
