@@ -55,9 +55,17 @@ export async function POST(req: NextRequest) {
       nullifierHash = verifyResult.nullifierHash
     }
 
-    // Ensure user exists
+    // Ensure user exists and resolve linked identity
     const effectiveWallet = `idkit_${nullifierHash.slice(0, 40)}`
-    await getOrCreateUser(nullifierHash, effectiveWallet, undefined, true)
+    const worldIdUser = await getOrCreateUser(nullifierHash, effectiveWallet, undefined, true)
+
+    // If user has a real wallet, use the wallet identity (links CLI to web app user)
+    const { walletToNullifier } = await import('@/lib/serverAuth')
+    if (worldIdUser?.walletAddress && !worldIdUser.walletAddress.startsWith('idkit_')) {
+      const wltNullifier = walletToNullifier(worldIdUser.walletAddress)
+      const walletUser = await getUserByNullifier(wltNullifier)
+      if (walletUser) nullifierHash = wltNullifier
+    }
 
     // Check API key limit
     const activeKeys = await countActiveKeysByOwner(nullifierHash)
