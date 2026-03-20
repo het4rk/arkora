@@ -3,6 +3,10 @@ name = "arkora"
 version = "2.0.0"
 edition = "2024"
 description = "CLI for Arkora - the provably human message board"
+authors = ["Hetark <hetark@arkora.app>"]
+homepage = "https://arkora.app"
+repository = "https://github.com/het4rk/arkora"
+license = "MIT"
 
 [[bin]]
 name = "arkora"

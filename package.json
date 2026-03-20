@@ -2,6 +2,7 @@
   "name": "arkora",
   "version": "1.1.0",
   "private": true,
+  "author": "Hetark <hetark@arkora.app> (https://arkora.app)",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
