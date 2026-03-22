@@ -15,8 +15,8 @@
   --color-accent: var(--clr-accent);
   --color-accent-hover: var(--accent-hover);
 
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  --font-sans: system-ui, sans-serif;
+  --font-mono: monospace;
 
   --breakpoint-xs: 390px;
 
@@ -83,7 +83,6 @@
 
   /* Brand - monochrome (white accent on dark) */
   --clr-accent:   rgb(255, 255, 255);
-  --accent-hex:   #FFFFFF;
   --accent-hover: #E0E0E0;
 
   /* iOS 26 Liquid Glass tokens */
@@ -92,7 +91,6 @@
   --glass-shine:  rgba(255,255,255,0.28);
   --glass-shadow: rgba(0,0,0,0.22);
   --glass-blur:   80px;
-  --glass-sat:    200%;
 
   /* Spatial system */
   --r-sm:   12px;
@@ -112,7 +110,6 @@
 
   /* Brand - monochrome (near-black accent on light) */
   --clr-accent:   rgb(18, 18, 20);
-  --accent-hex:   #121214;
   --accent-hover: #2A2A2E;
 
   --glass-bg:     rgba(255,255,255,0.62);
@@ -227,24 +224,6 @@ h1, h2, h3, h4, h5, h6 {
     inset 0 -1px 0 rgba(0,0,0,0.10),      /* bottom depth shadow */
     0 8px 32px var(--glass-shadow),        /* elevation shadow */
     0 0 0 0.5px rgba(255,255,255,0.06);   /* outer glow */
-}
-
-/* Liquid glass - iridescent tint for navigation & prominent surfaces */
-.glass-liquid {
-  background: linear-gradient(
-    160deg,
-    rgba(255,255,255,0.09)   0%,
-    rgba(255,255,255,0.075) 35%,
-    rgba(255,255,255,0.055) 65%,
-    rgba(255,255,255,0.045) 100%
-  );
-  backdrop-filter: blur(62px) saturate(200%);
-  -webkit-backdrop-filter: blur(62px) saturate(200%);
-  border: 1px solid rgba(255,255,255,0.13);
-  box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.20),
-    inset 0 -1px 0  rgba(0,0,0,0.18),
-    0 8px 48px var(--glass-shadow);
 }
 
 /* Navigation bar - anchored bottom, narrower shadow */
