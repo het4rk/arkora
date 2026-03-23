@@ -29,6 +29,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         : post.body
       : 'Discussion on Arkora'
 
+  const ogImage = `https://arkora.app/api/og?title=${encodeURIComponent(rawTitle.slice(0, 120))}&board=${encodeURIComponent(post.boardId ?? '')}&type=${post.type ?? 'text'}`
+
   return {
     title: fullTitle,
     description,
@@ -37,11 +39,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       type: 'article',
       siteName: 'Arkora',
+      images: [{ url: ogImage, width: 1200, height: 630 }],
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: fullTitle,
       description,
+      images: [ogImage],
     },
   }
 }

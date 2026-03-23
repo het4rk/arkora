@@ -102,10 +102,10 @@ export async function createPost(input: CreatePostInput & { id?: string }): Prom
 
 type PostWithQuoted = { post: typeof posts.$inferSelect; quoted: typeof posts.$inferSelect | null; karmaScore: number | null }
 
-/** Lightweight fetch for metadata generation - no joins, just title + body. */
-export async function getPostMetadata(id: string): Promise<{ title: string | null; body: string } | null> {
+/** Lightweight fetch for metadata generation - no joins. */
+export async function getPostMetadata(id: string): Promise<{ title: string | null; body: string; boardId: string | null; type: string | null } | null> {
   const [row] = await db
-    .select({ title: posts.title, body: posts.body })
+    .select({ title: posts.title, body: posts.body, boardId: posts.boardId, type: posts.type })
     .from(posts)
     .where(eq(posts.id, id))
     .limit(1)

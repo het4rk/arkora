@@ -1,6 +1,6 @@
 {
   "name": "arkora",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "author": "Hetark <hetark@arkora.app> (https://arkora.app)",
   "scripts": {
@@ -26,6 +26,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/og": "^0.11.1",
     "@vercel/speed-insights": "^2.0.0",
     "@worldcoin/agentkit": "^0.1.5",
     "@worldcoin/idkit": "^4.0.10",
