@@ -2,14 +2,19 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![CI](https://github.com/het4rk/arkora/actions/workflows/ci.yml/badge.svg)](https://github.com/het4rk/arkora/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/release/het4rk/arkora?label=version)](https://github.com/het4rk/arkora/releases)
 
-A provably human anonymous message board. Every voice is verified.
+**A provably human anonymous message board. Every voice is verified.**
 
-Arkora is a [World App](https://world.org) miniapp where users post, vote, and converse anonymously - but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities.
+> Post, vote, and converse anonymously - but every account is backed by a unique World ID proof of humanity. No bots, no fake accounts, no duplicate identities. World ID Orb proofs are validated onchain via the WorldIDRouter contract on World Chain - not on centralized servers.
 
-World ID Orb proofs are validated directly on World Chain via the WorldIDRouter smart contract - not on Worldcoin's centralized servers. Proof validation is settled by blockchain consensus.
+<p align="center">
+  <a href="https://arkora.app"><strong>arkora.app</strong></a> - Try it live in World App
+  <br />
+  <a href="https://x.com/humansposting">Twitter</a> - <a href="https://github.com/het4rk/arkora/releases">Changelog</a> - <a href="#developer-api">API Docs</a> - <a href="#cli">CLI</a>
+</p>
 
-**Live:** [arkora.app](https://arkora.app) | **Twitter:** [@humansposting](https://x.com/humansposting) | **License:** [MIT](./LICENSE)
+<!-- Add a screenshot here: ![Arkora Screenshot](docs/screenshot.png) -->
 
 ---
 
@@ -105,15 +110,9 @@ Your accent color from the Arkora skin shop carries over to the CLI - all headin
 
 ---
 
-## Recent Changes (Sprint 34)
+## Changelog
 
-- **Performance** - Feed virtualization (react-virtuoso), cursor-based reply pagination, hot feed cache TTL increase, Neon serverless HTTP driver (stateless HTTPS, no connection pooling needed)
-- **Reliability** - Async rate limiting on all 64+ endpoints (Upstash Redis), FeatureErrorBoundary on 11 sections, authFetch retry with exponential backoff, S3 upload retry, DB statement timeout, health check endpoint (DB + Redis + timeout)
-- **Security** - Edge middleware (payload size gating), per-recipient DM rate limit, follow cap (10K), walletAddress redacted from API, pseudoHandle length cap
-- **Observability** - Sentry breadcrumbs + error context + session replay, loading skeletons for 8 routes
-- **SEO/PWA** - Dynamic OG metadata for posts/profiles, sitemap.xml, service worker + PWA offline support
-- **Accessibility** - Focus trap, skip link, ARIA states
-- **Code quality** - Dead CSS cleanup, IDKit code-split (dynamic import), Pusher lazy init, vercel.json per-route timeouts, Playwright E2E tests (11 tests)
+See [Releases](https://github.com/het4rk/arkora/releases) for the full version history and changelog.
 
 ---
 
