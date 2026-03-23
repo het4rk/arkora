@@ -25,7 +25,7 @@ export async function updateKarma(nullifierHash: string, delta: number): Promise
  * Returns the recomputed score.
  */
 export async function recomputeKarma(nullifierHash: string): Promise<number> {
-  const [result] = await db.execute<{ karma_score: string | number }>(
+  const [result] = (await db.execute<{ karma_score: string | number }>(
     sql`
       WITH post_karma AS (
         SELECT COALESCE(SUM(upvotes - downvotes), 0) AS score
@@ -42,7 +42,7 @@ export async function recomputeKarma(nullifierHash: string): Promise<number> {
       WHERE nullifier_hash = ${nullifierHash}
       RETURNING karma_score
     `
-  )
+  )).rows
   return Number(result?.karma_score ?? 0)
 }
 

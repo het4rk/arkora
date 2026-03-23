@@ -15,6 +15,7 @@ pnpm dev              # Next.js dev server (Turbopack)
 pnpm build            # Production build
 pnpm lint             # ESLint
 pnpm test             # Run all tests (82 Vitest unit tests)
+pnpm test:e2e         # Playwright E2E tests (11 tests, chromium)
 pnpm db:push          # Push Drizzle schema to database
 pnpm db:generate      # Generate Drizzle migrations
 pnpm db:studio        # Open Drizzle Studio GUI
@@ -43,7 +44,7 @@ arkora stats                          # Platform stats
 - **Language**: TypeScript 5.6 strict mode (`noUncheckedIndexedAccess`, `noImplicitAny`, `noImplicitReturns`)
 - **Styling**: Tailwind CSS 4 (CSS-first config via `@theme` in `globals.css`) + custom glass-morphism classes
 - **State**: Zustand with localStorage persistence (`store/useArkoraStore.ts`)
-- **Database**: Neon Postgres via Drizzle ORM (`lib/db/schema.ts`)
+- **Database**: Neon Postgres via `@neondatabase/serverless` HTTP driver + Drizzle ORM (`lib/db/schema.ts`)
 - **Real-time**: Pusher (server `lib/pusher.ts`, client `pusher-js`)
 - **Auth**: World ID MiniKit (`@worldcoin/minikit-js`, `@worldcoin/minikit-react`) + IDKit v4 (`@worldcoin/idkit`) for desktop/mobile-browser
 - **Blockchain**: viem on World Chain (WorldIDRouter onchain proof verification, chain 480)
@@ -203,6 +204,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | `hooks/useFeed.ts` | Feed data fetching + pagination + cache |
 | `hooks/useMentionAutocomplete.ts` | @mention detection + debounced autocomplete |
 | `components/auth/SessionHydrator.tsx` | Hydrates Zustand from server on login (skins, fonts, preferences) |
+| `components/providers/ServiceWorkerRegistrar.tsx` | Registers `/sw.js` service worker on mount |
 | `components/providers/SkinProvider.tsx` | Applies skin CSS vars from Zustand |
 | `components/providers/FontProvider.tsx` | Injects Google Fonts + sets --font-override CSS var |
 | `components/settings/SkinShop.tsx` | Skin purchase + live preview before purchase |
@@ -227,7 +229,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 ## Known Issues
 
 - **Rate limiter** fully async with Upstash Redis enforcement across all 64+ endpoints in production (cross-instance). Falls back to in-memory when `UPSTASH_REDIS_REST_*` env vars are missing.
-- **Neon 20-connection limit.** Pool max set to 5 with singleton client caching.
+- **Neon HTTP driver.** Each query is a stateless HTTPS request - no connection pooling needed. No transaction support (use single atomic SQL statements with CTEs instead).
 - **DM private key in localStorage.** Users lose DM history if they clear browser data. By design for MVP.
 - **Country code** inferred from `x-vercel-ip-country` header. GPS optional, sent only when `locationEnabled=true`.
 - **Brand assets** (`/og-image.png`, `/icon-192.png`, `/icon-512.png`, `/favicon.ico`, `/apple-touch-icon.png`) must be created - blocks PWA install and social sharing previews.
@@ -398,11 +400,11 @@ MCP_PORT                 - MCP SSE port (default: 3001)
 - [x] Dead code cleanup + dependency audit (Sprint 28)
 - [x] Responsive layout (v1.1.0) - CSS breakpoint system, desktop side borders, fixed chrome constrained
 - [x] Auth session recovery (v1.1.0) - authFetch wrapper on all client API calls
-- [ ] Upgrade DB driver to `@neondatabase/serverless`
+- [x] Upgrade DB driver to `@neondatabase/serverless`
 - [ ] Rooms Phase 2 - audio (WebRTC or LiveKit)
 - [ ] Admin moderation queue for reports
-- [ ] Playwright E2E tests for critical paths
-- [ ] Service worker for PWA offline support
+- [x] Playwright E2E tests for critical paths
+- [x] Service worker for PWA offline support
 - [ ] Custom domain
 - [ ] eslint 10 upgrade (blocked by eslint-plugin-react compatibility)
 - [x] Migrate sync `rateLimit()` to async `rateLimit()` on all endpoints

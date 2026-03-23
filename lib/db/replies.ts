@@ -97,7 +97,7 @@ export async function upsertReplyVote(
   nullifierHash: string,
   direction: 1 | -1
 ): Promise<{ upvotes: number; downvotes: number }> {
-  const [row] = await db.execute<{ upvotes: number | string; downvotes: number | string }>(
+  const [row] = (await db.execute<{ upvotes: number | string; downvotes: number | string }>(
     sql`WITH upsert AS (
           INSERT INTO reply_votes (reply_id, nullifier_hash, direction)
           VALUES (${replyId}, ${nullifierHash}, ${direction})
@@ -110,7 +110,7 @@ export async function upsertReplyVote(
           downvotes = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction = -1)
         WHERE id = ${replyId}
         RETURNING upvotes, downvotes`
-  )
+  )).rows
   return {
     upvotes: Number(row?.upvotes ?? 0),
     downvotes: Number(row?.downvotes ?? 0),
@@ -122,7 +122,7 @@ export async function deleteReplyVote(
   replyId: string,
   nullifierHash: string
 ): Promise<{ upvotes: number; downvotes: number }> {
-  const [row] = await db.execute<{ upvotes: number | string; downvotes: number | string }>(
+  const [row] = (await db.execute<{ upvotes: number | string; downvotes: number | string }>(
     sql`WITH deleted AS (
           DELETE FROM reply_votes
           WHERE reply_id = ${replyId} AND nullifier_hash = ${nullifierHash}
@@ -133,7 +133,7 @@ export async function deleteReplyVote(
           downvotes = (SELECT COUNT(*) FROM reply_votes WHERE reply_id = ${replyId} AND direction = -1)
         WHERE id = ${replyId}
         RETURNING upvotes, downvotes`
-  )
+  )).rows
   return {
     upvotes: Number(row?.upvotes ?? 0),
     downvotes: Number(row?.downvotes ?? 0),

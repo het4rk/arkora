@@ -70,9 +70,7 @@ export async function voteOnNote(
         RETURNING id, post_id, body, submitter_nullifier_hash,
                   helpful_votes, not_helpful_votes, is_promoted, created_at`
   )
-  const voteAny = voteResult as unknown as (NoteRow[] | { rows: NoteRow[] })
-  const voteRows = (Array.isArray(voteAny) ? voteAny : voteAny.rows)
-  const [updated] = voteRows
+  const [updated] = (voteResult as unknown as { rows: NoteRow[] }).rows
 
   if (!updated) throw new Error('Note not found')
   return {
@@ -116,9 +114,7 @@ export async function deleteNoteVote(
         RETURNING id, post_id, body, submitter_nullifier_hash,
                   helpful_votes, not_helpful_votes, is_promoted, created_at`
   )
-  const deleteAny = deleteResult as unknown as (NoteRow[] | { rows: NoteRow[] })
-  const deleteRows = (Array.isArray(deleteAny) ? deleteAny : deleteAny.rows)
-  const [updated] = deleteRows
+  const [updated] = (deleteResult as unknown as { rows: NoteRow[] }).rows
 
   if (!updated) throw new Error('Note not found')
   return {

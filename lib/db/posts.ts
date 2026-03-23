@@ -177,7 +177,7 @@ export async function getFeed(params: FeedParams): Promise<Post[]> {
 
 /** Hot feed: Wilson-score-ish ranking - net votes / (age_hours + 2)^1.5 */
 export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> {
-  const rows = await db.execute<typeof posts.$inferSelect & { quoted_id: string | null }>(
+  const result = await db.execute<typeof posts.$inferSelect & { quoted_id: string | null }>(
     sql`SELECT p.*, hu.karma_score as author_karma_score, qp.id as quoted_id,
           qp.title as q_title, qp.body as q_body, qp.board_id as q_board_id,
           qp.nullifier_hash as q_nullifier_hash, qp.pseudo_handle as q_pseudo_handle,
@@ -199,7 +199,7 @@ export async function getHotFeed(boardId?: string, limit = 30): Promise<Post[]> 
         LIMIT ${Math.min(limit, 50)}`
   )
 
-  return (rows as unknown as Array<Record<string, unknown>>).map((r) => {
+  return (result.rows as unknown as Array<Record<string, unknown>>).map((r) => {
     const post: Post = {
       id: r['id'] as string, title: r['title'] as string, body: r['body'] as string,
       boardId: r['board_id'] as BoardId, nullifierHash: r['nullifier_hash'] as string,
@@ -502,7 +502,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
     params.lat !== undefined &&
     params.lng !== undefined
 
-  const rows = await db.execute<typeof posts.$inferSelect & { quoted_id: string | null }>(
+  const result = await db.execute<typeof posts.$inferSelect & { quoted_id: string | null }>(
     sql`SELECT p.*, hu.karma_score as author_karma_score, qp.id as quoted_id,
           qp.title as q_title, qp.body as q_body, qp.board_id as q_board_id,
           qp.nullifier_hash as q_nullifier_hash, qp.pseudo_handle as q_pseudo_handle,
@@ -533,7 +533,7 @@ export async function getLocalFeed(params: LocalFeedParams): Promise<Post[]> {
         LIMIT ${limit}`
   )
 
-  return (rows as unknown as Array<Record<string, unknown>>).map((r) => {
+  return (result.rows as unknown as Array<Record<string, unknown>>).map((r) => {
     const post: Post = {
       id: r['id'] as string, title: r['title'] as string, body: r['body'] as string,
       boardId: r['board_id'] as BoardId, nullifierHash: r['nullifier_hash'] as string,

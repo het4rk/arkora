@@ -97,10 +97,10 @@ export async function GET() {
     type DayRow = { day: string; count: string | number }
     type BoardRow = { board_id: string; count: string | number }
 
-    const dauRows = (dauRow as unknown) as CountRow[]
-    const mauRows = (mauRow as unknown) as CountRow[]
-    const last7dRows = (postsLast7dRow as unknown) as DayRow[]
-    const boardRows = (boardBreakdownRows as unknown) as BoardRow[]
+    const dauRows = (dauRow as unknown as { rows: CountRow[] }).rows
+    const mauRows = (mauRow as unknown as { rows: CountRow[] }).rows
+    const last7dRows = (postsLast7dRow as unknown as { rows: DayRow[] }).rows
+    const boardRows = (boardBreakdownRows as unknown as { rows: BoardRow[] }).rows
 
     return NextResponse.json({
       success: true,

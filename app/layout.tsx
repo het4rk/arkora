@@ -16,6 +16,7 @@ import { SessionHydrator } from '@/components/auth/SessionHydrator'
 import { TopBar } from '@/components/ui/TopBar'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/next'
+import { ServiceWorkerRegistrar } from '@/components/providers/ServiceWorkerRegistrar'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://arkora.app'),
@@ -80,6 +81,7 @@ export default function RootLayout({
           <BottomNav />
           <SpeedInsights />
           <Analytics />
+          <ServiceWorkerRegistrar />
         </MiniKitProvider>
       </body>
     </html>

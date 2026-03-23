@@ -40,3 +40,7 @@ yarn-error.log*
 # CLI build artifacts
 cli-rust/target/
 cli/dist/
+
+# Playwright
+test-results/
+playwright-report/
