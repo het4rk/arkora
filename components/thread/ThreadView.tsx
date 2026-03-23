@@ -18,6 +18,7 @@ import { useArkoraStore } from '@/store/useArkoraStore'
 import { haptic, formatDisplayName } from '@/lib/utils'
 import type { Reply } from '@/lib/types'
 import { BodyText } from '@/components/ui/BodyText'
+import { ShareSheet } from '@/components/ui/ShareSheet'
 import { authFetch } from '@/lib/authFetch'
 
 interface ThreadData {
@@ -105,6 +106,7 @@ export function ThreadView({ postId }: Props) {
   const [replySort, setReplySort] = useState<'top' | 'newest' | 'oldest'>('top')
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
   const [noteSubmitting, setNoteSubmitting] = useState(false)
@@ -360,6 +362,20 @@ export function ThreadView({ postId }: Props) {
                 <span>Note</span>
               </button>
               <BookmarkButton postId={post.id} />
+              <button
+                onClick={() => {
+                  haptic('light')
+                  setShareOpen(true)
+                }}
+                aria-label="Share post"
+                className="flex items-center gap-1 text-text-muted text-xs active:scale-90 transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+              </button>
               {post.viewCount > 0 && (
                 <span className="text-text-muted text-xs flex items-center gap-1">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -464,6 +480,14 @@ export function ThreadView({ postId }: Props) {
           onSuccess={() => { setReplyingTo(null); void fetchThread() }}
         />
       </div>
+
+      <ShareSheet
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={`${typeof window !== 'undefined' ? window.location.origin : ''}/post/${postId}`}
+        title={post.title}
+        text={post.type === 'poll' ? `Poll: ${post.title}` : post.body ? post.body.slice(0, 120) : undefined}
+      />
     </div>
   )
 }

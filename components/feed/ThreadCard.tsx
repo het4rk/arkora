@@ -13,10 +13,11 @@ import { TimeAgo } from '@/components/ui/TimeAgo'
 import { BookmarkButton } from '@/components/ui/BookmarkButton'
 import { QuotedPost } from '@/components/ui/QuotedPost'
 import { ReportSheet } from '@/components/ui/ReportSheet'
+import { ShareSheet } from '@/components/ui/ShareSheet'
 import { ImageViewer } from '@/components/ui/ImageViewer'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useT } from '@/hooks/useT'
-import { haptic, formatDisplayName, shareUrl } from '@/lib/utils'
+import { haptic, formatDisplayName } from '@/lib/utils'
 import { authFetch } from '@/lib/authFetch'
 
 interface Props {
@@ -40,20 +41,11 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const [repostMenuOpen, setRepostMenuOpen] = useState(false)
   const [isReposting, setIsReposting] = useState(false)
   const [reposted, setReposted] = useState(false)
-  const [shareCopied, setShareCopied] = useState(false)
-
-  async function handleShare(e: React.MouseEvent) {
-    e.stopPropagation()
-    const result = await shareUrl(`/post/${post.id}`, post.title)
-    if (result === 'copied') {
-      setShareCopied(true)
-      setTimeout(() => setShareCopied(false), 2000)
-    }
-  }
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isOwner = !!nullifierHash && post.nullifierHash === nullifierHash
   const displayName = post.pseudoHandle ? formatDisplayName(post.pseudoHandle) : post.sessionTag
@@ -285,21 +277,19 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
           </button>
           <BookmarkButton postId={post.id} {...(isBookmarked !== undefined && { initialBookmarked: isBookmarked })} />
           <button
-            onClick={(e) => { void handleShare(e) }}
+            onClick={(e) => {
+              e.stopPropagation()
+              haptic('light')
+              setShareOpen(true)
+            }}
             aria-label="Share post"
-            className={`flex items-center gap-1 text-xs active:scale-90 transition-all ${shareCopied ? 'text-accent' : 'text-text-muted'}`}
+            className="flex items-center gap-1 text-xs active:scale-90 transition-all text-text-muted"
           >
-            {shareCopied ? (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            ) : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                <polyline points="16 6 12 2 8 6" />
-                <line x1="12" y1="2" x2="12" y2="15" />
-              </svg>
-            )}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
           </button>
           {post.viewCount > 0 && (
             <div className="flex items-center gap-1 text-text-muted text-xs">
@@ -326,6 +316,13 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
       onClose={() => setReportOpen(false)}
       targetType="post"
       targetId={post.id}
+    />
+    <ShareSheet
+      isOpen={shareOpen}
+      onClose={() => setShareOpen(false)}
+      url={`${typeof window !== 'undefined' ? window.location.origin : ''}/post/${post.id}`}
+      title={post.title}
+      text={post.type === 'poll' ? `Poll: ${post.title}` : post.body ? post.body.slice(0, 120) : undefined}
     />
     {post.imageUrl && (
       <ImageViewer

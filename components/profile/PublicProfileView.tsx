@@ -11,6 +11,7 @@ import { AnimatePresence } from 'framer-motion'
 import { TipModal } from '@/components/ui/TipModal'
 import { SubscribeModal } from '@/components/ui/SubscribeModal'
 import { haptic, formatDisplayName } from '@/lib/utils'
+import { ShareSheet } from '@/components/ui/ShareSheet'
 import type { Post, HumanUser } from '@/lib/types'
 import { authFetch } from '@/lib/authFetch'
 import Link from 'next/link'
@@ -41,6 +42,7 @@ export function PublicProfileView({ nullifierHash }: Props) {
   const [followLoading, setFollowLoading] = useState(false)
   const [tipOpen, setTipOpen] = useState(false)
   const [subOpen, setSubOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const isOwnProfile = viewerHash === nullifierHash
 
   const fetchProfile = useCallback(async () => {
@@ -246,6 +248,22 @@ export function PublicProfileView({ nullifierHash }: Props) {
             {data?.user?.bio && (
               <p className="text-text-secondary text-sm mt-3 leading-relaxed">{data.user.bio}</p>
             )}
+
+            {/* Share profile */}
+            <button
+              onClick={() => {
+                haptic('light')
+                setShareOpen(true)
+              }}
+              className="mt-4 flex items-center gap-1.5 text-text-muted text-xs font-medium active:opacity-60 transition-opacity"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+              Share profile
+            </button>
           </div>
         </div>
 
@@ -302,6 +320,14 @@ export function PublicProfileView({ nullifierHash }: Props) {
           />
         )}
       </AnimatePresence>
+
+      <ShareSheet
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={`${typeof window !== 'undefined' ? window.location.origin : ''}/u/${nullifierHash}`}
+        title={displayName}
+        text={`Check out ${displayName} on Arkora - the provably human message board.`}
+      />
     </div>
   )
 }

@@ -7,8 +7,9 @@ import { MiniKit } from '@worldcoin/minikit-js'
 import { useArkoraStore, type IdentityMode, type Theme } from '@/store/useArkoraStore'
 import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n'
 import { generateAlias } from '@/lib/session'
-import { cn } from '@/lib/utils'
+import { cn, haptic } from '@/lib/utils'
 import { useT } from '@/hooks/useT'
+import { ShareSheet } from '@/components/ui/ShareSheet'
 import { SkinShop } from '@/components/settings/SkinShop'
 import { FontShop } from '@/components/settings/FontShop'
 import { getSkinById } from '@/lib/skins'
@@ -73,6 +74,7 @@ export function SettingsView() {
     }).catch(() => null)
   }
 
+  const [inviteOpen, setInviteOpen] = useState(false)
   const [aliasDraft, setAliasDraft] = useState(persistentAlias ?? '')
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -566,6 +568,22 @@ export function SettingsView() {
                 </span>
               </div>
             </div>
+            <button
+              onClick={() => {
+                haptic('light')
+                setInviteOpen(true)
+              }}
+              className="w-full flex items-center gap-2 px-4 py-3 glass rounded-[var(--r-lg)] text-accent text-sm font-semibold active:opacity-70 transition-opacity"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <line x1="20" y1="8" x2="20" y2="14" />
+                <line x1="23" y1="11" x2="17" y2="11" />
+              </svg>
+              <span>Invite Friends</span>
+            </button>
             {isVerified && (
               <button
                 onClick={async () => {
@@ -995,6 +1013,14 @@ export function SettingsView() {
           </section>
         </div>
       </div>
+
+      <ShareSheet
+        isOpen={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        url="https://arkora.app"
+        title="Arkora"
+        text="Join Arkora - the provably human message board. Every voice is verified."
+      />
     </div>
   )
 }

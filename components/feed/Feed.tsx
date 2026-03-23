@@ -10,7 +10,9 @@ import { LiveRoomsStrip } from './LiveRoomsStrip'
 import { haptic } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { useT } from '@/hooks/useT'
+import { ShareSheet } from '@/components/ui/ShareSheet'
 import type { PollResult } from '@/lib/types'
+import { BOARDS } from '@/lib/types'
 import { authFetch } from '@/lib/authFetch'
 
 // Discrete radius options in miles; -1 means "entire country"
@@ -104,6 +106,8 @@ export function Feed() {
       })
       .catch(() => null)
   }, [])
+
+  const [boardShareOpen, setBoardShareOpen] = useState(false)
 
   // ---- Touch gesture state (pull-to-refresh + horizontal tab swipe) ----
   const [pullDistance, setPullDistance] = useState(0)
@@ -247,6 +251,32 @@ export function Feed() {
           ))}
         </div>
       </div>
+
+      {/* Active board chip + share */}
+      {activeBoard && (
+        <div
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 56px)' }}
+          className="fixed left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5"
+        >
+          <span className="glass rounded-full px-3 py-1 text-xs font-semibold text-accent shadow-lg">
+            #{BOARDS.find((b) => b.id === activeBoard)?.label ?? activeBoard}
+          </span>
+          <button
+            onClick={() => {
+              haptic('light')
+              setBoardShareOpen(true)
+            }}
+            aria-label="Share board"
+            className="glass rounded-full p-1.5 shadow-lg text-text-muted active:scale-90 transition-all"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Radius slider - shown below TopBar when Local is active and location granted */}
       {hasLocalCoords && (
@@ -432,6 +462,16 @@ export function Feed() {
           />
         )}
       </div>
+
+      {activeBoard && (
+        <ShareSheet
+          isOpen={boardShareOpen}
+          onClose={() => setBoardShareOpen(false)}
+          url={typeof window !== 'undefined' ? window.location.origin : 'https://arkora.app'}
+          title={`#${BOARDS.find((b) => b.id === activeBoard)?.label ?? activeBoard} on Arkora`}
+          text={`Check out #${BOARDS.find((b) => b.id === activeBoard)?.label ?? activeBoard} on Arkora - the provably human message board.`}
+        />
+      )}
     </>
   )
 }
