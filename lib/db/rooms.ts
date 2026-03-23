@@ -41,6 +41,16 @@ async function cleanupExpiredRooms(): Promise<void> {
     .update(rooms)
     .set({ isLive: false })
     .where(and(eq(rooms.isLive, true), lt(rooms.endsAt, new Date())))
+
+  // Hard-delete participants from closed rooms older than 7 days to prevent table bloat
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  await db
+    .delete(roomParticipants)
+    .where(
+      and(
+        sql`${roomParticipants.roomId} IN (SELECT id FROM rooms WHERE is_live = false AND ends_at < ${cutoff})`,
+      )
+    )
 }
 
 export async function createRoom(
