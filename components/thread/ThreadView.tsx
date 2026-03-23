@@ -23,6 +23,7 @@ import { authFetch } from '@/lib/authFetch'
 interface ThreadData {
   post: Post
   replies: Reply[]
+  nextCursor: string | null
   notes: CommunityNote[]
   pollResults: PollResult[] | null
   userVote: number | null
@@ -102,6 +103,8 @@ export function ThreadView({ postId }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [replyingTo, setReplyingTo] = useState<Reply | null>(null)
   const [replySort, setReplySort] = useState<'top' | 'newest' | 'oldest'>('top')
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
   const [noteSubmitting, setNoteSubmitting] = useState(false)
@@ -158,12 +161,35 @@ export function ThreadView({ postId }: Props) {
       }
       const json = (await res.json()) as { success: boolean; data: ThreadData; error?: string }
       setData(json.data)
+      setNextCursor(json.data.nextCursor)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsLoading(false)
     }
   }, [postId, router])
+
+  const loadMoreReplies = useCallback(async () => {
+    if (!nextCursor || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const res = await authFetch(`/api/posts/${postId}?cursor=${encodeURIComponent(nextCursor)}`)
+      if (!res.ok) throw new Error('Failed to load more replies')
+      const json = (await res.json()) as { success: boolean; data: ThreadData; error?: string }
+      setData((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          replies: [...prev.replies, ...json.data.replies],
+        }
+      })
+      setNextCursor(json.data.nextCursor)
+    } catch (err) {
+      console.error('[ThreadView loadMore]', err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [postId, nextCursor, loadingMore])
 
   useEffect(() => { void fetchThread() }, [fetchThread])
 
@@ -408,6 +434,18 @@ export function ThreadView({ postId }: Props) {
           )}
 
           <ReplyTree replies={sortedReplies} onReplyTo={setReplyingTo} onDeleted={() => void fetchThread()} />
+
+          {nextCursor && (
+            <div className="flex justify-center pt-4">
+              <button
+                onClick={() => void loadMoreReplies()}
+                disabled={loadingMore}
+                className="glass px-5 py-2.5 rounded-full text-sm font-semibold text-text-secondary active:scale-95 transition-all disabled:opacity-50"
+              >
+                {loadingMore ? 'Loading...' : 'Load more replies'}
+              </button>
+            </div>
+          )}
 
           {replies.length === 0 && (
             <p className="text-text-muted text-sm text-center py-12">

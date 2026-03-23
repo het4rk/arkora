@@ -56,6 +56,11 @@ export async function POST(req: NextRequest) {
     if (!(await isVerifiedHuman(followerId))) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })
     }
+    // Cap follows at 10K to prevent feed query timeouts
+    const followingCount = await getFollowingCount(followerId)
+    if (followingCount >= 10_000) {
+      return NextResponse.json({ success: false, error: 'Following limit reached (10,000)' }, { status: 400 })
+    }
 
     // Both follower and followed must be in named mode
     const [followerUser, followedUser] = await Promise.all([

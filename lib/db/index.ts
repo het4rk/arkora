@@ -27,6 +27,10 @@ function getClient(): postgres.Sql {
   // Cache the client in both dev and production to prevent connection exhaustion
   // on serverless warm instances (Neon free tier: 20 connections max)
   globalThis._pgClient = client
+  // Set 10s statement timeout + verify connectivity on module load
+  client`SET statement_timeout = '10000'`.catch((err: unknown) => {
+    console.error('[DB] Connection test failed:', err instanceof Error ? err.message : String(err))
+  })
   return client
 }
 

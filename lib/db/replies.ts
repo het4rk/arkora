@@ -1,6 +1,6 @@
 import { db } from './index'
 import { replies, replyVotes, posts } from './schema'
-import { eq, desc, and, or, sql, inArray } from 'drizzle-orm'
+import { eq, desc, and, or, sql, inArray, lt } from 'drizzle-orm'
 import type { Reply, CreateReplyInput } from '@/lib/types'
 import { generateSessionTag } from '@/lib/session'
 import { incrementReplyCount, decrementReplyCount } from './posts'
@@ -45,17 +45,33 @@ export async function createReply(input: CreateReplyInput): Promise<Reply> {
   return toReply(row)
 }
 
-export async function getRepliesByPostId(postId: string): Promise<Reply[]> {
+export async function getRepliesByPostId(
+  postId: string,
+  options?: { cursor?: string; limit?: number }
+): Promise<{ replies: Reply[]; nextCursor: string | null }> {
   // Return replies including deleted ones so thread tree stays intact.
-  // UI renders deleted replies as tombstones. Cap at 500 as a safety valve.
+  // UI renders deleted replies as tombstones.
+  // Cursor-based pagination: sort by createdAt DESC, cursor is ISO timestamp.
+  const pageLimit = Math.min(options?.limit ?? 20, 100)
+
+  const conditions = [eq(replies.postId, postId)]
+  if (options?.cursor) {
+    conditions.push(lt(replies.createdAt, new Date(options.cursor)))
+  }
+
   const rows = await db
     .select()
     .from(replies)
-    .where(and(eq(replies.postId, postId)))
-    .orderBy(desc(replies.upvotes), desc(replies.createdAt))
-    .limit(500)
+    .where(and(...conditions))
+    .orderBy(desc(replies.createdAt))
+    .limit(pageLimit + 1)
 
-  return rows.map(toReply)
+  const hasMore = rows.length > pageLimit
+  const page = hasMore ? rows.slice(0, pageLimit) : rows
+  const lastRow = page[page.length - 1]
+  const nextCursor = hasMore && lastRow ? lastRow.createdAt.toISOString() : null
+
+  return { replies: page.map(toReply), nextCursor }
 }
 
 export async function deleteReply(replyId: string, nullifierHash: string): Promise<boolean> {

@@ -20,9 +20,16 @@ export async function GET(req: NextRequest, { params }: Params) {
     }
 
     const { id } = await params
-    const [post, replies, notes] = await Promise.all([
+    const url = new URL(req.url)
+    const cursorParam = url.searchParams.get('cursor')
+    const limitParam = url.searchParams.get('limit')
+    const paginationOpts: { cursor?: string; limit?: number } = {}
+    if (cursorParam) paginationOpts.cursor = cursorParam
+    if (limitParam) paginationOpts.limit = Math.min(Math.max(parseInt(limitParam, 10) || 20, 1), 100)
+
+    const [post, repliesResult, notes] = await Promise.all([
       getPostById(id),
-      getRepliesByPostId(id),
+      getRepliesByPostId(id, paginationOpts),
       getNotesByPostId(id),
     ])
 
@@ -55,7 +62,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       isOwner = authorNullifier === nullifierHash || post.nullifierHash === nullifierHash
     }
 
-    return NextResponse.json({ success: true, data: { post, replies, notes, pollResults, userVote, authorKarmaScore, isOwner } })
+    return NextResponse.json({ success: true, data: { post, replies: repliesResult.replies, nextCursor: repliesResult.nextCursor, notes, pollResults, userVote, authorKarmaScore, isOwner } })
   } catch (err) {
     console.error('[posts/[id] GET]', err instanceof Error ? err.message : String(err))
     return NextResponse.json(

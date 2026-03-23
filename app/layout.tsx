@@ -10,7 +10,7 @@ import { BottomNav } from '@/components/ui/BottomNav'
 import { RoomMiniPlayer } from '@/components/rooms/RoomMiniPlayer'
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen'
 import { PostComposer } from '@/components/compose/PostComposer'
-import { VerifyHuman } from '@/components/auth/VerifyHuman'
+import { VerifyHumanLazy } from '@/components/auth/VerifyHumanLazy'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { SessionHydrator } from '@/components/auth/SessionHydrator'
 import { TopBar } from '@/components/ui/TopBar'
@@ -72,7 +72,7 @@ export default function RootLayout({
           <WalletConnect />
           <OnboardingScreen />
           <PostComposer />
-          <VerifyHuman />
+          <VerifyHumanLazy />
           <ErrorBoundary>
             <main id="main-content" className="pb-20 safe-top-bar app-col app-shell">{children}</main>
           </ErrorBoundary>

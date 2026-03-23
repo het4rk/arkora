@@ -34,7 +34,7 @@ export async function GET(
       )
     }
 
-    const replies = await getRepliesByPostId(id)
+    const { replies } = await getRepliesByPostId(id, { limit: 500 })
 
     let pollResults: { optionIndex: number; count: number }[] | null = null
     if (post.type === 'poll') {

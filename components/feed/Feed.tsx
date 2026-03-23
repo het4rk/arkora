@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback, useMemo, type TouchEvent as ReactTouchEvent } from 'react'
+import { Virtuoso } from 'react-virtuoso'
 import { useFeed, type FeedMode } from '@/hooks/useFeed'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { ThreadCard } from './ThreadCard'
@@ -82,8 +83,12 @@ export function Feed() {
     nullifierHash ?? undefined,
     localCoords
   )
-  const sentinelRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null)
+  const scrollCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    scrollRef.current = node
+    setScrollParent(node)
+  }, [])
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
   const [pollDataMap, setPollDataMap] = useState<Record<string, { results: PollResult[]; userVote: number | null }>>({})
 
@@ -195,23 +200,11 @@ export function Feed() {
     fetchPollData(pollPostIds)
   }, [posts, fetchPollData])
 
-  // Infinite scroll via IntersectionObserver
-  useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        if (entry?.isIntersecting && hasMore && !isLoadingMore) {
-          void loadMore()
-        }
-      },
-      { threshold: 0.5 }
-    )
-
-    observer.observe(sentinel)
-    return () => observer.disconnect()
+  // Stable callback for Virtuoso endReached (infinite scroll)
+  const handleEndReached = useCallback(() => {
+    if (hasMore && !isLoadingMore) {
+      void loadMore()
+    }
   }, [hasMore, isLoadingMore, loadMore])
 
   // Refresh local feed when radius changes
@@ -278,7 +271,7 @@ export function Feed() {
 
       {/* Feed content */}
       <div
-        ref={scrollRef}
+        ref={scrollCallbackRef}
         className={cn(
           'overflow-y-scroll h-[calc(100dvh-56px)]',
           hasLocalCoords ? 'pt-12' : 'pt-2'
@@ -402,31 +395,41 @@ export function Feed() {
           </div>
         )}
 
-        {posts.map((post) => (
-          <ThreadCard
-            key={post.id}
-            post={post}
-            onDeleted={removePost}
-            isBookmarked={bookmarkedIds.has(post.id)}
-            pollResults={pollDataMap[post.id]?.results ?? null}
-            userVote={pollDataMap[post.id]?.userVote ?? null}
-            authorKarmaScore={post.authorKarmaScore ?? null}
-          />
-        ))}
-
-        {/* Infinite scroll sentinel */}
-        {hasMore && (
-          <div ref={sentinelRef} className="h-32 flex items-center justify-center">
-            {isLoadingMore && (
-              <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+        {posts.length > 0 && scrollParent && (
+          <Virtuoso
+            data={posts}
+            customScrollParent={scrollParent}
+            overscan={200}
+            endReached={handleEndReached}
+            increaseViewportBy={200}
+            itemContent={(_index, post) => (
+              <ThreadCard
+                key={post.id}
+                post={post}
+                onDeleted={removePost}
+                isBookmarked={bookmarkedIds.has(post.id)}
+                pollResults={pollDataMap[post.id]?.results ?? null}
+                userVote={pollDataMap[post.id]?.userVote ?? null}
+                authorKarmaScore={post.authorKarmaScore ?? null}
+              />
             )}
-          </div>
-        )}
-
-        {!hasMore && posts.length > 0 && (
-          <div className="py-10 flex items-center justify-center text-text-muted text-sm">
-            You&apos;ve seen it all.
-          </div>
+            components={{
+              Footer: () => (
+                <>
+                  {hasMore && isLoadingMore && (
+                    <div className="h-32 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+                    </div>
+                  )}
+                  {!hasMore && posts.length > 0 && (
+                    <div className="py-10 flex items-center justify-center text-text-muted text-sm">
+                      You&apos;ve seen it all.
+                    </div>
+                  )}
+                </>
+              ),
+            }}
+          />
         )}
       </div>
     </>

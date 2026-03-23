@@ -49,19 +49,33 @@ export function isAllowedImageDomain(url: string): boolean {
   }
 }
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      if (attempt === retries) throw err
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)))
+    }
+  }
+  throw new Error('Unreachable')
+}
+
 export const hippiusAdapter: StorageAdapter = {
   async upload(buffer, filename, mimetype): Promise<string> {
     // Prefix with timestamp to avoid collisions
     const key = `uploads/${Date.now()}-${filename}`
 
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: BUCKET,
-        Key: key,
-        Body: buffer,
-        ContentType: mimetype,
-        // ACL not set here - rely on bucket-level public access configured in Hippius console
-      })
+    await withRetry(() =>
+      s3.send(
+        new PutObjectCommand({
+          Bucket: BUCKET,
+          Key: key,
+          Body: buffer,
+          ContentType: mimetype,
+          // ACL not set here - rely on bucket-level public access configured in Hippius console
+        })
+      )
     )
 
     // Path-style URL: https://s3.hippius.com/<bucket>/<key>
