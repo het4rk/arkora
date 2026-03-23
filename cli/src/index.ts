@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
+import chalk from 'chalk'
 import { loginCommand } from './commands/login.js'
 import { feedCommand } from './commands/feed.js'
 import { postCommand } from './commands/post.js'
@@ -18,6 +19,20 @@ import { setAccent } from './theme.js'
 const config = getConfig()
 if (config.skinId) {
   setAccent(config.skinId, config.customHex)
+}
+
+// Show banner on first run (no subcommand) or help
+if (process.argv.length <= 2) {
+  const d = chalk.dim
+  const b = chalk.bold.white
+  console.log()
+  console.log(d('    /\\   ') + b('  _ __  _  __   ___   _ __    /\\  '))
+  console.log(d('   /  \\  ') + b(' / _` || |/ /  / _ \\ | \'__|  /  \\ '))
+  console.log(d('  / /\\ \\ ') + b('| (_| ||   <  | (_) || |    / /\\ \\'))
+  console.log(d(' /_/  \\_\\') + b(' \\__,_||_|\\_\\  \\___/ |_|   /_/  \\_\\'))
+  console.log()
+  console.log(d('  provably human. verifiably real.'))
+  console.log()
 }
 
 const program = new Command()

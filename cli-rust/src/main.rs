@@ -8,6 +8,14 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(name = "arkora", version = "2.0.0")]
 #[command(about = "CLI for Arkora - the provably human message board")]
+#[command(before_help = r#"
+    /\     _ __  _  __   ___   _ __    /\
+   /  \   / _` || |/ /  / _ \ | '__|  /  \
+  / /\ \ | (_| ||   <  | (_) || |    / /\ \
+ /_/  \_\ \__,_||_|\_\  \___/ |_|   /_/  \_\
+
+  provably human. verifiably real.
+"#)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,

@@ -80,7 +80,12 @@ World ID Orb proofs are validated directly on World Chain via the WorldIDRouter 
 
 ### CLI
 
-Native Rust terminal client - 4.5MB single binary, no runtime dependencies. Authenticate with World ID directly in your terminal.
+Two implementations available:
+
+- **Rust CLI** (`cli-rust/`) - 4.5MB native binary, no runtime dependencies. Recommended for end users.
+- **Node CLI** (`cli/`) - TypeScript/commander-based, useful for development and prototyping.
+
+Authenticate with World ID directly in your terminal (ASCII banner on launch).
 
 | Command | Description |
 | --- | --- |
@@ -100,13 +105,25 @@ Your accent color from the Arkora skin shop carries over to the CLI - all headin
 
 ---
 
+## Recent Changes (Sprint 34)
+
+- **Performance** - Feed virtualization (react-virtuoso), cursor-based reply pagination, hot feed cache TTL increase, Neon serverless HTTP driver (stateless HTTPS, no connection pooling needed)
+- **Reliability** - Async rate limiting on all 64+ endpoints (Upstash Redis), FeatureErrorBoundary on 11 sections, authFetch retry with exponential backoff, S3 upload retry, DB statement timeout, health check endpoint (DB + Redis + timeout)
+- **Security** - Edge middleware (payload size gating), per-recipient DM rate limit, follow cap (10K), walletAddress redacted from API, pseudoHandle length cap
+- **Observability** - Sentry breadcrumbs + error context + session replay, loading skeletons for 8 routes
+- **SEO/PWA** - Dynamic OG metadata for posts/profiles, sitemap.xml, service worker + PWA offline support
+- **Accessibility** - Focus trap, skip link, ARIA states
+- **Code quality** - Dead CSS cleanup, IDKit code-split (dynamic import), Pusher lazy init, vercel.json per-route timeouts, Playwright E2E tests (11 tests)
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
 | --- | --- |
 | Framework | Next.js 15 (App Router, Turbopack) |
 | Language | TypeScript 5.6 (strict mode) |
-| Database | Neon Postgres + Drizzle ORM |
+| Database | Neon Postgres via `@neondatabase/serverless` HTTP driver + Drizzle ORM |
 | Auth | SIWE (Sign-In with Ethereum) + World MiniKit + IDKit v4 |
 | Real-time | Pusher Channels (private, server-authorized) |
 | File storage | Hippius S3 - decentralized storage on Bittensor subnet 14 |
@@ -212,7 +229,7 @@ Arkora has undergone comprehensive security auditing across all layers. Key prop
 - **Private Pusher channels** - all per-user channels require server-side authorization
 - **CSP hardened** - `unsafe-eval` removed from `script-src`, HSTS 2-year preload, COOP headers set
 - **Constant-time nonce comparison** - SIWE nonce validation uses `crypto.timingSafeEqual()`
-- **Rate limiting** - per-endpoint, per-user sliding window on all routes
+- **Rate limiting** - async per-endpoint, per-user sliding window on all 64+ routes (Upstash Redis in production, in-memory fallback for dev)
 - **Atomic votes** - single CTE statements to prevent race conditions
 - **Session recovery** - `authFetch()` wrapper on all client API calls detects expired sessions and forces re-authentication
 
@@ -336,7 +353,7 @@ lib/
   crypto/             DM encryption (Curve25519 + AES-256-GCM)
   i18n/               Translation dictionaries (10 locales) + lazy loader
   storage/            Hippius S3 adapter
-  rateLimit.ts        Async sliding-window rate limiter (Redis + in-memory fallback)
+  rateLimit.ts        Async sliding-window rate limiter (Upstash Redis + in-memory fallback)
   cache.ts            Feed cache with TTL
   sanitize.ts         Input sanitization + mention parsing
   serverAuth.ts       Session cookie reader
@@ -344,6 +361,12 @@ lib/
 
 store/
   useArkoraStore.ts   Global Zustand store
+
+e2e/                  Playwright E2E tests (5 specs, 11 tests)
+middleware.ts         Edge middleware (payload size gating)
+vercel.json           Per-route function config (timeouts)
+playwright.config.ts  Playwright configuration
+public/sw.js          Service worker for PWA offline
 ```
 
 ---
@@ -351,12 +374,15 @@ store/
 ## Testing
 
 ```bash
-pnpm test              # run all tests
+pnpm test              # 82 Vitest unit tests
 pnpm test:watch        # watch mode
 pnpm test:coverage     # coverage report
+pnpm test:e2e          # 11 Playwright E2E tests (chromium)
 ```
 
-82 unit tests covering input sanitization, rate limiting, E2E DM encryption (Curve25519 + AES-256-GCM), karma tiers, AgentKit auth middleware, and utility functions. Tests run in CI before lint and build.
+**Unit tests:** 82 Vitest tests covering input sanitization, rate limiting, E2E DM encryption (Curve25519 + AES-256-GCM), karma tiers, AgentKit auth middleware, and utility functions. Tests run in CI before lint and build.
+
+**E2E tests:** 11 Playwright tests across 5 specs (API boards, API posts, API search, feed page, health check). Run against a local dev server in headless Chromium.
 
 See [QA.md](./QA.md) for the full manual testing checklist (80+ test cases across auth, feed, posts, DMs, rooms, monetization, API, and security).
 

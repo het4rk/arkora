@@ -14,8 +14,8 @@ This file is loaded automatically by Claude Code at the start of every session. 
 pnpm dev              # Next.js dev server (Turbopack)
 pnpm build            # Production build
 pnpm lint             # ESLint
-pnpm test             # Run all tests (82 Vitest unit tests)
-pnpm test:e2e         # Playwright E2E tests (11 tests, chromium)
+pnpm test             # 82 Vitest unit tests
+pnpm test:e2e         # 11 Playwright E2E tests (chromium)
 pnpm db:push          # Push Drizzle schema to database
 pnpm db:generate      # Generate Drizzle migrations
 pnpm db:studio        # Open Drizzle Studio GUI
@@ -212,6 +212,12 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | `components/settings/SettingsView.tsx` | Full settings page |
 | `components/search/SearchSheet.tsx` | Multi-entity search modal |
 | `components/ui/FeatureErrorBoundary.tsx` | Component-level error boundaries for feature sections |
+| `components/auth/VerifyHumanLazy.tsx` | Code-split World ID verification (dynamic import of IDKit) |
+| `middleware.ts` | Edge middleware for payload size gating |
+| `public/sw.js` | Service worker for PWA offline support |
+| `vercel.json` | Per-route function config (timeouts) |
+| `playwright.config.ts` | Playwright E2E test configuration |
+| `e2e/` | Playwright E2E tests (5 specs, 11 tests) |
 | `app/api/idkit/context/route.ts` | Generates RP context (signRequest) for IDKit v4 widget |
 | `next.config.ts` | CSP headers, HSTS, remotePatterns, Sentry config |
 | `cli/src/index.ts` | CLI entry point (commander setup) |
@@ -279,7 +285,7 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 | Sprint | Shipped |
 | --- | --- |
-| 34 | Production hardening - async rate limiting (Redis-enforced across all 64+ endpoints), DM conversation indexes, search tsvector column + GIN index, hot feed cache TTL increase (60s->120s), atomic view count increment, walletAddress redacted from public API, pseudoHandle length cap (50 chars), FeatureErrorBoundary on 11 sections, authFetch retry with exponential backoff, Sentry breadcrumbs + error context + session replay, loading skeletons for 8 routes, dynamic OG metadata for posts/profiles, sitemap.xml, accessibility fixes (focus trap, skip link, ARIA states), skin color CSS variable fix. |
+| 34 | Production hardening (34a/34b/34c) - skin color CSS variable fix, dead CSS cleanup (--accent-hex, --glass-sat, .glass-liquid, Geist font vars), async rate limiting migration (Redis-enforced across all 64+ endpoints), DM conversation DB indexes, search tsvector column + GIN index, hot feed cache TTL increase (60s->120s), atomic view count increment, walletAddress redacted from public API, pseudoHandle length cap (50 chars), FeatureErrorBoundary on 11 sections, authFetch retry with exponential backoff, Sentry breadcrumbs + error context + session replay, loading skeletons for 8 routes, dynamic OG metadata for posts/profiles, sitemap.xml, accessibility (focus trap, skip link, ARIA states), edge middleware (payload size gating), feed virtualization (react-virtuoso), cursor-based reply pagination, per-recipient DM rate limit, follow cap (10K), health check (DB + Redis + timeout), IDKit code-split (dynamic import via VerifyHumanLazy), DB statement timeout, S3 upload retry, Pusher lazy init, vercel.json per-route timeouts, Neon serverless HTTP driver migration, service worker + PWA offline, Playwright E2E tests (11 tests across 5 specs), CLI ASCII banner. |
 | 33 | CLI World ID direct auth - replaces manual API key copy-paste with one-scan World ID verification. CLI fetches RP context from server, creates World ID bridge request via IDKit WASM (patched fetch for Node.js WASM loading), displays the actual World ID QR code in terminal. User scans with World App, verifies identity, CLI polls bridge directly, sends proof to `POST /api/cli/auth` which verifies via cloud API and returns API key. One scan, no browser, no copy-paste. Also includes fallback device authorization flow via `cli_sessions` table + `/api/cli/session`, `/api/cli/poll`, `/api/cli/authorize` routes + `/cli/verify` web page. |
 | 32 | CLI tool (`cli/`) - standalone Node.js CLI with commander/chalk/qrcode-terminal. Commands: `arkora login` (QR code + API key validation), `arkora feed` (colored terminal output), `arkora post` (create text posts via v1 API), `arkora boards` (list boards), `arkora stats` (platform stats). Server-side: POST handler on `/api/v1/posts` (API key auth, rate limited 10/min, text-only, sanitized), `getNullifierByKeyHash()` in `lib/db/apiKeys.ts`, CORS updated to allow POST + Content-Type. |
 | 31 (v1.1.0) | Responsive layout system - CSS custom property `--app-col` scales from 100% (mobile) to 680/720/760px at md/lg/xl breakpoints, `.app-fixed` constrains all fixed chrome (TopBar, BottomNav, sheets, composers) to content column, `.app-shell` adds subtle side borders on desktop. Auth session recovery - `authFetch()` wrapper on all 60+ client-side API calls detects 401 and clears stale Zustand state. Bug fixes - DM conversations query rewritten from broken raw SQL DISTINCT ON to Drizzle builder + JS dedup, `db.execute()` return shape fixed in communityNotes. Hardening - try/catch added to 6 unprotected API routes (me, fonts, skins, preferences, nonce). Search UX - board chips limited to 12 with expandable "+N more" toggle. Version bump to 1.1.0. |
@@ -401,11 +407,23 @@ MCP_PORT                 - MCP SSE port (default: 3001)
 - [x] Responsive layout (v1.1.0) - CSS breakpoint system, desktop side borders, fixed chrome constrained
 - [x] Auth session recovery (v1.1.0) - authFetch wrapper on all client API calls
 - [x] Upgrade DB driver to `@neondatabase/serverless`
+- [x] Playwright E2E tests for critical paths (11 tests, 5 specs)
+- [x] Service worker for PWA offline support
+- [x] Migrate sync `rateLimit()` to async `rateLimit()` on all endpoints
+- [x] Edge middleware (payload size gating)
+- [x] Feed virtualization (react-virtuoso)
+- [x] Cursor-based reply pagination
+- [x] IDKit code-split (dynamic import)
+- [x] vercel.json per-route timeouts
+- [x] Dynamic OG metadata for posts/profiles + sitemap.xml
+- [x] Loading skeletons for 8 routes
+- [x] FeatureErrorBoundary on 11 sections
+- [x] Accessibility (focus trap, skip link, ARIA states)
+- [x] Dead CSS cleanup
+- [ ] Brand assets (og-image, favicons, PWA icons) - blocks PWA install + social sharing
 - [ ] Rooms Phase 2 - audio (WebRTC or LiveKit)
 - [ ] Admin moderation queue for reports
-- [x] Playwright E2E tests for critical paths
-- [x] Service worker for PWA offline support
 - [ ] Custom domain
 - [ ] eslint 10 upgrade (blocked by eslint-plugin-react compatibility)
-- [x] Migrate sync `rateLimit()` to async `rateLimit()` on all endpoints
 - [ ] On-chain purchase transaction verification
+- [ ] Media/image upload support in posts
