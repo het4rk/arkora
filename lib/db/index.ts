@@ -8,13 +8,22 @@ if (process.env.NEXT_PHASE !== 'phase-production-build') {
   validateEnv()
 }
 
+let _db: ReturnType<typeof drizzle<typeof schema>> | null = null
+
 function getDb() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL environment variable is not set')
+  if (!_db) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is not set')
+    }
+    const sql = neon(process.env.DATABASE_URL)
+    _db = drizzle(sql, { schema })
   }
-  const sql = neon(process.env.DATABASE_URL)
-  return drizzle(sql, { schema })
+  return _db
 }
 
-export const db = getDb()
-export type Db = typeof db
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  get(_, prop) {
+    return (getDb() as Record<string | symbol, unknown>)[prop]
+  },
+})
+export type Db = ReturnType<typeof drizzle<typeof schema>>
