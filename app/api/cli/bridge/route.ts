@@ -132,8 +132,8 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const sessionId = req.nextUrl.searchParams.get('sessionId')
-    if (!sessionId) {
-      return NextResponse.json({ success: false, error: 'Missing sessionId' }, { status: 400 })
+    if (!sessionId || !/^[a-zA-Z0-9_-]{1,128}$/.test(sessionId)) {
+      return NextResponse.json({ success: false, error: 'Invalid sessionId' }, { status: 400 })
     }
 
     if (!(await rateLimit(`cli-bridge-poll:${sessionId}`, 60, 60_000))) {

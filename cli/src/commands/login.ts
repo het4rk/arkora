@@ -44,6 +44,12 @@ interface RpContext {
 export async function loginCommand(): Promise<void> {
   const baseUrl = getApiUrl()
 
+  // Validate API URL is a trusted origin before making network requests
+  if (!/^https?:\/\/[a-zA-Z0-9._-]+(:\d+)?$/.test(baseUrl)) {
+    console.error(chalk.red(`Untrusted API URL: ${baseUrl}`))
+    process.exit(1)
+  }
+
   console.log()
   console.log(chalk.bold('Arkora CLI Login'))
   console.log()

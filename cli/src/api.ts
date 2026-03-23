@@ -12,7 +12,16 @@ export async function api<T>(
   apiKey: string,
   options: { method?: string; body?: Record<string, unknown> } = {}
 ): Promise<ApiResponse<T>> {
-  const url = `${getApiUrl()}/api/v1${path}`
+  const baseUrl = getApiUrl()
+  // Validate API URL is a trusted origin
+  if (!/^https?:\/\/[a-zA-Z0-9._-]+(:\d+)?$/.test(baseUrl)) {
+    throw new Error(`Untrusted API URL: ${baseUrl}`)
+  }
+  // Validate API key format before sending
+  if (!/^ark_[a-zA-Z0-9]{32,128}$/.test(apiKey)) {
+    throw new Error('Invalid API key format')
+  }
+  const url = `${baseUrl}/api/v1${path}`
   const headers: Record<string, string> = {
     'X-API-Key': apiKey,
   }

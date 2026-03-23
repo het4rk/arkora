@@ -16,14 +16,23 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const idkitResult = body?.idkitResult
-    if (!idkitResult || typeof idkitResult !== 'object') {
+    if (!idkitResult || typeof idkitResult !== 'object' || Array.isArray(idkitResult)) {
       return NextResponse.json(
         { success: false, error: 'Missing idkitResult' },
         { status: 400 }
       )
     }
 
-    // Verify the World ID proof
+    // Validate expected IDKit result structure before passing to verification
+    const { responses } = idkitResult as Record<string, unknown>
+    if (responses !== undefined && !Array.isArray(responses)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid idkitResult format' },
+        { status: 400 }
+      )
+    }
+
+    // Verify the World ID proof - only trusted after server-side verification
     const verifyResult = await verifyWorldIdProofCloud(idkitResult)
 
     let nullifierHash: string | undefined
