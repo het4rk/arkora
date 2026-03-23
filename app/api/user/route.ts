@@ -21,7 +21,7 @@ export async function DELETE() {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`delete-account:${nullifierHash}`, 2, 60_000)) {
+    if (!(await rateLimit(`delete-account:${nullifierHash}`, 2, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

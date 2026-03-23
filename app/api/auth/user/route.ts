@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
-    if (!rateLimit(`auth-user-get:${nullifierHash}`, 60, 60_000)) {
+    if (!(await rateLimit(`auth-user-get:${nullifierHash}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
     const user = await getUserByNullifier(nullifierHash)
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 10 registrations per 60s per wallet
-    if (!rateLimit(`auth-user:${walletAddress.toLowerCase()}`, 10, 60_000)) {
+    if (!(await rateLimit(`auth-user:${walletAddress.toLowerCase()}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const res = NextResponse.json({ success: true, nullifierHash, user })
+    const res = NextResponse.json({ success: true, nullifierHash, user: { ...user, walletAddress: null } })
     // Set server-side identity cookie so protected endpoints can verify the caller
     res.cookies.set('arkora-nh', nullifierHash, {
       httpOnly: true,
@@ -111,7 +111,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`auth-user-patch:${nullifierHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`auth-user-patch:${nullifierHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

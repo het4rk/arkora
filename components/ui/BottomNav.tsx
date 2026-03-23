@@ -8,6 +8,7 @@ import { cn, haptic } from '@/lib/utils'
 import { useArkoraStore } from '@/store/useArkoraStore'
 import { useT } from '@/hooks/useT'
 import { SearchSheet } from '@/components/search/SearchSheet'
+import { FeatureErrorBoundary } from '@/components/ui/FeatureErrorBoundary'
 import { authFetch } from '@/lib/authFetch'
 
 export function BottomNav() {
@@ -58,7 +59,9 @@ export function BottomNav() {
 
   return (
     <>
-      <SearchSheet />
+      <FeatureErrorBoundary name="Search">
+        <SearchSheet />
+      </FeatureErrorBoundary>
       <nav className="fixed bottom-0 z-30 app-fixed" aria-label="Main navigation">
         {/* Liquid glass bar */}
         <div className="glass-nav">

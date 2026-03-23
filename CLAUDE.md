@@ -158,11 +158,11 @@ All user preferences are synced server-side in `humanUsers`. On login, `SessionH
 | Timing oracle | SIWE nonce uses `crypto.timingSafeEqual()` |
 | Pusher isolation | Private channels server-authorized via `/api/pusher/auth` |
 | Cookie validation | `getCallerNullifier()` validates format with regex before returning |
-| Rate limiting | Per-endpoint, per-user sliding window; full API key used (not truncated) |
+| Rate limiting | Per-endpoint async Redis enforcement (Upstash), in-memory fallback; per-user sliding window; full API key used (not truncated) |
 | Identity isolation | Named profile uses real nullifier; alias uses SHA256(real+":alias"); anon uses SHA256(real+":anon:"+postId). `authorNullifier` (internal) never in API responses. Follow/DM/tip gated to named mode. |
 | Session recovery | `authFetch()` wrapper detects 401 on all client fetches and clears stale Zustand auth state, forcing re-auth instead of showing generic errors. |
 
-Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set (cross-instance enforcement). Falls back to in-memory when env vars are missing (dev/local). Both sync `rateLimit()` and async `rateLimitAsync()` APIs are available.
+Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set (cross-instance enforcement). Falls back to in-memory when env vars are missing (dev/local). Single async `rateLimit()` API - all callsites use `await`.
 
 ---
 
@@ -183,7 +183,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | `lib/db/polls.ts` | Poll vote casting + results |
 | `lib/db/fonts.ts` | Font purchase + activation queries |
 | `lib/sanitize.ts` | `sanitizeLine` / `sanitizeText` / `parseMentions` |
-| `lib/rateLimit.ts` | In-memory sliding-window rate limiter |
+| `lib/rateLimit.ts` | Async sliding-window rate limiter (Redis + in-memory fallback) |
 | `lib/cache.ts` | Feed cache with TTL (unstable_cache) |
 | `lib/crypto/dm.ts` | ECDH key gen + AES-256-GCM encrypt/decrypt |
 | `lib/storage/hippius.ts` | S3 upload adapter |
@@ -209,6 +209,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | `components/settings/FontShop.tsx` | Font purchase + live preview before purchase |
 | `components/settings/SettingsView.tsx` | Full settings page |
 | `components/search/SearchSheet.tsx` | Multi-entity search modal |
+| `components/ui/FeatureErrorBoundary.tsx` | Component-level error boundaries for feature sections |
 | `app/api/idkit/context/route.ts` | Generates RP context (signRequest) for IDKit v4 widget |
 | `next.config.ts` | CSP headers, HSTS, remotePatterns, Sentry config |
 | `cli/src/index.ts` | CLI entry point (commander setup) |
@@ -225,7 +226,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 
 ## Known Issues
 
-- **Rate limiter** uses Upstash Redis in production (cross-instance). Falls back to in-memory when `UPSTASH_REDIS_REST_*` env vars are missing.
+- **Rate limiter** fully async with Upstash Redis enforcement across all 64+ endpoints in production (cross-instance). Falls back to in-memory when `UPSTASH_REDIS_REST_*` env vars are missing.
 - **Neon 20-connection limit.** Pool max set to 5 with singleton client caching.
 - **DM private key in localStorage.** Users lose DM history if they clear browser data. By design for MVP.
 - **Country code** inferred from `x-vercel-ip-country` header. GPS optional, sent only when `locationEnabled=true`.
@@ -276,6 +277,7 @@ Commit format: `<type>(<scope>): <short description>` (e.g., `feat(feed): add lo
 
 | Sprint | Shipped |
 | --- | --- |
+| 34 | Production hardening - async rate limiting (Redis-enforced across all 64+ endpoints), DM conversation indexes, search tsvector column + GIN index, hot feed cache TTL increase (60s->120s), atomic view count increment, walletAddress redacted from public API, pseudoHandle length cap (50 chars), FeatureErrorBoundary on 11 sections, authFetch retry with exponential backoff, Sentry breadcrumbs + error context + session replay, loading skeletons for 8 routes, dynamic OG metadata for posts/profiles, sitemap.xml, accessibility fixes (focus trap, skip link, ARIA states), skin color CSS variable fix. |
 | 33 | CLI World ID direct auth - replaces manual API key copy-paste with one-scan World ID verification. CLI fetches RP context from server, creates World ID bridge request via IDKit WASM (patched fetch for Node.js WASM loading), displays the actual World ID QR code in terminal. User scans with World App, verifies identity, CLI polls bridge directly, sends proof to `POST /api/cli/auth` which verifies via cloud API and returns API key. One scan, no browser, no copy-paste. Also includes fallback device authorization flow via `cli_sessions` table + `/api/cli/session`, `/api/cli/poll`, `/api/cli/authorize` routes + `/cli/verify` web page. |
 | 32 | CLI tool (`cli/`) - standalone Node.js CLI with commander/chalk/qrcode-terminal. Commands: `arkora login` (QR code + API key validation), `arkora feed` (colored terminal output), `arkora post` (create text posts via v1 API), `arkora boards` (list boards), `arkora stats` (platform stats). Server-side: POST handler on `/api/v1/posts` (API key auth, rate limited 10/min, text-only, sanitized), `getNullifierByKeyHash()` in `lib/db/apiKeys.ts`, CORS updated to allow POST + Content-Type. |
 | 31 (v1.1.0) | Responsive layout system - CSS custom property `--app-col` scales from 100% (mobile) to 680/720/760px at md/lg/xl breakpoints, `.app-fixed` constrains all fixed chrome (TopBar, BottomNav, sheets, composers) to content column, `.app-shell` adds subtle side borders on desktop. Auth session recovery - `authFetch()` wrapper on all 60+ client-side API calls detects 401 and clears stale Zustand state. Bug fixes - DM conversations query rewritten from broken raw SQL DISTINCT ON to Drizzle builder + JS dedup, `db.execute()` return shape fixed in communityNotes. Hardening - try/catch added to 6 unprotected API routes (me, fonts, skins, preferences, nonce). Search UX - board chips limited to 12 with expandable "+N more" toggle. Version bump to 1.1.0. |
@@ -399,8 +401,9 @@ MCP_PORT                 - MCP SSE port (default: 3001)
 - [ ] Upgrade DB driver to `@neondatabase/serverless`
 - [ ] Rooms Phase 2 - audio (WebRTC or LiveKit)
 - [ ] Admin moderation queue for reports
-- [ ] Playwright E2E tests
+- [ ] Playwright E2E tests for critical paths
+- [ ] Service worker for PWA offline support
 - [ ] Custom domain
 - [ ] eslint 10 upgrade (blocked by eslint-plugin-react compatibility)
-- [ ] Migrate sync `rateLimit()` to `rateLimitAsync()` on internal endpoints
+- [x] Migrate sync `rateLimit()` to async `rateLimit()` on all endpoints
 - [ ] On-chain purchase transaction verification

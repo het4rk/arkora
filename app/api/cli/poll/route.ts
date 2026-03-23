@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    if (!rateLimit(`cli-poll:${token}`, 60, 60_000)) {
+    if (!(await rateLimit(`cli-poll:${token}`, 60, 60_000))) {
       return NextResponse.json(
         { success: false, error: 'Too many requests' },
         { status: 429 }

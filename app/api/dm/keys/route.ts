@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     if (!callerHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
-    if (!rateLimit(`dm-keys-get:${callerHash}`, 60, 60_000)) {
+    if (!(await rateLimit(`dm-keys-get:${callerHash}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
     const nullifierHash = new URL(req.url).searchParams.get('nullifierHash')
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
-    if (!rateLimit(`dm-keys-post:${nullifierHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`dm-keys-post:${nullifierHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
     const { publicKey } = (await req.json()) as { publicKey?: string }

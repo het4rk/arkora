@@ -102,6 +102,16 @@ export async function createPost(input: CreatePostInput & { id?: string }): Prom
 
 type PostWithQuoted = { post: typeof posts.$inferSelect; quoted: typeof posts.$inferSelect | null; karmaScore: number | null }
 
+/** Lightweight fetch for metadata generation - no joins, just title + body. */
+export async function getPostMetadata(id: string): Promise<{ title: string | null; body: string } | null> {
+  const [row] = await db
+    .select({ title: posts.title, body: posts.body })
+    .from(posts)
+    .where(eq(posts.id, id))
+    .limit(1)
+  return row ?? null
+}
+
 export async function getPostById(id: string): Promise<Post | null> {
   const rows = await db
     .select({ post: posts, quoted: quotedPosts, karmaScore: humanUsers.karmaScore })
@@ -286,18 +296,22 @@ export async function getVoteByNullifier(
   return row ? { direction: row.direction } : null
 }
 
-/** Record a verified-human view. One row per (postId, nullifierHash) - deduped by composite PK. */
+/** Record a verified-human view. One row per (postId, nullifierHash) - deduped by composite PK.
+ *  Uses atomic increment instead of COUNT(*) recount for O(1) scalability. */
 export async function recordView(postId: string, nullifierHash: string): Promise<void> {
-  await db.execute(
-    sql`WITH ins AS (
-          INSERT INTO post_views (post_id, nullifier_hash)
-          VALUES (${postId}, ${nullifierHash})
-          ON CONFLICT (post_id, nullifier_hash) DO NOTHING
-        )
-        UPDATE posts
-        SET view_count = (SELECT COUNT(*) FROM post_views WHERE post_id = ${postId})
-        WHERE id = ${postId}`
-  )
+  // INSERT returns the row only when a new view is recorded (not a duplicate)
+  const [inserted] = await db
+    .insert(postViews)
+    .values({ postId, nullifierHash })
+    .onConflictDoNothing()
+    .returning({ postId: postViews.postId })
+
+  // Only increment view_count when a genuinely new view was inserted
+  if (inserted) {
+    await db.update(posts)
+      .set({ viewCount: sql`${posts.viewCount} + 1` })
+      .where(eq(posts.id, postId))
+  }
 }
 
 export async function upsertVote(

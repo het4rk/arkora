@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`profile:${nullifierHash}`, 60, 60_000)) {
+    if (!(await rateLimit(`profile:${nullifierHash}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })
     }
 

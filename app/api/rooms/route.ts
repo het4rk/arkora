@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 2 room creations per 10 minutes
-    if (!rateLimit(`room-create:${callerHash}`, 2, 10 * 60_000)) {
+    if (!(await rateLimit(`room-create:${callerHash}`, 2, 10 * 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many rooms created. Try again later.' }, { status: 429 })
     }
 

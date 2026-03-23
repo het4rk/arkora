@@ -63,16 +63,15 @@ export async function searchPosts(query: string, limit = 20): Promise<Post[]> {
     return rows.map(toPost)
   }
 
-  // Full-text search with relevance ranking.
+  // Full-text search using the stored search_vector tsvector column (GIN-indexed).
   // Uses db.select() so Drizzle maps snake_case columns to camelCase fields.
-  const tsVector = sql`to_tsvector('english', title || ' ' || body || ' ' || COALESCE(pseudo_handle, '') || ' ' || board_id)`
   const tsQuery = sql`websearch_to_tsquery('english', ${q})`
 
   const rows = await db
     .select()
     .from(posts)
-    .where(sql`${tsVector} @@ ${tsQuery}`)
-    .orderBy(sql`ts_rank(${tsVector}, ${tsQuery}) DESC`, desc(posts.createdAt))
+    .where(sql`search_vector @@ ${tsQuery}`)
+    .orderBy(sql`ts_rank(search_vector, ${tsQuery}) DESC`, desc(posts.createdAt))
     .limit(limit)
 
   return rows.map(toPost)

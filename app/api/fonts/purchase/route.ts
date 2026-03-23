@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
     }
 
-    if (!rateLimit(`font-purchase:${nullifierHash}`, 5, 60_000)) {
+    if (!(await rateLimit(`font-purchase:${nullifierHash}`, 5, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

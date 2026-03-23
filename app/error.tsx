@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import * as Sentry from '@sentry/nextjs'
 
 interface Props {
   error: Error & { digest?: string }
@@ -11,6 +12,7 @@ interface Props {
 export default function Error({ error, reset }: Props) {
   useEffect(() => {
     console.error('[AppError]', error)
+    Sentry.captureException(error)
   }, [error])
 
   const router = useRouter()

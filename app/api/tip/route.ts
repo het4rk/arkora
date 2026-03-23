@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { recordTip } from '@/lib/db/tips'
-import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
+import { isVerifiedHuman, getInternalUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 import { worldAppNotify } from '@/lib/worldAppNotify'
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid amount' }, { status: 400 })
     }
 
-    if (!rateLimit(`tip:${senderHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`tip:${senderHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many tips. Slow down.' }, { status: 429 })
     }
 
@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
     }
 
     const [sender, recipient] = await Promise.all([
-      getUserByNullifier(senderHash),
-      getUserByNullifier(recipientHash),
+      getInternalUserByNullifier(senderHash),
+      getInternalUserByNullifier(recipientHash),
     ])
     if (!recipient) {
       return NextResponse.json({ success: false, error: 'Recipient not found' }, { status: 404 })

@@ -10,7 +10,7 @@ import { canFollow } from '@/lib/identityRules'
 export async function GET(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-    if (!rateLimit(`follow-get:${ip}`, 60, 60_000)) {
+    if (!(await rateLimit(`follow-get:${ip}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     if (allLinked.includes(followedId)) {
       return NextResponse.json({ success: false, error: 'Cannot follow yourself' }, { status: 400 })
     }
-    if (!rateLimit(`follow:${followerId}`, 30, 60_000)) {
+    if (!(await rateLimit(`follow:${followerId}`, 30, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many actions. Slow down.' }, { status: 429 })
     }
     if (!(await isVerifiedHuman(followerId))) {

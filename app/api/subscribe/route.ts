@@ -4,7 +4,7 @@ import {
   getActiveSubscription,
   cancelSubscription,
 } from '@/lib/db/subscriptions'
-import { isVerifiedHuman, getUserByNullifier } from '@/lib/db/users'
+import { isVerifiedHuman, getInternalUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 import { getCallerNullifier, getLinkedNullifiers } from '@/lib/serverAuth'
 import { isPaymentBlocked } from '@/lib/geo'
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`subscribe-get:${subscriberHash}`, 60, 60_000)) {
+    if (!(await rateLimit(`subscribe-get:${subscriberHash}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid WLD amount' }, { status: 400 })
     }
 
-    if (!rateLimit(`subscribe:${subscriberHash}`, 5, 60_000)) {
+    if (!(await rateLimit(`subscribe:${subscriberHash}`, 5, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
@@ -94,8 +94,8 @@ export async function POST(req: NextRequest) {
 
     // Both subscriber and creator must be in named mode
     const [subscriber, creator] = await Promise.all([
-      getUserByNullifier(subscriberHash),
-      getUserByNullifier(creatorHash),
+      getInternalUserByNullifier(subscriberHash),
+      getInternalUserByNullifier(creatorHash),
     ])
     if (!creator) {
       return NextResponse.json({ success: false, error: 'Creator not found' }, { status: 404 })
@@ -129,7 +129,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`subscribe-delete:${callerHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`subscribe-delete:${callerHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

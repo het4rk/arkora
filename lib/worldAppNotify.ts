@@ -1,4 +1,4 @@
-import { getUserByNullifier } from '@/lib/db/users'
+import { getInternalUserByNullifier } from '@/lib/db/users'
 
 /**
  * Sends a native World App push notification to a user identified by their nullifierHash.
@@ -15,7 +15,7 @@ export async function worldAppNotify(
   if (!apiKey || !appId) return
 
   try {
-    const user = await getUserByNullifier(recipientHash)
+    const user = await getInternalUserByNullifier(recipientHash)
     if (!user?.walletAddress) return
 
     void fetch('https://developer.worldcoin.org/api/v2/minikit/send-notification', {

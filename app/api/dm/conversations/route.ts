@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     if (!nullifierHash) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
-    if (!rateLimit(`dm-conv:${nullifierHash}`, 30, 60_000)) {
+    if (!(await rateLimit(`dm-conv:${nullifierHash}`, 30, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
     const conversations = await getConversations(nullifierHash)

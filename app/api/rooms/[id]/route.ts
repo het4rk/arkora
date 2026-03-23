@@ -11,7 +11,7 @@ export async function GET(
 ) {
   try {
     const ip = _req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-    if (!rateLimit(`room-get:${ip}`, 120, 60_000)) {
+    if (!(await rateLimit(`room-get:${ip}`, 120, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
@@ -41,7 +41,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`room-delete:${callerHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`room-delete:${callerHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

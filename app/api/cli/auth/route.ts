@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/rateLimit'
 import { verifyWorldIdProofCloud } from '@/lib/worldid'
-import { getOrCreateUser, getUserByNullifier } from '@/lib/db/users'
+import { getOrCreateUser, getInternalUserByNullifier } from '@/lib/db/users'
 import { createApiKey, countActiveKeysByOwner } from '@/lib/db/apiKeys'
 
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-    if (!rateLimit(`cli-auth:${ip}`, 5, 60_000)) {
+    if (!(await rateLimit(`cli-auth:${ip}`, 5, 60_000))) {
       return NextResponse.json(
         { success: false, error: 'Too many requests' },
         { status: 429 }
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         const responses = idkitResult.responses as Array<Record<string, unknown>> | undefined
         const clientNullifier = responses?.[0]?.nullifier as string | undefined
         if (clientNullifier) {
-          const existingUser = await getUserByNullifier(clientNullifier)
+          const existingUser = await getInternalUserByNullifier(clientNullifier)
           if (existingUser) {
             nullifierHash = clientNullifier
           }
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     const { walletToNullifier } = await import('@/lib/serverAuth')
     if (worldIdUser?.walletAddress && !worldIdUser.walletAddress.startsWith('idkit_')) {
       const wltNullifier = walletToNullifier(worldIdUser.walletAddress)
-      const walletUser = await getUserByNullifier(wltNullifier)
+      const walletUser = await getInternalUserByNullifier(wltNullifier)
       if (walletUser) nullifierHash = wltNullifier
     }
 

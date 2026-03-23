@@ -81,28 +81,12 @@ function memRateLimit(key: string, limit: number, windowMs: number): boolean {
 
 /**
  * Returns true if the request is allowed, false if the limit is exceeded.
+ * Uses Redis when available, otherwise falls back to in-memory.
  * @param key      Unique key for this action (e.g. `post:${nullifierHash}`)
  * @param limit    Max requests allowed in the window
  * @param windowMs Window size in milliseconds
  */
-export function rateLimit(key: string, limit: number, windowMs: number): boolean {
-  if (!redis) {
-    return memRateLimit(key, limit, windowMs)
-  }
-
-  // Redis limiter is async but our API is sync for backwards compat.
-  // Fire the check and optimistically allow - Redis enforces on next call.
-  // This avoids changing every callsite to async.
-  const rl = getRedisLimiter(limit, windowMs)
-  void rl.limit(key).catch(() => {})
-  return memRateLimit(key, limit, windowMs)
-}
-
-/**
- * Async rate limit check - preferred for new code. Returns true if allowed.
- * Uses Redis when available, otherwise falls back to in-memory.
- */
-export async function rateLimitAsync(
+export async function rateLimit(
   key: string,
   limit: number,
   windowMs: number

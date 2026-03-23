@@ -5,7 +5,7 @@ import { createCliSession } from '@/lib/db/cliSessions'
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? 'anon'
-    if (!rateLimit(`cli-session:${ip}`, 5, 600_000)) {
+    if (!(await rateLimit(`cli-session:${ip}`, 5, 600_000))) {
       return NextResponse.json(
         { success: false, error: 'Too many requests. Try again later.' },
         { status: 429 }

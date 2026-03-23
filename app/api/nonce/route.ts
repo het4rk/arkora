@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const headerStore = await headers()
     const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-    if (!rateLimit(`nonce:${ip}`, 10, 60_000)) {
+    if (!(await rateLimit(`nonce:${ip}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

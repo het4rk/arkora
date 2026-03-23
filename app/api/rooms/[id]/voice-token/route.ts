@@ -31,7 +31,7 @@ export async function POST(
     }
 
     // 10 token requests per minute per user - prevents abuse
-    if (!rateLimit(`voice-token:${callerHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`voice-token:${callerHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

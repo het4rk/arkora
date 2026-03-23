@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCallerNullifier, walletToNullifier } from '@/lib/serverAuth'
-import { getUserByNullifier } from '@/lib/db/users'
+import { getInternalUserByNullifier } from '@/lib/db/users'
 import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? 'anon'
-    if (!rateLimit(`me:${ip}`, 60, 60_000)) {
+    if (!(await rateLimit(`me:${ip}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
@@ -15,10 +15,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, nullifierHash: null, user: null })
     }
 
-    const user = await getUserByNullifier(nullifierHash)
+    const user = await getInternalUserByNullifier(nullifierHash)
     if (!user) {
       return NextResponse.json({ success: true, nullifierHash: null, user: null })
     }
+
+    // Strip walletAddress before sending to client
+    const safeUser = { ...user, walletAddress: null }
 
     // If this is a World ID session (0x...) but the user has a real wallet address,
     // prefer the wallet identity - it holds the posts, bio, and username.
@@ -28,13 +31,13 @@ export async function GET(req: NextRequest) {
       !user.walletAddress.startsWith('idkit_')
     ) {
       const wltNullifier = walletToNullifier(user.walletAddress)
-      const walletUser = await getUserByNullifier(wltNullifier)
+      const walletUser = await getInternalUserByNullifier(wltNullifier)
       if (walletUser) {
-        return NextResponse.json({ success: true, nullifierHash: wltNullifier, user: walletUser })
+        return NextResponse.json({ success: true, nullifierHash: wltNullifier, user: { ...walletUser, walletAddress: null } })
       }
     }
 
-    return NextResponse.json({ success: true, nullifierHash, user })
+    return NextResponse.json({ success: true, nullifierHash, user: safeUser })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[me]', msg)

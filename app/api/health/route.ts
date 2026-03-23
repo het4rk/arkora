@@ -5,7 +5,7 @@ import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'anon'
-  if (!rateLimit(`health:${ip}`, 10, 60_000)) {
+  if (!(await rateLimit(`health:${ip}`, 10, 60_000))) {
     return NextResponse.json({ status: 'rate-limited' }, { status: 429 })
   }
   try {

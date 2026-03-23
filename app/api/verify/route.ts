@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { type ISuccessResult } from '@worldcoin/minikit-js'
 import { verifyWorldIdProof, verifyWorldIdProofCloud, getLatestWorldChainBlock } from '@/lib/worldid'
-import { getOrCreateUser, getUserByNullifier, setWorldIdVerified, setRegistrationTxHash } from '@/lib/db/users'
+import { getOrCreateUser, getUserByNullifier, getInternalUserByNullifier, setWorldIdVerified, setRegistrationTxHash } from '@/lib/db/users'
 import { registerNullifierOnchain } from '@/lib/registry'
 import { walletToNullifier } from '@/lib/serverAuth'
 import { rateLimit } from '@/lib/rateLimit'
@@ -38,7 +38,7 @@ function parseVerifyBody(raw: unknown): VerifyBody | null {
  */
 async function resolveIdentity(
   worldIdNullifier: string,
-  worldIdUser: Awaited<ReturnType<typeof getUserByNullifier>>
+  worldIdUser: Awaited<ReturnType<typeof getInternalUserByNullifier>>
 ): Promise<{ nullifierHash: string; user: NonNullable<typeof worldIdUser> }> {
   if (
     worldIdUser &&
@@ -46,7 +46,7 @@ async function resolveIdentity(
     !worldIdUser.walletAddress.startsWith('idkit_')
   ) {
     const wltNullifier = walletToNullifier(worldIdUser.walletAddress)
-    const walletUser = await getUserByNullifier(wltNullifier)
+    const walletUser = await getInternalUserByNullifier(wltNullifier)
     if (walletUser) {
       return { nullifierHash: wltNullifier, user: walletUser }
     }
@@ -69,7 +69,7 @@ async function tryRestoreSession(nullifierHash: string): Promise<NextResponse | 
   const NULLIFIER_RE = /^0x[0-9a-fA-F]{1,64}$/
   if (!nullifierHash || !NULLIFIER_RE.test(nullifierHash)) return null
 
-  const existingUser = await getUserByNullifier(nullifierHash)
+  const existingUser = await getInternalUserByNullifier(nullifierHash)
   if (!existingUser) return null
 
   const { nullifierHash: sessionHash, user: sessionUser } =
@@ -78,7 +78,7 @@ async function tryRestoreSession(nullifierHash: string): Promise<NextResponse | 
   const restored = NextResponse.json({
     success: true,
     nullifierHash: sessionHash,
-    user: sessionUser,
+    user: { ...sessionUser, walletAddress: null },
   })
   setCookieOnResponse(restored, sessionHash)
   return restored
@@ -87,7 +87,7 @@ async function tryRestoreSession(nullifierHash: string): Promise<NextResponse | 
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-    if (!rateLimit(`verify:${ip}`, 5, 60_000)) {
+    if (!(await rateLimit(`verify:${ip}`, 5, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
@@ -165,10 +165,11 @@ export async function POST(req: NextRequest) {
     })
 
     const updatedUser = await getUserByNullifier(sessionHash)
+    const safeUser = updatedUser ?? sessionUser
     const res = NextResponse.json({
       success: true,
       nullifierHash: sessionHash,
-      user: updatedUser ?? sessionUser,
+      user: { ...safeUser, walletAddress: null },
     })
     setCookieOnResponse(res, sessionHash)
     return res

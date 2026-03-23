@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   try {
     // Rate limit: 60 requests/min per IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? 'unknown'
-    if (!rateLimit(`feed:${ip}`, 60, 60_000)) {
+    if (!(await rateLimit(`feed:${ip}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429 })
     }
 
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
 
     const pseudoHandle = identityMode === 'anonymous'
       ? undefined
-      : rawHandle ? sanitizeLine(rawHandle) : undefined
+      : rawHandle ? sanitizeLine(rawHandle).slice(0, 50) : undefined
 
     if (!isRepost && title.length > 280) {
       return NextResponse.json(
@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 5 posts per minute per user
-    if (!rateLimit(`post:${nullifierHash}`, 5, 60_000)) {
+    if (!(await rateLimit(`post:${nullifierHash}`, 5, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many posts. Try again in a minute.' }, { status: 429 })
     }
 

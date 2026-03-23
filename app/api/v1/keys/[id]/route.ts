@@ -17,7 +17,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (!rateLimit(`key-revoke:${nullifierHash}`, 10, 60_000)) {
+  if (!(await rateLimit(`key-revoke:${nullifierHash}`, 10, 60_000))) {
     return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
   }
 

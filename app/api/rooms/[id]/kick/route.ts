@@ -17,7 +17,7 @@ export async function POST(
 
     const { id } = await params
 
-    if (!rateLimit(`room-kick:${id}:${callerHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`room-kick:${id}:${callerHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
     const body = (await req.json()) as { targetHash?: string }

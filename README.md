@@ -336,7 +336,7 @@ lib/
   crypto/             DM encryption (Curve25519 + AES-256-GCM)
   i18n/               Translation dictionaries (10 locales) + lazy loader
   storage/            Hippius S3 adapter
-  rateLimit.ts        In-memory sliding-window rate limiter
+  rateLimit.ts        Async sliding-window rate limiter (Redis + in-memory fallback)
   cache.ts            Feed cache with TTL
   sanitize.ts         Input sanitization + mention parsing
   serverAuth.ts       Session cookie reader

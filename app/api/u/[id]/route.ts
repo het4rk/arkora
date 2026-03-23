@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const { id: nullifierHash } = await params
 
     const ip = req.headers.get('x-forwarded-for') ?? 'anon'
-    if (!rateLimit(`profile:${ip}`, 60, 60_000)) {
+    if (!(await rateLimit(`profile:${ip}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

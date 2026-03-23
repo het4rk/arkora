@@ -1,4 +1,5 @@
 import { ConversationView } from '@/components/dm/ConversationView'
+import { FeatureErrorBoundary } from '@/components/ui/FeatureErrorBoundary'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -6,5 +7,9 @@ interface Props {
 
 export default async function ConversationPage({ params }: Props) {
   const { id } = await params
-  return <ConversationView otherHash={id} />
+  return (
+    <FeatureErrorBoundary name="Conversation">
+      <ConversationView otherHash={id} />
+    </FeatureErrorBoundary>
+  )
 }

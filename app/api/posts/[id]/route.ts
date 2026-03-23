@@ -15,7 +15,7 @@ interface Params {
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? 'anon'
-    if (!rateLimit(`postdetail:${ip}`, 120, 60_000)) {
+    if (!(await rateLimit(`postdetail:${ip}`, 120, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 10 uploads per minute
-    if (!rateLimit(`upload:${nullifierHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`upload:${nullifierHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many uploads' }, { status: 429 })
     }
 

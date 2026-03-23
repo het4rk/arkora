@@ -95,6 +95,11 @@ export function SearchSheet() {
                 <input
                   ref={inputRef}
                   type="search"
+                  role="combobox"
+                  aria-expanded={hasAnyResults}
+                  aria-controls="search-results-list"
+                  aria-autocomplete="list"
+                  aria-label="Search posts, boards, people"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search posts, boards, people..."
@@ -138,7 +143,7 @@ export function SearchSheet() {
             </div>
 
             {/* Results */}
-            <div className="flex-1 overflow-y-auto">
+            <div id="search-results-list" role="listbox" aria-label="Search results" className="flex-1 overflow-y-auto">
               {isSearching && (
                 <div className="flex items-center justify-center py-16">
                   <div className="flex gap-1.5">

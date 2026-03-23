@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`bookmarks:${nullifierHash}`, 30, 60_000)) {
+    if (!(await rateLimit(`bookmarks:${nullifierHash}`, 30, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })
     }
 
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`bookmark:${nullifierHash}`, 30, 60_000)) {
+    if (!(await rateLimit(`bookmark:${nullifierHash}`, 30, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })
     }
 

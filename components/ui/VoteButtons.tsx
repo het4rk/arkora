@@ -44,7 +44,8 @@ export function VoteButtons({ post, className }: Props) {
       <button
         onClick={() => { if (isOwnPost) return; haptic('light'); void castVote(post.id, 1, post.upvotes, post.downvotes) }}
         disabled={isVoting || isOwnPost}
-        aria-label={`Upvote (${displayUpvotes})`}
+        aria-label={`Upvote (${displayUpvotes} votes)`}
+        aria-pressed={myDirection === 1}
         title={isOwnPost ? "Can't vote on your own post" : undefined}
         className={cn(
           'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold transition-all active:scale-95',
@@ -64,7 +65,8 @@ export function VoteButtons({ post, className }: Props) {
       <button
         onClick={() => { if (isOwnPost) return; haptic('light'); void castVote(post.id, -1, post.upvotes, post.downvotes) }}
         disabled={isVoting || isOwnPost}
-        aria-label={`Downvote (${displayDownvotes})`}
+        aria-label={`Downvote (${displayDownvotes} votes)`}
+        aria-pressed={myDirection === -1}
         title={isOwnPost ? "Can't vote on your own post" : undefined}
         className={cn(
           'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold transition-all active:scale-95',

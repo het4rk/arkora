@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 10 reports per minute
-    if (!rateLimit(`report:${nullifierHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`report:${nullifierHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many reports. Slow down.' }, { status: 429 })
     }
 

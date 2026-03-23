@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     if (!replyId || typeof direction !== 'number' || !Number.isInteger(direction) || (direction !== 1 && direction !== -1 && direction !== 0)) {
       return NextResponse.json({ success: false, error: 'Missing or invalid fields' }, { status: 400 })
     }
-    if (!rateLimit(`reply-vote:${nullifierHash}`, 30, 60_000)) {
+    if (!(await rateLimit(`reply-vote:${nullifierHash}`, 30, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many votes. Slow down.' }, { status: 429 })
     }
     if (!(await isVerifiedHuman(nullifierHash))) {

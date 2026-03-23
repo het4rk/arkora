@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!noteId || (typeof helpful !== 'boolean' && helpful !== null)) {
       return NextResponse.json({ success: false, error: 'Missing or invalid fields' }, { status: 400 })
     }
-    if (!rateLimit(`note-vote:${nullifierHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`note-vote:${nullifierHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many votes. Slow down.' }, { status: 429 })
     }
     if (!(await isVerifiedHuman(nullifierHash))) {

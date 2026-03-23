@@ -26,13 +26,13 @@ export const getCachedLocalFeed = unstable_cache(
 
 /**
  * Cached version of the hot feed (Wilson-score time-decay ranking).
- * Revalidates every 60 s (or on new/deleted post) - longer TTL is fine since
+ * Revalidates every 120 s (or on new/deleted post) - longer TTL is fine since
  * the ranking changes slowly and the query is more expensive.
  */
 export const getCachedHotFeed = unstable_cache(
   (boardId?: string) => getHotFeed(boardId),
   ['hot-feed'],
-  { revalidate: 60, tags: ['posts'] }
+  { revalidate: 120, tags: ['posts'] }
 )
 
 // ── Invalidation helpers ─────────────────────────────────────────────────────

@@ -58,6 +58,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-background text-text min-h-screen">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-accent focus:text-background focus:px-4 focus:py-2 focus:rounded-lg">
+          Skip to main content
+        </a>
         <MiniKitProvider>
           <ThemeProvider />
           <SkinProvider />
@@ -71,7 +74,7 @@ export default function RootLayout({
           <PostComposer />
           <VerifyHuman />
           <ErrorBoundary>
-            <main className="pb-20 safe-top-bar app-col app-shell">{children}</main>
+            <main id="main-content" className="pb-20 safe-top-bar app-col app-shell">{children}</main>
           </ErrorBoundary>
           <RoomMiniPlayer />
           <BottomNav />

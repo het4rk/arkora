@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireV2Auth, V2_CORS_HEADERS } from '@/lib/agentAuth'
-import { rateLimitAsync } from '@/lib/rateLimit'
+import { rateLimit as rateLimitFn } from '@/lib/rateLimit'
 import { db } from '@/lib/db'
 import { posts, pollVotes } from '@/lib/db/schema'
 import { and, lt, isNull, desc, eq, sql, inArray } from 'drizzle-orm'
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   if (auth instanceof NextResponse) return auth
 
   const rateLimit_ = auth.authType === 'agentkit' ? 240 : 120
-  const allowed = await rateLimitAsync(`v2polls:${auth.key}`, rateLimit_, 60_000)
+  const allowed = await rateLimitFn(`v2polls:${auth.key}`, rateLimit_, 60_000)
   if (!allowed) {
     return NextResponse.json(
       { success: false, error: 'Too many requests' },

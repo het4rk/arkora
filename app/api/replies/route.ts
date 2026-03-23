@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     const pseudoHandle = identityMode === 'anonymous'
       ? undefined
-      : rawHandle ? sanitizeLine(rawHandle) : undefined
+      : rawHandle ? sanitizeLine(rawHandle).slice(0, 50) : undefined
 
     if (replyBody.length > 10000) {
       return NextResponse.json(
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 10 replies per minute
-    if (!rateLimit(`reply:${nullifierHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`reply:${nullifierHash}`, 10, 60_000))) {
       return NextResponse.json(
         { success: false, error: 'Too many replies. Try again in a minute.' },
         { status: 429 }

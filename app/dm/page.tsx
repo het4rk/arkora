@@ -1,4 +1,5 @@
 import { ConversationList } from '@/components/dm/ConversationList'
+import { FeatureErrorBoundary } from '@/components/ui/FeatureErrorBoundary'
 
 export default function DmPage() {
   return (
@@ -8,7 +9,9 @@ export default function DmPage() {
         <h1 className="text-text font-bold text-xl">Messages</h1>
         <p className="text-text-muted text-xs mt-0.5">End-to-end encrypted</p>
       </div>
-      <ConversationList />
+      <FeatureErrorBoundary name="Messages">
+        <ConversationList />
+      </FeatureErrorBoundary>
     </div>
   )
 }

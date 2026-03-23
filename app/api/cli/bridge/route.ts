@@ -5,7 +5,7 @@ import { createDecipheriv } from 'crypto'
 import { rateLimit } from '@/lib/rateLimit'
 import { signRequest } from '@worldcoin/idkit/signing'
 // verifyWorldIdProof imported dynamically below
-import { getOrCreateUser, getUserByNullifier } from '@/lib/db/users'
+import { getOrCreateUser, getInternalUserByNullifier } from '@/lib/db/users'
 import { createApiKey, countActiveKeysByOwner } from '@/lib/db/apiKeys'
 
 // ── WASM fetch patch ──────────────────────────────────────────────────
@@ -64,7 +64,7 @@ function decryptBridgeResponse(key: Buffer, ivB64: string, payloadB64: string): 
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? 'anon'
-    if (!rateLimit(`cli-bridge:${ip}`, 5, 600_000)) {
+    if (!(await rateLimit(`cli-bridge:${ip}`, 5, 600_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429 })
     }
 
@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing sessionId' }, { status: 400 })
     }
 
-    if (!rateLimit(`cli-bridge-poll:${sessionId}`, 60, 60_000)) {
+    if (!(await rateLimit(`cli-bridge-poll:${sessionId}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
@@ -210,7 +210,7 @@ export async function GET(req: NextRequest) {
       if (alreadyVerified) {
         const clientNullifier = (idkitResult.nullifier_hash ?? idkitResult.nullifier) as string | undefined
         if (clientNullifier) {
-          const existingUser = await getUserByNullifier(clientNullifier)
+          const existingUser = await getInternalUserByNullifier(clientNullifier)
           if (existingUser) nullifierHash = clientNullifier
         }
       }
@@ -240,7 +240,7 @@ export async function GET(req: NextRequest) {
         !worldIdUser.walletAddress.startsWith('idkit_')
       ) {
         const wltNullifier = walletToNullifier(worldIdUser.walletAddress)
-        const walletUser = await getUserByNullifier(wltNullifier)
+        const walletUser = await getInternalUserByNullifier(wltNullifier)
         if (walletUser) {
           nullifierHash = wltNullifier
           handle = walletUser.pseudoHandle ?? handle

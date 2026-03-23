@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 60 votes per minute
-    if (!rateLimit(`vote:${nullifierHash}`, 60, 60_000)) {
+    if (!(await rateLimit(`vote:${nullifierHash}`, 60, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many votes. Slow down.' }, { status: 429 })
     }
 

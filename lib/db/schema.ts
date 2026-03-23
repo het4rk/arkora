@@ -54,6 +54,9 @@ export const posts = pgTable(
     authorNullifier: text('author_nullifier'),
     // Identity mode at time of posting: 'anonymous' | 'alias' | 'named'
     postIdentityMode: text('post_identity_mode').notNull().default('anonymous'),
+    // Full-text search vector (generated column in Postgres - see raw SQL below).
+    // Drizzle stores this as text but the actual column is tsvector.
+    searchVector: text('search_vector'),
   },
   (table) => ({
     boardIdx: index('posts_board_id_idx').on(table.boardId),
@@ -68,6 +71,15 @@ export const posts = pgTable(
     tagsIdx: index('posts_tags_idx').using('gin', table.tags),
     // Internal identity lookups (rate limiting, moderation, following feed)
     authorNullifierIdx: index('posts_author_nullifier_idx').on(table.authorNullifier),
+    // GIN index on search_vector for full-text search.
+    // NOTE: pnpm db:push cannot create a generated tsvector column or this GIN index.
+    // Run the following SQL manually against the database:
+    //
+    //   ALTER TABLE posts ADD COLUMN IF NOT EXISTS search_vector tsvector
+    //     GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, ''))) STORED;
+    //   CREATE INDEX IF NOT EXISTS posts_search_idx ON posts USING GIN(search_vector);
+    //
+    postsSearchIdx: index('posts_search_idx').using('gin', sql`search_vector`),
   })
 )
 
@@ -247,6 +259,8 @@ export const dmMessages = pgTable(
   (table) => ({
     convIdx: index('dm_messages_conv_idx').on(table.senderHash, table.recipientHash),
     recipientIdx: index('dm_messages_recipient_idx').on(table.recipientHash, table.createdAt),
+    dmSenderCreatedIdx: index('dm_messages_sender_created_idx').on(table.senderHash, table.createdAt),
+    dmRecipientCreatedIdx: index('dm_messages_recipient_created_idx').on(table.recipientHash, table.createdAt),
   })
 )
 

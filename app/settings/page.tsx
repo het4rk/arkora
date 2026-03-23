@@ -1,5 +1,10 @@
 import { SettingsView } from '@/components/settings/SettingsView'
+import { FeatureErrorBoundary } from '@/components/ui/FeatureErrorBoundary'
 
 export default function SettingsPage() {
-  return <SettingsView />
+  return (
+    <FeatureErrorBoundary name="Settings">
+      <SettingsView />
+    </FeatureErrorBoundary>
+  )
 }

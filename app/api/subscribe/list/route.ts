@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`subscribe-list:${subscriberHash}`, 30, 60_000)) {
+    if (!(await rateLimit(`subscribe-list:${subscriberHash}`, 30, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

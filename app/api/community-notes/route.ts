@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     if (body.length > 500) {
       return NextResponse.json({ success: false, error: 'Note too long (500 chars max)' }, { status: 400 })
     }
-    if (!rateLimit(`note:${submitterNullifierHash}`, 3, 60_000)) {
+    if (!(await rateLimit(`note:${submitterNullifierHash}`, 3, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many notes. Try again in a minute.' }, { status: 429 })
     }
     if (!(await isVerifiedHuman(submitterNullifierHash))) {

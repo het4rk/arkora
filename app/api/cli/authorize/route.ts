@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!rateLimit(`cli-authorize:${nullifierHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`cli-authorize:${nullifierHash}`, 10, 60_000))) {
       return NextResponse.json(
         { success: false, error: 'Too many requests' },
         { status: 429 }

@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { cookies } from 'next/headers'
-import { getUserByNullifier, getUserByWalletAddressNonWlt } from '@/lib/db/users'
+import { getInternalUserByNullifier, getUserByWalletAddressNonWlt } from '@/lib/db/users'
 
 /**
  * Reads the caller's nullifier hash from the server-side `arkora-nh` httpOnly cookie.
@@ -41,7 +41,7 @@ export function walletToNullifier(walletAddress: string): string {
  * identity the current session resolves to.
  */
 export async function getLinkedNullifiers(nullifierHash: string): Promise<string[]> {
-  const user = await getUserByNullifier(nullifierHash)
+  const user = await getInternalUserByNullifier(nullifierHash)
   if (!user?.walletAddress || user.walletAddress.startsWith('idkit_')) {
     return [nullifierHash]
   }

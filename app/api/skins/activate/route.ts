@@ -11,7 +11,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
     }
 
-    if (!rateLimit(`skin-activate:${nullifierHash}`, 30, 60_000)) {
+    if (!(await rateLimit(`skin-activate:${nullifierHash}`, 30, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

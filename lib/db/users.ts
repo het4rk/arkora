@@ -4,7 +4,25 @@ import { eq, inArray, sql, and } from 'drizzle-orm'
 import type { HumanUser } from '@/lib/types'
 import { sanitizeText } from '@/lib/sanitize'
 
+/** Public-safe user mapper - walletAddress is always null to prevent leaking in API responses. */
 function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
+  return {
+    nullifierHash: row.nullifierHash,
+    walletAddress: null as unknown as string,
+    pseudoHandle: row.pseudoHandle ?? null,
+    avatarUrl: row.avatarUrl ?? null,
+    bio: row.bio ?? null,
+    identityMode: (row.identityMode as HumanUser['identityMode']) ?? 'anonymous',
+    karmaScore: row.karmaScore ?? 0,
+    worldIdVerified: row.worldIdVerified,
+    verifiedBlockNumber: row.verifiedBlockNumber !== null ? Number(row.verifiedBlockNumber) : null,
+    registrationTxHash: row.registrationTxHash ?? null,
+    createdAt: row.createdAt,
+  }
+}
+
+/** Internal user mapper - includes walletAddress for server-side use (tips, subscriptions, auth linking). */
+export function toInternalUser(row: typeof humanUsers.$inferSelect): HumanUser {
   return {
     nullifierHash: row.nullifierHash,
     walletAddress: row.walletAddress,
@@ -20,13 +38,14 @@ function toUser(row: typeof humanUsers.$inferSelect): HumanUser {
   }
 }
 
+/** Creates or returns user with walletAddress included (server-side auth flows). */
 export async function getOrCreateUser(
   nullifierHash: string,
   walletAddress: string,
   username?: string,
   worldIdVerified?: boolean
 ): Promise<HumanUser> {
-  const existing = await getUserByNullifier(nullifierHash)
+  const existing = await getInternalUserByNullifier(nullifierHash)
   if (existing) {
     if (username && !existing.pseudoHandle) {
       return updatePseudoHandle(nullifierHash, username)
@@ -47,12 +66,22 @@ export async function getOrCreateUser(
     .returning()
 
   if (!row) {
-    const refetch = await getUserByNullifier(nullifierHash)
+    const refetch = await getInternalUserByNullifier(nullifierHash)
     if (!refetch) throw new Error('Failed to create user')
     return refetch
   }
 
   return toUser(row)
+}
+
+/** Lightweight fetch for metadata generation - just handle + bio. */
+export async function getUserMetadata(nullifierHash: string): Promise<{ pseudoHandle: string | null; bio: string | null } | null> {
+  const [row] = await db
+    .select({ pseudoHandle: humanUsers.pseudoHandle, bio: humanUsers.bio })
+    .from(humanUsers)
+    .where(eq(humanUsers.nullifierHash, nullifierHash))
+    .limit(1)
+  return row ? { pseudoHandle: row.pseudoHandle ?? null, bio: row.bio ?? null } : null
 }
 
 export async function getUserByNullifier(
@@ -67,6 +96,19 @@ export async function getUserByNullifier(
   return row ? toUser(row) : null
 }
 
+/** Same as getUserByNullifier but includes walletAddress - for server-side auth, tips, subscriptions. */
+export async function getInternalUserByNullifier(
+  nullifierHash: string
+): Promise<HumanUser | null> {
+  const [row] = await db
+    .select()
+    .from(humanUsers)
+    .where(eq(humanUsers.nullifierHash, nullifierHash))
+    .limit(1)
+
+  return row ? toInternalUser(row) : null
+}
+
 export async function updatePseudoHandle(
   nullifierHash: string,
   pseudoHandle: string
@@ -78,7 +120,7 @@ export async function updatePseudoHandle(
     .returning()
 
   if (!row) throw new Error('User not found')
-  return toUser(row)
+  return toInternalUser(row)
 }
 
 export async function updateAvatarUrl(
@@ -165,7 +207,7 @@ export async function getUserByWalletAddressNonWlt(walletAddress: string): Promi
       sql`${humanUsers.nullifierHash} NOT LIKE 'wlt_%'`
     ))
     .limit(1)
-  return row ? toUser(row) : null
+  return row ? toInternalUser(row) : null
 }
 
 export async function isVerifiedHuman(nullifierHash: string): Promise<boolean> {

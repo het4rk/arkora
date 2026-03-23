@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Verification required' }, { status: 403 })
     }
 
-    if (!rateLimit(`reactions:${callerHash}`, 30, 60_000)) {
+    if (!(await rateLimit(`reactions:${callerHash}`, 30, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 

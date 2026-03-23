@@ -14,7 +14,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!rateLimit(`room-leave:${callerHash}`, 10, 60_000)) {
+    if (!(await rateLimit(`room-leave:${callerHash}`, 10, 60_000))) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
