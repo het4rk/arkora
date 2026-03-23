@@ -8,7 +8,7 @@ const HEALTH_TIMEOUT = 5000
 export async function GET(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'anon'
   if (!(await rateLimit(`health:${ip}`, 10, 60_000))) {
-    return NextResponse.json({ status: 'rate-limited' }, { status: 429 })
+    return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
   }
 
   try {
@@ -27,12 +27,12 @@ export async function GET(req: NextRequest) {
     const allOk = dbOk && (redisOk === null || redisOk === true)
 
     return NextResponse.json(
-      { status: allOk ? 'ok' : 'degraded', db: dbOk, redis: redisOk, ts: Date.now() },
+      { success: true, data: { status: allOk ? 'ok' : 'degraded', db: dbOk, redis: redisOk, ts: Date.now() } },
       { status: allOk ? 200 : 503 }
     )
   } catch {
     return NextResponse.json(
-      { status: 'error', db: false, redis: null, ts: Date.now() },
+      { success: false, error: 'Health check failed', data: { status: 'error', db: false, redis: null, ts: Date.now() } },
       { status: 503 }
     )
   }

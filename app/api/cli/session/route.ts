@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const ip = req.headers.get('x-forwarded-for') ?? 'anon'
     if (!(await rateLimit(`cli-session:${ip}`, 5, 600_000))) {
       return NextResponse.json(
-        { success: false, error: 'Too many requests. Try again later.' },
+        { success: false, error: 'Too many requests' },
         { status: 429 }
       )
     }

@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!(await rateLimit(`dm:${senderHash}`, 30, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many messages. Slow down.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
     if (!(await rateLimit(`dm-recv:${recipientHash}`, 100, 60_000))) {
       return NextResponse.json({ success: false, error: 'Recipient is receiving too many messages' }, { status: 429 })

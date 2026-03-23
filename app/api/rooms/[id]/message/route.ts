@@ -19,7 +19,7 @@ export async function POST(
 
     // Rate limit: 30 messages per 60 seconds
     if (!(await rateLimit(`room-msg:${callerHash}`, 30, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many messages. Slow down.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const { id } = await params

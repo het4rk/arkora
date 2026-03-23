@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     // Rate limit by IP - search is unauthenticated so we can't key on nullifier
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
     if (!(await rateLimit(`search:${ip}`, 30, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const filterParam = req.nextUrl.searchParams.get('type') ?? 'all'

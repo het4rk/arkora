@@ -11,6 +11,7 @@ import { worldAppNotify } from '@/lib/worldAppNotify'
 import { isAllowedImageDomain } from '@/lib/storage/hippius'
 import { getPublicNullifier } from '@/lib/identityRules'
 import type { IdentityMode } from '@/lib/identityRules'
+import { MAX_BODY_LENGTH, MAX_PSEUDOHANDLE_LENGTH } from '@/lib/constants'
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,9 +47,9 @@ export async function POST(req: NextRequest) {
 
     const pseudoHandle = identityMode === 'anonymous'
       ? undefined
-      : rawHandle ? sanitizeLine(rawHandle).slice(0, 50) : undefined
+      : rawHandle ? sanitizeLine(rawHandle).slice(0, MAX_PSEUDOHANDLE_LENGTH) : undefined
 
-    if (replyBody.length > 10000) {
+    if (replyBody.length > MAX_BODY_LENGTH) {
       return NextResponse.json(
         { success: false, error: 'Reply exceeds 10,000 characters' },
         { status: 400 }
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
     // Rate limit: 10 replies per minute
     if (!(await rateLimit(`reply:${nullifierHash}`, 10, 60_000))) {
       return NextResponse.json(
-        { success: false, error: 'Too many replies. Try again in a minute.' },
+        { success: false, error: 'Too many requests' },
         { status: 429 }
       )
     }

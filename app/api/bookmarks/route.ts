@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!(await rateLimit(`bookmarks:${nullifierHash}`, 30, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const { searchParams } = new URL(req.url)
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!(await rateLimit(`bookmark:${nullifierHash}`, 30, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const { postId } = (await req.json()) as { postId?: string }

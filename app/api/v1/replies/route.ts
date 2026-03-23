@@ -7,6 +7,7 @@ import { sanitizeText } from '@/lib/sanitize'
 import { createReply } from '@/lib/db/replies'
 import { getPublicNullifier } from '@/lib/identityRules'
 import type { IdentityMode } from '@/lib/identityRules'
+import { MAX_BODY_LENGTH } from '@/lib/constants'
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const sanitizedBody = sanitizeText(rawBody)
 
-    if (sanitizedBody.length > 10000) {
+    if (sanitizedBody.length > MAX_BODY_LENGTH) {
       return NextResponse.json(
         { success: false, error: 'Body exceeds 10,000 characters' },
         { status: 400, headers: CORS_HEADERS }

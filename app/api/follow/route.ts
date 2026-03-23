@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Cannot follow yourself' }, { status: 400 })
     }
     if (!(await rateLimit(`follow:${followerId}`, 30, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many actions. Slow down.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
     if (!(await isVerifiedHuman(followerId))) {
       return NextResponse.json({ success: false, error: 'Not verified' }, { status: 403 })

@@ -10,6 +10,7 @@ import { createNotification } from '@/lib/db/notifications'
 import { pusherServer } from '@/lib/pusher'
 import { worldAppNotify } from '@/lib/worldAppNotify'
 import { ANONYMOUS_BOARDS } from '@/lib/types'
+import { MAX_TITLE_LENGTH, MAX_BODY_LENGTH, MAX_POLL_OPTION_LENGTH, MIN_POLL_OPTIONS, MAX_POLL_OPTIONS, MAX_PSEUDOHANDLE_LENGTH } from '@/lib/constants'
 import { FEATURED_BOARDS, resolveBoard, normalizeBoard } from '@/lib/boards'
 import type { BoardId, CreatePostInput, FeedParams, LocalFeedParams } from '@/lib/types'
 import { getPublicNullifier } from '@/lib/identityRules'
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     // Rate limit: 60 requests/min per IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? 'unknown'
     if (!(await rateLimit(`feed:${ip}`, 60, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const { searchParams } = new URL(req.url)
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
     // Poll-specific validation
     if (isPoll) {
       const opts = body.pollOptions
-      if (!Array.isArray(opts) || opts.length < 2 || opts.length > 4) {
+      if (!Array.isArray(opts) || opts.length < MIN_POLL_OPTIONS || opts.length > MAX_POLL_OPTIONS) {
         return NextResponse.json({ success: false, error: 'Polls require 2–4 options' }, { status: 400 })
       }
       for (const opt of opts) {
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ success: false, error: 'Each option must be 1–100 characters' }, { status: 400 })
         }
         const sanitizedOpt = sanitizeLine(opt)
-        if (!sanitizedOpt || sanitizedOpt.length > 100) {
+        if (!sanitizedOpt || sanitizedOpt.length > MAX_POLL_OPTION_LENGTH) {
           return NextResponse.json({ success: false, error: 'Each option must be 1–100 characters' }, { status: 400 })
         }
       }
@@ -185,16 +186,16 @@ export async function POST(req: NextRequest) {
 
     const pseudoHandle = identityMode === 'anonymous'
       ? undefined
-      : rawHandle ? sanitizeLine(rawHandle).slice(0, 50) : undefined
+      : rawHandle ? sanitizeLine(rawHandle).slice(0, MAX_PSEUDOHANDLE_LENGTH) : undefined
 
-    if (!isRepost && title.length > 280) {
+    if (!isRepost && title.length > MAX_TITLE_LENGTH) {
       return NextResponse.json(
         { success: false, error: 'Title exceeds 280 characters' },
         { status: 400 }
       )
     }
 
-    if (!isPoll && !isRepost && postBody.length > 10000) {
+    if (!isPoll && !isRepost && postBody.length > MAX_BODY_LENGTH) {
       return NextResponse.json(
         { success: false, error: 'Body exceeds 10,000 characters' },
         { status: 400 }
@@ -203,7 +204,7 @@ export async function POST(req: NextRequest) {
 
     // Rate limit: 5 posts per minute per user
     if (!(await rateLimit(`post:${nullifierHash}`, 5, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many posts. Try again in a minute.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     // Gate: must be a verified human

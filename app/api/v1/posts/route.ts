@@ -13,6 +13,7 @@ import { FEATURED_BOARDS, resolveBoard } from '@/lib/boards'
 import { getPublicNullifier } from '@/lib/identityRules'
 import { invalidatePosts } from '@/lib/cache'
 import type { IdentityMode } from '@/lib/identityRules'
+import { MAX_TITLE_LENGTH, MAX_BODY_LENGTH } from '@/lib/constants'
 
 /**
  * GET /api/v1/posts
@@ -196,14 +197,14 @@ export async function POST(req: NextRequest) {
     const title = sanitizeLine(rawTitle)
     const postBody = sanitizeText(rawBody ?? '')
 
-    if (title.length > 280) {
+    if (title.length > MAX_TITLE_LENGTH) {
       return NextResponse.json(
         { success: false, error: 'Title exceeds 280 characters' },
         { status: 400, headers: CORS_HEADERS }
       )
     }
 
-    if (postBody.length > 10000) {
+    if (postBody.length > MAX_BODY_LENGTH) {
       return NextResponse.json(
         { success: false, error: 'Body exceeds 10,000 characters' },
         { status: 400, headers: CORS_HEADERS }

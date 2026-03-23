@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 
     if (!(await rateLimit(`poll-vote:${nullifierHash}`, 10, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     if (!(await isVerifiedHuman(nullifierHash))) {

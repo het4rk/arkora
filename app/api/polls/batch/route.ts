@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
     if (!(await rateLimit(`poll-batch:${ip}`, 60, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const { searchParams } = new URL(req.url)

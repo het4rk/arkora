@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!(await rateLimit(`profile:${nullifierHash}`, 60, 60_000))) {
-      return NextResponse.json({ success: false, error: 'Too many requests. Slow down.' }, { status: 429 })
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const { searchParams } = new URL(req.url)
