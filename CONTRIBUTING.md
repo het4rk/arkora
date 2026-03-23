@@ -85,7 +85,7 @@ Scope is optional but helpful: `feat(rooms)`, `fix(dm)`, `chore(deps)`, `securit
 
 CI checks that must pass:
 
-- Tests: 69 unit tests passing (`pnpm test`)
+- Tests: 82 unit tests + 11 E2E tests passing (`pnpm test` and `pnpm test:e2e`)
 - TypeScript: zero errors (`tsc --noEmit`)
 - ESLint: zero warnings (`next lint`)
 - Build: `next build` succeeds

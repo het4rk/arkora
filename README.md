@@ -14,7 +14,6 @@
   <a href="https://x.com/humansposting">Twitter</a> - <a href="https://github.com/het4rk/arkora/releases">Changelog</a> - <a href="#developer-api">API Docs</a> - <a href="#cli">CLI</a>
 </p>
 
-<!-- Add a screenshot here: ![Arkora Screenshot](docs/screenshot.png) -->
 
 ---
 
@@ -361,6 +360,12 @@ lib/
 store/
   useArkoraStore.ts   Global Zustand store
 
+contracts/            ArkoraNullifierRegistry.sol (onchain World ID registry, deployed on World Chain)
+cli/                  Node.js CLI (TypeScript + commander)
+cli-rust/             Rust CLI (clap + reqwest + colored)
+mcp/                  MCP server for AI agent tooling
+scripts/              Database seed + migration scripts
+docs/                 Social preview image + assets
 e2e/                  Playwright E2E tests (5 specs, 11 tests)
 middleware.ts         Edge middleware (payload size gating)
 vercel.json           Per-route function config (timeouts)
