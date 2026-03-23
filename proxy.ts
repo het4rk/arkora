@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 const MAX_JSON_SIZE = 1 * 1024 * 1024  // 1MB for JSON endpoints
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024  // 10MB for upload endpoint
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
   const contentLength = req.headers.get('content-length')
 

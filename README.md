@@ -367,7 +367,7 @@ mcp/                  MCP server for AI agent tooling
 scripts/              Database seed + migration scripts
 docs/                 Social preview image + assets
 e2e/                  Playwright E2E tests (5 specs, 11 tests)
-middleware.ts         Edge middleware (payload size gating)
+proxy.ts              Edge proxy (payload size gating, Next.js 16.2 convention)
 vercel.json           Per-route function config (timeouts)
 playwright.config.ts  Playwright configuration
 public/sw.js          Service worker for PWA offline

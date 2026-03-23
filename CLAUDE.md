@@ -213,7 +213,7 @@ Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_R
 | `components/search/SearchSheet.tsx` | Multi-entity search modal |
 | `components/ui/FeatureErrorBoundary.tsx` | Component-level error boundaries for feature sections |
 | `components/auth/VerifyHumanLazy.tsx` | Code-split World ID verification (dynamic import of IDKit) |
-| `middleware.ts` | Edge middleware for payload size gating |
+| `proxy.ts` | Edge proxy for payload size gating (Next.js 16.2 convention) |
 | `public/sw.js` | Service worker for PWA offline support |
 | `vercel.json` | Per-route function config (timeouts) |
 | `playwright.config.ts` | Playwright E2E test configuration |
