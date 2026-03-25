@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import Pusher from 'pusher-js'
 import { authFetch } from '@/lib/authFetch'
@@ -37,8 +37,8 @@ function getInitials(handle: string): string {
     .join('') || '?'
 }
 
-// Participant bubble in the voice-room grid
-function ParticipantBubble({
+// Participant bubble in the voice-room grid - memoized to avoid re-renders during frequent participant updates
+const ParticipantBubble = memo(function ParticipantBubble({
   participant,
   isSpeaking,
   isHost,
@@ -103,7 +103,7 @@ function ParticipantBubble({
       </p>
     </div>
   )
-}
+})
 
 interface RoomViewProps {
   roomId: string

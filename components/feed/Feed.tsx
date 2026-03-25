@@ -195,14 +195,15 @@ export function Feed() {
   }, [])
 
   useEffect(() => {
-    if (!nullifierHash || posts.length === 0) return
-    fetchBookmarks(posts.map((p) => p.id), nullifierHash)
-  }, [posts, nullifierHash, fetchBookmarks])
-
-  useEffect(() => {
+    if (posts.length === 0) return
+    const postIds = posts.map((p) => p.id)
     const pollPostIds = posts.filter((p) => p.type === 'poll').map((p) => p.id)
-    fetchPollData(pollPostIds)
-  }, [posts, fetchPollData])
+    // Batch bookmark + poll data fetches into a single effect
+    void Promise.all([
+      nullifierHash ? fetchBookmarks(postIds, nullifierHash) : Promise.resolve(),
+      fetchPollData(pollPostIds),
+    ])
+  }, [posts, nullifierHash, fetchBookmarks, fetchPollData])
 
   // Stable callback for Virtuoso endReached (infinite scroll)
   const handleEndReached = useCallback(() => {

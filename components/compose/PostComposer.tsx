@@ -61,7 +61,7 @@ export function PostComposer() {
         if (j.success && j.data) setAllBoards(j.data)
       })
       .catch(() => null)
-  }, [isComposerOpen])
+  }, []) // Fetch once on mount - board list is stable
 
   // Manual board selection - mark as user-picked so hashtags don't override
   const handleBoardChange = useCallback((id: string) => {

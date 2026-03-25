@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { upsertReplyVote, deleteReplyVote, getReplyNullifier, getReplyVoteByNullifier } from '@/lib/db/replies'
+import { upsertReplyVote, deleteReplyVote, getReplyNullifier, getReplyVoteByNullifier, hasAnyReplyVote } from '@/lib/db/replies'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { updateKarma } from '@/lib/db/karma'
 import { rateLimit } from '@/lib/rateLimit'
@@ -54,14 +54,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Cannot vote on your own reply' }, { status: 403 })
     }
 
-    // Double-vote check: block if any linked identity already voted on this reply
+    // Double-vote check: batch query all linked identities at once
     if (oldDir === 0) {
-      for (const linked of allLinked) {
-        if (linked === nullifierHash) continue
-        const existing = await getReplyVoteByNullifier(replyId, linked)
-        if (existing) {
-          return NextResponse.json({ success: false, error: 'You have already voted on this reply' }, { status: 403 })
-        }
+      const otherLinked = allLinked.filter((l) => l !== nullifierHash)
+      if (otherLinked.length > 0 && await hasAnyReplyVote(replyId, otherLinked)) {
+        return NextResponse.json({ success: false, error: 'You have already voted on this reply' }, { status: 403 })
       }
     }
 

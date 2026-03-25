@@ -173,6 +173,20 @@ export async function getReplyVoteByNullifier(
   return row ? { direction: row.direction } : null
 }
 
+/** Check if any of the given nullifiers have voted on a reply. Returns true if any have. */
+export async function hasAnyReplyVote(
+  replyId: string,
+  nullifiers: string[]
+): Promise<boolean> {
+  if (nullifiers.length === 0) return false
+  const rows = await db
+    .select({ nullifierHash: replyVotes.nullifierHash })
+    .from(replyVotes)
+    .where(and(eq(replyVotes.replyId, replyId), inArray(replyVotes.nullifierHash, nullifiers)))
+    .limit(1)
+  return rows.length > 0
+}
+
 export async function getRepliesByNullifier(
   nullifierHash: string,
   limit = 30

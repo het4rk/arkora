@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { upsertVote, getPostNullifier, deletePostVote, getVoteByNullifier } from '@/lib/db/posts'
+import { upsertVote, getPostNullifier, deletePostVote, getVoteByNullifier, hasAnyPostVote } from '@/lib/db/posts'
 import { isVerifiedHuman } from '@/lib/db/users'
 import { updateKarma } from '@/lib/db/karma'
 import { createNotification } from '@/lib/db/notifications'
@@ -69,17 +69,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Double-vote check: block if any linked identity already voted on this post
+    // Double-vote check: batch query all linked identities at once
     if (oldDir === 0) {
-      for (const linked of allLinked) {
-        if (linked === nullifierHash) continue
-        const existing = await getVoteByNullifier(postId, linked)
-        if (existing) {
-          return NextResponse.json(
-            { success: false, error: 'You have already voted on this post' },
-            { status: 403 }
-          )
-        }
+      const otherLinked = allLinked.filter((l) => l !== nullifierHash)
+      if (otherLinked.length > 0 && await hasAnyPostVote(postId, otherLinked)) {
+        return NextResponse.json(
+          { success: false, error: 'You have already voted on this post' },
+          { status: 403 }
+        )
       }
     }
 

@@ -15,6 +15,10 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
     }
 
+    if (!(await rateLimit(`prefs-get:${nullifierHash}`, 60, 60_000))) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
+
     const [row] = await db
       .select({
         theme: humanUsers.theme,
@@ -35,9 +39,8 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: row })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[preferences:GET]', msg)
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    console.error('[preferences:GET]', err instanceof Error ? err.message : String(err))
+    return NextResponse.json({ success: false, error: 'Failed to load preferences' }, { status: 500 })
   }
 }
 
@@ -89,8 +92,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[preferences:PATCH]', msg)
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    console.error('[preferences:PATCH]', err instanceof Error ? err.message : String(err))
+    return NextResponse.json({ success: false, error: 'Failed to update preferences' }, { status: 500 })
   }
 }

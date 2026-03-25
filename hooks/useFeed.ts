@@ -99,6 +99,8 @@ export function useFeed(
       const json = (await res.json()) as { data: Post[] }
       applyPage(json.data, reset)
     },
+    // nullifierHash intentionally excluded - accessed via nullifierRef to avoid re-creating
+    // fetchPosts on every auth state change (would reset pagination mid-scroll)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [boardId, feedMode, localCoords?.lat, localCoords?.lng, localCoords?.radiusMiles, applyPage]
   )

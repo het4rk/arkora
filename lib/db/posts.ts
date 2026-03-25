@@ -296,6 +296,20 @@ export async function getVoteByNullifier(
   return row ? { direction: row.direction } : null
 }
 
+/** Check if any of the given nullifiers have voted on a post. Returns true if any have. */
+export async function hasAnyPostVote(
+  postId: string,
+  nullifiers: string[]
+): Promise<boolean> {
+  if (nullifiers.length === 0) return false
+  const rows = await db
+    .select({ nullifierHash: postVotes.nullifierHash })
+    .from(postVotes)
+    .where(and(eq(postVotes.postId, postId), inArray(postVotes.nullifierHash, nullifiers)))
+    .limit(1)
+  return rows.length > 0
+}
+
 /** Record a verified-human view. One row per (postId, nullifierHash) - deduped by composite PK.
  *  Uses atomic increment instead of COUNT(*) recount for O(1) scalability. */
 export async function recordView(postId: string, nullifierHash: string): Promise<void> {

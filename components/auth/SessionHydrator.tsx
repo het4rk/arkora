@@ -33,6 +33,7 @@ export function SessionHydrator() {
         }
       })
       .catch(() => {/* silent */})
+  // Run once on mount to validate session cookie - store setters are stable refs
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -49,6 +50,7 @@ export function SessionHydrator() {
         }
       })
       .catch(() => {/* silent */})
+  // Store setters (setOwnedSkins, setActiveSkin) are stable refs - only re-fetch on auth change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVerified, nullifierHash])
 
@@ -64,6 +66,7 @@ export function SessionHydrator() {
         }
       })
       .catch(() => {/* silent */})
+  // Store setters (setOwnedFonts, setActiveFont) are stable refs - only re-fetch on auth change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVerified, nullifierHash])
 
@@ -89,6 +92,7 @@ export function SessionHydrator() {
         }
       })
       .catch(() => {/* silent */})
+  // Store setters (setTheme, setNotify*, setLocation*) are stable refs - only re-fetch on auth change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVerified, nullifierHash])
 
