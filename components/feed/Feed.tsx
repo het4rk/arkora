@@ -304,7 +304,7 @@ export function Feed() {
       <div
         ref={scrollCallbackRef}
         className={cn(
-          'overflow-y-scroll h-[calc(100dvh-56px)]',
+          'overflow-y-scroll overflow-x-hidden h-[calc(100dvh-56px)]',
           hasLocalCoords ? 'pt-12' : 'pt-2'
         )}
         style={{ ...swipeStyle, touchAction: 'pan-y' }}

@@ -183,7 +183,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
         )}
 
         {post.type !== 'repost' && (
-          <h2 className="text-fluid-hero font-bold text-text line-clamp-5 mb-5">
+          <h2 className="text-fluid-hero font-bold text-text line-clamp-5 mb-5 break-words">
             {post.title}
           </h2>
         )}
@@ -239,7 +239,7 @@ export const ThreadCard = memo(function ThreadCard({ post, topReply, onDeleted, 
             <p className="text-accent text-[11px] font-semibold uppercase tracking-[0.12em] mb-2">
               {t('thread.top')} {t('thread.reply').toLowerCase()}
             </p>
-            <p className="text-text-secondary text-sm leading-relaxed line-clamp-3">
+            <p className="text-text-secondary text-sm leading-relaxed line-clamp-3 break-words">
               {topReply}
             </p>
           </div>

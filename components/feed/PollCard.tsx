@@ -98,7 +98,7 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
               key={opt.index}
               onClick={(e) => void vote(e, opt.index)}
               disabled={isVoting}
-              className="w-full text-left px-4 py-3 rounded-[var(--r-lg)] glass border border-border/30 text-sm font-medium text-text active:scale-[0.99] transition-all disabled:opacity-60"
+              className="w-full text-left px-4 py-3 rounded-[var(--r-lg)] glass border border-border/30 text-sm font-medium text-text active:scale-[0.99] transition-all disabled:opacity-60 break-words"
             >
               {opt.text}
             </button>
@@ -124,7 +124,7 @@ export function PollCard({ post, initialResults, initialUserVote }: Props) {
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 )}
-                <span className={`text-sm font-medium ${isChosen ? 'text-text' : 'text-text-secondary'}`}>
+                <span className={`text-sm font-medium break-words ${isChosen ? 'text-text' : 'text-text-secondary'}`}>
                   {opt.text}
                 </span>
               </div>

@@ -63,7 +63,7 @@ function NoteCard({
       <p className={`text-[11px] font-semibold uppercase tracking-[0.12em] mb-2 ${note.isPromoted ? 'text-text-secondary' : 'text-text-muted'}`}>
         {note.isPromoted ? 'Community Note' : 'Proposed Note'}
       </p>
-      <p className="text-text-secondary text-sm leading-relaxed">{note.body}</p>
+      <p className="text-text-secondary text-sm leading-relaxed break-words">{note.body}</p>
       {isVerified && (
         <div className="flex items-center gap-3 mt-3">
           <button
@@ -262,7 +262,7 @@ export function ThreadView({ postId }: Props) {
             <TimeAgo date={post.createdAt} />
           </div>
 
-          <h1 className="text-fluid-title font-bold text-text">
+          <h1 className="text-fluid-title font-bold text-text break-words">
             {post.title}
           </h1>
 
@@ -301,7 +301,7 @@ export function ThreadView({ postId }: Props) {
               initialUserVote={userVote ?? null}
             />
           ) : (
-            <p className="text-text-secondary text-[15px] leading-[1.65] whitespace-pre-wrap">
+            <p className="text-text-secondary text-[15px] leading-[1.65] whitespace-pre-wrap break-words">
               <BodyText text={post.body} />
             </p>
           )}
